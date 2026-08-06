@@ -92,9 +92,14 @@ export const me = asyncHandler(async (req, res) => {
   success(res, 200, 'Profile fetched successfully', user);
 });
 
+export const updateMe = asyncHandler(async (req, res) => {
+  const user = await authService.updateProfile(req.user!.id, req.body);
+  success(res, 200, 'Profile updated successfully', user);
+});
+
 export const google = asyncHandler(async (req, res) => {
   const client = getClientInfo(req);
   const { accessToken, refreshToken, user, isNewUser } = await authService.googleAuth(req.body.credential, client);
   setRefreshCookie(res, refreshToken);
-  success(res, isNewUser ? 201 : 200, 'Google login successful', { accessToken, user });
+  success(res, isNewUser ? 201 : 200, 'Google login successful', { accessToken, user, isNewUser });
 });

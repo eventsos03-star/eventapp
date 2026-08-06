@@ -214,7 +214,13 @@ export async function changePassword(
   currentSessionId?: string,
 ): Promise<void> {
   const user = await getUserById(userId, true);
-  if (!user || !(await user.comparePassword(currentPassword))) {
+  if (!user) throw new AppError('User not found', 404);
+
+  if (user.provider === USER_PROVIDER.GOOGLE) {
+    throw new AppError('Google accounts sign in with Google. Set a password to use this feature.', 400);
+  }
+
+  if (!(await user.comparePassword(currentPassword))) {
     throw new AppError('Current password is incorrect', 400);
   }
 
@@ -229,6 +235,20 @@ export async function changePassword(
 
 export async function getCurrentUser(userId: string): Promise<SafeUser> {
   return getSafeUserById(userId);
+}
+
+export async function updateProfile(
+  userId: string,
+  input: { firstName?: string; lastName?: string },
+): Promise<SafeUser> {
+  const user = await getUserById(userId);
+  if (!user) throw new AppError('User not found', 404);
+
+  if (input.firstName !== undefined) user.firstName = input.firstName;
+  if (input.lastName !== undefined) user.lastName = input.lastName;
+  await user.save();
+
+  return user.toSafeObject();
 }
 
 interface GoogleProfile {

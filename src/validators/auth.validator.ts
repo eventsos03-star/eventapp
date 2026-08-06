@@ -43,6 +43,17 @@ export const changePasswordSchema = z.object({
   }),
 });
 
+export const updateProfileSchema = z.object({
+  body: z
+    .object({
+      firstName: z.string().trim().min(1, 'First name is required').max(50).optional(),
+      lastName: z.string().trim().min(1, 'Last name is required').max(50).optional(),
+    })
+    .refine((data) => data.firstName !== undefined || data.lastName !== undefined, {
+      message: 'Provide at least one field to update',
+    }),
+});
+
 export const googleSchema = z.object({
   body: z.object({
     credential: z.string().min(1, 'Google credential is required'),

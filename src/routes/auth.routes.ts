@@ -14,6 +14,7 @@ import {
   loginSchema,
   registerSchema,
   resetPasswordSchema,
+  updateProfileSchema,
 } from '../validators/auth.validator.js';
 
 const router = Router();
@@ -32,5 +33,6 @@ router.post('/change-password', authenticate, authLimiter, validate(changePasswo
 
 router.post('/google', authLimiter, validate(googleSchema), authController.google);
 router.get('/me', authenticate, authLimiter, authController.me);
+router.patch('/me', authenticate, authLimiter, validate(updateProfileSchema), authController.updateMe);
 
 export default router;

@@ -8,6 +8,7 @@ process.env.CLIENT_URL = 'http://localhost:3000';
 process.env.SMTP_HOST = '';
 process.env.SMTP_USER = '';
 process.env.SMTP_PASS = '';
+process.env.GOOGLE_CLIENT_ID = '';
 
 const { default: app } = await import('../src/app.js');
 const mongoose = (await import('mongoose')).default;
@@ -166,6 +167,7 @@ try {
   globalThis.fetch = realFetch;
 }
 assert(r.status === 200, `google links existing account (got ${r.status})`);
+assert(r.json.data.isNewUser === false, 'google existing account: isNewUser=false');
 assert(r.json.data.user.emailVerified === true, 'existing user linked + verified');
 const googleUser = await (await import('../src/models/user.model.js')).default.findOne({ email: user.email });
 assert(googleUser.googleId === 'google-id-1', 'googleId stored on linked account');
@@ -181,6 +183,35 @@ try {
   globalThis.fetch = realFetch;
 }
 assert(r.status === 201, `google creates new user (got ${r.status})`);
+assert(r.json.data.isNewUser === true, 'google new user: isNewUser=true');
+const googleAccessToken = r.json.data.accessToken;
+
+console.log('\n== Update profile ==');
+r = await request('/api/auth/me', {
+  method: 'PATCH',
+  headers: { Authorization: `Bearer ${googleAccessToken}` },
+  body: { firstName: 'New', lastName: 'GoogleName' },
+});
+assert(r.status === 200, `PATCH /auth/me returns 200 (got ${r.status})`);
+assert(r.json.data.firstName === 'New' && r.json.data.lastName === 'GoogleName', 'profile fields updated');
+r = await request('/api/auth/me', { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+assert(r.status === 200 && r.json.data.firstName === 'New', 'updated name persists via me');
+
+console.log('\n== Change password (google user) ==');
+r = await request('/api/auth/change-password', {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${googleAccessToken}` },
+  body: { currentPassword: 'whatever123', newPassword: 'newpassword123' },
+});
+assert(r.status === 400, `google user change-password blocked with 400 (got ${r.status})`);
+
+console.log('\n== Update profile validation ==');
+r = await request('/api/auth/me', {
+  method: 'PATCH',
+  headers: { Authorization: `Bearer ${googleAccessToken}` },
+  body: {},
+});
+assert(r.status === 400, `empty profile update rejected (got ${r.status})`);
 
 console.log('\n== Logout all ==');
 r = await request('/api/auth/logout-all', { method: 'POST', headers: { Authorization: `Bearer ${accessToken2}` } });
