@@ -1,71 +1,98 @@
-# EventOS — Auth Backend
+# EventOS
 
-Production-ready authentication backend for EventOS. This is the first module of the project and includes everything needed for user accounts: registration, email verification, login/logout, refresh tokens, sessions, password flows, and Google OAuth.
+Full-stack monorepo for EventOS — a secure event platform.
 
-Built with Node.js, Express, TypeScript, MongoDB Atlas, Mongoose, JWT, bcrypt, Zod, Nodemailer. ES Modules throughout. No Redis, no Docker, no test framework required.
+- **`server/`** — Authentication backend: Node.js, Express, TypeScript, MongoDB Atlas, Mongoose, JWT, bcrypt, Zod, Nodemailer. Registration, email verification, login/logout, refresh tokens, sessions, password flows, Google OAuth.
+- **`client/`** — Frontend: Next.js (App Router) + React + TypeScript. Complete auth UI: login, register, email verification, password reset, profile management, Google one-tap sign-in.
+
+Both apps live in a single git repository.
 
 ## Quick start
 
 ```bash
-npm install
-cp .env.example .env     # then fill in the values below
-npm run dev
+npm install                # root tools (concurrently)
+npm run install:all        # server + client dependencies
+
+# configure .env files first (see below)
+
+npm run dev                # starts both: server on :5000, client on :3000
 ```
 
-The server only starts listening after a successful MongoDB Atlas connection.
+Open **http://localhost:3000**. The Next.js dev server rewrites `/api` to `http://localhost:5000`, so cookies and CORS just work.
 
-## What you must set in `.env`
+## Environment setup
 
-| Variable | Where to get it | Required to run |
+### `server/.env`
+
+Copy `server/.env.example`. Key values:
+
+| Variable | Required | Notes |
 |---|---|---|
-| `MONGO_URI` | MongoDB Atlas → your cluster → **Connect → Drivers**. Use the `mongodb+srv://` URI and replace `<password>` with your database user password. Example: `mongodb+srv://eventos:yourpassword@cluster0.xxxxx.mongodb.net/eventos` | Yes |
-| `JWT_ACCESS_SECRET` | Generate with the command below (use a different value for each) | Yes |
-| `JWT_REFRESH_SECRET` | Same as above — must differ from access secret | Yes |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | Any real SMTP provider (Gmail, Resend, etc.). For Gmail: `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER=<your@gmail.com>`, `SMTP_PASS=<16-char App Password>` (Google Account → Security → 2-Step Verification → App passwords). **No code changes needed to swap providers.** | No* |
-| `GOOGLE_CLIENT_ID` | Google Cloud Console → Credentials → OAuth client ID. Backend checks Google tokens are issued for this app. The frontend needs the same value. | No** |
-| `CLIENT_URL` | Your frontend URL. The verification/reset links point here. Default `http://localhost:3000` | Yes |
+| `MONGO_URI` | Yes | MongoDB Atlas connection string |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Yes | Generate two different random values |
+| `SMTP_*` | No | Without it, verification/reset links print to the console in development |
+| `GOOGLE_CLIENT_ID` | No* | Must match the client's value |
+| `CLIENT_URL` | Yes | `http://localhost:3000` in development |
 
-\* Without SMTP credentials the server still runs; registration works but emails are not delivered. In `development`, the verification/reset links are printed to the console so you can test the full flow locally.
-
-\** Without `GOOGLE_CLIENT_ID` Google login still works (token audience is not checked). Set it to reject tokens issued for other apps.
-
-Generate the JWT secrets (run twice, keep both values):
+Generate secrets:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-## Google OAuth setup
+### `client/.env`
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com) and create a project.
-2. **APIs & Services → OAuth consent screen** → configure (External, add your email).
-3. **APIs & Services → Credentials → Create Credentials → OAuth client ID** → type *Web application*.
-   - Authorized JavaScript origins: `http://localhost:3000`
-   - Authorized redirect URIs: `http://localhost:3000` (your frontend handles the popup/redirect)
-4. Grab the **Client ID**. Put it in the backend `.env` as `GOOGLE_CLIENT_ID` and in the frontend `.env` as `VITE_GOOGLE_CLIENT_ID`.
-5. Frontend: use Google Identity Services to obtain an ID token (`credential`) and POST it to `POST /api/auth/google` with body `{ "credential": "..." }`.
-   - If the email already exists, the Google account is **linked** to the existing user (no duplicates, password login keeps working).
-   - If the account is new, a user is created with provider `google`, already verified and `ACTIVE`.
-   - The backend verifies the token against Google's `tokeninfo` endpoint on every request.
+Copy `client/.env.example` and set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (the same value as the server's `GOOGLE_CLIENT_ID`) to enable Google sign-in.
 
-## Running
+## Running the apps individually
 
 ```bash
-npm run dev        # tsx watch — development
-npm run build      # compile TypeScript to dist/
-npm start          # run compiled output
-npm run typecheck  # typecheck only
+npm run dev:server    # tsx watch — server at http://localhost:5000
+npm run dev:client    # next dev — client at http://localhost:3000
 ```
 
-Optional dev smoke test (requires a local MongoDB, e.g. on `127.0.0.1:27018`):
+## Useful scripts
 
-```bash
-npx tsx scripts/smoke.mjs
+| Script | What it does |
+|---|---|
+| `npm run dev` | Runs server + client concurrently |
+| `npm run build` | Builds both apps |
+| `npm run typecheck` | Type-checks both apps |
+| `npm run install:all` | Installs deps for both apps |
+
+## Project structure
+
+```
+eventapp/
+├── package.json          # root scripts (concurrently)
+├── server/
+│   ├── src/
+│   │   ├── config/       # env (Zod-validated), MongoDB connection
+│   │   ├── controllers/  # thin HTTP handlers
+│   │   ├── middleware/   # authenticate, authorize, validate, rate limits, error
+│   │   ├── models/       # User, Session (Mongoose)
+│   │   ├── routes/       # auth routes + router index
+│   │   ├── services/     # auth, token, user, email
+│   │   ├── validators/   # Zod schemas for every request
+│   │   ├── emails/       # HTML templates for verify / reset emails
+│   │   ├── app.ts
+│   │   └── server.ts
+│   └── scripts/          # smoke tests
+├── client/
+│   ├── next.config.ts    # rewrites /api → http://localhost:5000
+│   └── src/
+│       ├── app/          # routes: /, /login, /register, /verify-email,
+│       │                 # /forgot-password, /reset-password, /dashboard, not-found
+│       ├── components/   # AuthShell, Field, GoogleButton, Layout, guards
+│       ├── context/      # AuthProvider / useAuth
+│       ├── lib/          # API client, Google Identity helpers
+│       └── types/        # shared types (User, API responses)
+└── docs/                 # design docs
 ```
 
 ## API
 
-Base URL: `http://localhost:5000/api` — all routes are prefixed `/api/auth`.
+Base URL (dev): `http://localhost:5000/api` — all routes prefixed `/api/auth`.
 
 | Method | Route | Auth | Body / Notes |
 |---|---|---|---|
@@ -73,57 +100,29 @@ Base URL: `http://localhost:5000/api` — all routes are prefixed `/api/auth`.
 | GET | `/auth/verify-email?token=...` | — | Link sent by email. One-time use, 24h expiry. |
 | POST | `/auth/login` | — | `email`, `password`. Sets httpOnly refresh cookie, returns `{ accessToken, user }`. |
 | POST | `/auth/refresh` | cookie | Rotates the refresh token and returns a new access token. |
-| POST | `/auth/logout` | cookie | Ends the current session (deletes the session document). |
+| POST | `/auth/logout` | cookie | Ends the current session. |
 | POST | `/auth/logout-all` | Bearer | Ends every session for the user. |
-| POST | `/auth/forgot-password` | — | `email`. Sends a reset link if the account exists (does not reveal whether it does). |
+| POST | `/auth/forgot-password` | — | `email`. Sends a reset link if the account exists. |
 | POST | `/auth/reset-password` | — | `token`, `password`. Invalidates all sessions. |
 | POST | `/auth/change-password` | Bearer | `currentPassword`, `newPassword`. Logs out other devices. |
 | POST | `/auth/google` | — | `credential` (Google ID token). Links or creates the account. |
-| GET | `/auth/me` | Bearer | Current user profile, email, verification status. |
+| GET | `/auth/me` | Bearer | Current user profile. |
+| PATCH | `/auth/me` | Bearer | `firstName` / `lastName` update. |
 | GET | `/health` | — | Health check. |
 
-### Authentication
+Response format: `{ "success": true, "message": "...", "data": {} }`. Errors: `{ "success": false, "message": "..." }`.
 
-- **Access token** — short-lived (15 min), sent as `Authorization: Bearer <token>`.
-- **Refresh token** — 30 days, stored in an **httpOnly, `SameSite=Lax` cookie** (`secure` in production). Stored server-side in the `sessions` collection as a SHA-256 hash, rotated on every refresh.
-- Session document records the browser, IP, and user agent. Expired sessions are cleaned up automatically by a MongoDB TTL index.
+## Google OAuth setup
 
-### Response format
-
-```json
-{ "success": true, "message": "Login successful", "data": {} }
-```
-
-Errors:
-
-```json
-{ "success": false, "message": "Invalid email or password" }
-```
-
-## Project structure
-
-```
-src/
-├── config/        # env (Zod-validated), MongoDB connection
-├── controllers/   # thin HTTP handlers
-├── middleware/    # authenticate, authorize, validate, rate limits, error, 404
-├── models/        # User, Session (Mongoose)
-├── routes/        # auth routes + router index
-├── services/      # auth, token, user, email
-├── validators/    # Zod schemas for every request
-├── utils/         # AppError, asyncHandler, response helpers, tokens
-├── types/         # shared types + Express request augmentation
-├── constants/     # statuses, providers, expiries
-├── emails/        # HTML templates for verify / reset emails
-├── app.ts         # Express app
-└── server.ts      # connects to DB, then starts listening
-```
+1. [Google Cloud Console](https://console.cloud.google.com) → create a project → **APIs & Services → OAuth consent screen**.
+2. **Credentials → Create Credentials → OAuth client ID** → type *Web application*.
+   - Authorized JavaScript origins: `http://localhost:3000`
+3. Put the **Client ID** in both `server/.env` (`GOOGLE_CLIENT_ID`) and `client/.env` (`NEXT_PUBLIC_GOOGLE_CLIENT_ID`).
+4. The client loads Google Identity Services (`gsi/client`) in the root layout, renders the one-tap button, and POSTs the ID token to `/auth/google`. The backend verifies it against Google's `tokeninfo` endpoint on every request.
 
 ## Security notes
 
-- Helmet, strict CORS (only `CLIENT_URL`, credentials enabled), rate limiting on all auth routes (stricter on login/forgot-password).
+- Helmet, strict CORS (only `CLIENT_URL`, credentials enabled), rate limiting on all auth routes.
 - bcrypt password hashing, generic login errors (no account enumeration), httpOnly secure cookies.
 - Email verification and password reset tokens are random 32-byte values, stored hashed, one-time use, with expiry.
-- Zod validation on every request — the frontend is never trusted.
-- Soft delete ready: `User.deletedAt`; queries already filter `deletedAt: null`.
-- Refresh-token reuse is blocked: after a token is rotated, the old token no longer matches any session.
+- Access token: 15 min, sent as `Authorization: Bearer`. Refresh token: 30 days, httpOnly cookie, stored as SHA-256 hash, rotated on refresh. Refresh-token reuse is blocked.
