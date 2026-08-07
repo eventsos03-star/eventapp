@@ -1,0 +1,20 @@
+{
+  "name": "eventos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EventOS — full-stack app (Express + TypeScript backend, Next.js + React frontend)",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix server run build && npm --prefix client run build",
+    "typecheck": "npm --prefix server run typecheck && npm --prefix client run typecheck",
+    "install:all": "npm install --prefix server && npm install --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
