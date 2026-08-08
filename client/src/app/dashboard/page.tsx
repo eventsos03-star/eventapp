@@ -3,24 +3,61 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { ProtectedRoute } from '../../components/ProtectedRoute'
-import { Layout } from '../../components/Layout'
-import { Field } from '../../components/Field'
-import { Spinner } from '../../components/Spinner'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
+
+type Message = { type: 'success' | 'error'; text: string } | null
+
+function Spinner() {
+  return (
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+  )
+}
+
+function Alert({ message }: { message: Message }) {
+  if (!message) return null
+  const isSuccess = message.type === 'success'
+  return (
+    <div
+      className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${
+        isSuccess
+          ? 'border-teal/30 bg-teal/10 text-teal'
+          : 'border-red-300 bg-red-50 text-red-700'
+      }`}
+    >
+      {message.text}
+    </div>
+  )
+}
+
+function Badge({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <span
+      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+        ok ? 'bg-teal/15 text-teal' : 'bg-amber/20 text-amber-deep'
+      }`}
+    >
+      {label}
+    </span>
+  )
+}
+
+function textInputClass() {
+  return 'rounded-lg border border-paper-dim bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35 outline-none transition focus:border-amber focus:ring-2 focus:ring-amber/30'
+}
 
 function DashboardContent() {
   const { user, logoutAll, updateProfile } = useAuth()
 
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
-  const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [profileMessage, setProfileMessage] = useState<Message>(null)
   const [savingProfile, setSavingProfile] = useState(false)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmNewPassword, setConfirmNewPassword] = useState('')
-  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [passwordMessage, setPasswordMessage] = useState<Message>(null)
   const [changingPassword, setChangingPassword] = useState(false)
   const [signingOutAll, setSigningOutAll] = useState(false)
 
@@ -73,112 +110,160 @@ function DashboardContent() {
   }
 
   return (
-    <Layout>
-      <div className="welcome">
-        <h1>Hello, {user.firstName} 👋</h1>
-        <p>Manage your profile and account security.</p>
-      </div>
+    <div className="min-h-screen bg-ink font-sans text-paper-dim">
+      <nav className="flex items-center justify-between border-b border-ink-line px-5 py-6 sm:px-10 lg:px-16">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">
+            E
+          </span>
+          <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">
+            EventOS
+          </span>
+        </div>
+        <span className="text-sm text-paper-dim/50">{user.email}</span>
+      </nav>
 
-      <div className="dashboard-grid">
-        <section className="card">
-          <h2>Profile</h2>
-          <dl className="profile-list">
-            <div>
-              <dt>Name</dt>
-              <dd>{fullName}</dd>
-            </div>
-            <div>
-              <dt>Email</dt>
-              <dd>{user.email}</dd>
-            </div>
-            <div>
-              <dt>Provider</dt>
-              <dd>{user.provider === 'google' ? 'Google' : 'Email & password'}</dd>
-            </div>
-            <div>
-              <dt>Email verified</dt>
-              <dd>
-                <span className={`badge ${user.emailVerified ? 'badge-success' : 'badge-warning'}`}>
-                  {user.emailVerified ? 'Verified' : 'Pending'}
-                </span>
-              </dd>
-            </div>
-            <div>
-              <dt>Role</dt>
-              <dd>{user.role}</dd>
-            </div>
-          </dl>
-          <button type="button" className="btn btn-danger-outline" onClick={() => void handleLogoutAll()} disabled={signingOutAll}>
-            {signingOutAll ? <Spinner /> : 'Sign out all devices'}
-          </button>
-        </section>
+      <main className="mx-auto max-w-5xl px-5 pb-24 pt-12 sm:px-10 lg:px-16">
+        <div className="mb-10">
+          <h1 className="font-display text-3xl font-semibold text-paper-dim sm:text-4xl">
+            Hello, {user.firstName} 👋
+          </h1>
+          <p className="mt-2 text-paper-dim/55">Manage your profile and account security.</p>
+        </div>
 
-        <section className="card">
-          <h2>Edit profile</h2>
-          {profileMessage && <div className={`alert alert-${profileMessage.type}`}>{profileMessage.text}</div>}
-          <form onSubmit={handleProfileSubmit} className="form">
-            <div className="form-row">
-              <Field
-                label="First name"
-                name="firstName"
-                required
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
-              <Field
-                label="Last name"
-                name="lastName"
-                required
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={savingProfile}>
-              {savingProfile ? <Spinner /> : 'Save changes'}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* profile summary */}
+          <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6 lg:col-span-2">
+            <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+            <h2 className="mb-4 font-display text-xl font-semibold text-ink">Profile</h2>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <dt className="text-xs font-semibold tracking-wide text-ink/45">NAME</dt>
+                <dd className="mt-1 text-sm text-ink">{fullName}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold tracking-wide text-ink/45">EMAIL</dt>
+                <dd className="mt-1 text-sm text-ink">{user.email}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold tracking-wide text-ink/45">PROVIDER</dt>
+                <dd className="mt-1 text-sm text-ink">
+                  {user.provider === 'google' ? 'Google' : 'Email & password'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold tracking-wide text-ink/45">EMAIL VERIFIED</dt>
+                <dd className="mt-1.5">
+                  <Badge ok={user.emailVerified} label={user.emailVerified ? 'Verified' : 'Pending'} />
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold tracking-wide text-ink/45">ROLE</dt>
+                <dd className="mt-1 text-sm text-ink">{user.role}</dd>
+              </div>
+            </dl>
+            <button
+              type="button"
+              onClick={() => void handleLogoutAll()}
+              disabled={signingOutAll}
+              className="mt-6 flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {signingOutAll && <Spinner />}
+              Sign out all devices
             </button>
-          </form>
-        </section>
+          </section>
 
-        <section className="card">
-          <h2>Change password</h2>
-          {passwordMessage && <div className={`alert alert-${passwordMessage.type}`}>{passwordMessage.text}</div>}
-          <form onSubmit={handlePasswordSubmit} className="form">
-            <Field
-              label="Current password"
-              name="currentPassword"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-            />
-            <Field
-              label="New password"
-              name="newPassword"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-            <Field
-              label="Confirm new password"
-              name="confirmNewPassword"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={confirmNewPassword}
-              onChange={(e) => setConfirmNewPassword(e.target.value)}
-            />
-            <button type="submit" className="btn btn-primary" disabled={changingPassword}>
-              {changingPassword ? <Spinner /> : 'Change password'}
-            </button>
-          </form>
-        </section>
-      </div>
-    </Layout>
+          {/* edit profile */}
+          <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
+            <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+            <h2 className="mb-4 font-display text-xl font-semibold text-ink">Edit profile</h2>
+            <Alert message={profileMessage} />
+            <form onSubmit={handleProfileSubmit} className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold tracking-wide text-ink/60">FIRST NAME</span>
+                  <input
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className={textInputClass()}
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold tracking-wide text-ink/60">LAST NAME</span>
+                  <input
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className={textInputClass()}
+                  />
+                </label>
+              </div>
+              <button
+                type="submit"
+                disabled={savingProfile}
+                className="flex items-center justify-center gap-2 rounded-lg bg-amber px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-amber-deep disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {savingProfile && <Spinner />}
+                Save changes
+              </button>
+            </form>
+          </section>
+
+          {/* change password */}
+          <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
+            <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+            <h2 className="mb-4 font-display text-xl font-semibold text-ink">Change password</h2>
+            <Alert message={passwordMessage} />
+            <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold tracking-wide text-ink/60">CURRENT PASSWORD</span>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className={textInputClass()}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold tracking-wide text-ink/60">NEW PASSWORD</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className={textInputClass()}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold tracking-wide text-ink/60">CONFIRM NEW PASSWORD</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  className={textInputClass()}
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={changingPassword}
+                className="flex items-center justify-center gap-2 rounded-lg bg-amber px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-amber-deep disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {changingPassword && <Spinner />}
+                Change password
+              </button>
+            </form>
+          </section>
+        </div>
+      </main>
+    </div>
   )
 }
 
