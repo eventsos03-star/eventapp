@@ -6,12 +6,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 
-declare global {
-  interface Window {
-    google?: any
-  }
-}
-
 function GoogleSignInButton({
   onCredential,
   onError,
