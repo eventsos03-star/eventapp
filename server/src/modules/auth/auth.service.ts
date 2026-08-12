@@ -113,18 +113,18 @@ export async function verifyEmail(token: string): Promise<SafeUser> {
 
   if (!user) throw new AppError('Invalid or expired verification link', 400);
 
-  if (user.emailVerified && user.status === USER_STATUS.ACTIVE) {
-    return user.toSafeObject();
-  }
+  // The link may be presented twice (React Strict Mode, email link scanners,
+  // page refresh). Replaying a used link on an already-verified account is
+  // a success, not an error. The token is intentionally kept so replays can
+  // find the account.
+  if (user.emailVerified) return user.toSafeObject();
 
-  if (!user.verificationExpires || user.verificationExpires.getTime() < Date.now()) {
-    throw new AppError('Invalid or expired verification link', 400);
+  if (user.verificationExpires && user.verificationExpires.getTime() < Date.now()) {
+    throw new AppError('Verification link has expired. Please request a new one.', 400);
   }
 
   user.emailVerified = true;
   user.status = USER_STATUS.ACTIVE;
-  user.verificationToken = undefined;
-  user.verificationExpires = undefined;
   await user.save();
 
   return user.toSafeObject();

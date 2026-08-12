@@ -104,6 +104,11 @@ function StatusIcon({ status }: { status: 'loading' | 'success' | 'error' }) {
   )
 }
 
+// Strict Mode (dev) and page remounts can run the effect below twice with the
+// same token. Share one request per token so the one-time link is only
+// consumed once and the result stays stable on refresh.
+const verifyRequests = new Map<string, ReturnType<typeof api.verifyEmail>>()
+
 function VerifyEmailView() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
@@ -118,8 +123,12 @@ function VerifyEmailView() {
       return
     }
     let active = true
-    api
-      .verifyEmail(token)
+    let request = verifyRequests.get(token)
+    if (!request) {
+      request = api.verifyEmail(token)
+      verifyRequests.set(token, request)
+    }
+    request
       .then((res) => {
         if (!active) return
         setStatus('success')
