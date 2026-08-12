@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 
+let googleInitialized = false
+
 function GoogleSignInButton({
   onCredential,
   onError,
@@ -14,37 +16,58 @@ function GoogleSignInButton({
   onError: (message: string) => void
 }) {
   const buttonRef = useRef<HTMLDivElement>(null)
+  const onCredentialRef = useRef(onCredential)
+  const onErrorRef = useRef(onError)
+
+  useEffect(() => {
+    onCredentialRef.current = onCredential
+    onErrorRef.current = onError
+  })
 
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
     if (!clientId) return
 
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    script.onload = () => {
-      if (!window.google || !buttonRef.current) return
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: (response: { credential?: string }) => {
-          if (response.credential) {
-            onCredential(response.credential)
-          } else {
-            onError('Google sign-in did not return a credential')
-          }
-        },
-      })
+    let cancelled = false
+    let attempts = 0
+
+    const render = () => {
+      if (cancelled || !buttonRef.current || !window.google?.accounts?.id) return false
+
+      if (!googleInitialized) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response: { credential?: string }) => {
+            if (response.credential) {
+              onCredentialRef.current(response.credential)
+            } else {
+              onErrorRef.current('Google sign-in did not return a credential')
+            }
+          },
+        })
+        googleInitialized = true
+      }
+
       window.google.accounts.id.renderButton(buttonRef.current, {
         theme: 'outline',
         size: 'large',
         width: 360,
       })
+
+      return true
     }
-    document.body.appendChild(script)
+
+    const poll = setInterval(() => {
+      if (render() || ++attempts > 33) clearInterval(poll)
+    }, 300)
+
+    render()
+
     return () => {
-      document.body.removeChild(script)
+      cancelled = true
+      clearInterval(poll)
     }
-  }, [onCredential, onError])
+  }, [])
 
   return <div ref={buttonRef} className="flex justify-center" />
 }
