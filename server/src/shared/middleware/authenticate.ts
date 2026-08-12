@@ -1,8 +1,8 @@
 import type { NextFunction, Response } from 'express';
-import User from '../models/user.model.js';
-import { AppError } from '../utils/AppError.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { verifyAccessToken } from '../services/token.service.js';
+import User from '../../models/user.model.js';
+import { AppError } from '../../shared/utils/AppError.js';
+import { asyncHandler } from '../../shared/utils/asyncHandler.js';
+import { verifyAccessToken } from '../../shared/services/token.service.js';
 
 /**
  * Protects routes. Requires a valid Bearer access token and loads the user

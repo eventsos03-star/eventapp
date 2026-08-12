@@ -1,5 +1,5 @@
-import User, { type SafeUser, type UserDoc } from '../models/user.model.js';
-import { AppError } from '../utils/AppError.js';
+import User, { type SafeUser, type UserDoc } from '../../models/user.model.js';
+import { AppError } from '../../shared/utils/AppError.js';
 
 export async function getUserByEmail(email: string, includePassword = false): Promise<UserDoc | null> {
   const query = User.findOne({ email, deletedAt: null });

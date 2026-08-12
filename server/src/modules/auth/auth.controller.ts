@@ -1,11 +1,11 @@
 import type { Response } from 'express';
-import { env } from '../config/env.js';
-import { REFRESH_COOKIE_MAX_AGE_MS, REFRESH_COOKIE_NAME } from '../constants/index.js';
-import * as authService from '../services/auth.service.js';
-import { AppError } from '../utils/AppError.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { getClientInfo } from '../utils/getClientInfo.js';
-import { success } from '../utils/response.js';
+import { env } from '../../config/env.js';
+import { REFRESH_COOKIE_MAX_AGE_MS, REFRESH_COOKIE_NAME } from '../../shared/constants/index.js';
+import * as authService from './auth.service.js';
+import { AppError } from '../../shared/utils/AppError.js';
+import { asyncHandler } from '../../shared/utils/asyncHandler.js';
+import { getClientInfo } from '../../shared/utils/getClientInfo.js';
+import { success } from '../../shared/utils/response.js';
 
 const cookieOptions = {
   httpOnly: true,

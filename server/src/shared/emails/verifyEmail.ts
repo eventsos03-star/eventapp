@@ -1,4 +1,4 @@
-import { env } from '../config/env.js';
+import { env } from '../../config/env.js';
 import { emailLayout } from './layout.js';
 
 export function buildVerifyEmailLink(token: string): string {

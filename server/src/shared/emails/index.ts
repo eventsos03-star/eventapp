@@ -1,5 +1,5 @@
-import { env } from '../config/env.js';
-import { sendEmail } from '../services/email.service.js';
+import { env } from '../../config/env.js';
+import { sendEmail } from '../../shared/services/email.service.js';
 import {
   buildVerifyEmailLink,
   verifyEmailTemplate,

@@ -1,6 +1,6 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { AnyZodObject, ZodError } from 'zod';
-import { AppError } from '../utils/AppError.js';
+import { AppError } from '../../shared/utils/AppError.js';
 
 /**
  * Validates the request body/query/params against a Zod schema.

@@ -4,8 +4,8 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { env } from './config/env.js';
-import { errorHandler } from './middleware/error.js';
-import { notFound } from './middleware/notFound.js';
+import { errorHandler } from './shared/middleware/error.js';
+import { notFound } from './shared/middleware/notFound.js';
 import routes from './routes/index.js';
 
 const app = express();

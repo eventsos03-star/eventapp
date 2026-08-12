@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import * as authController from '../controllers/auth.controller.js';
-import { authenticate } from '../middleware/authenticate.js';
+import * as authController from './auth.controller.js';
+import { authenticate } from '../../shared/middleware/authenticate.js';
 import {
   authLimiter,
   forgotPasswordLimiter,
   loginLimiter,
-} from '../middleware/rateLimiter.js';
-import { validate } from '../middleware/validate.js';
+} from '../../shared/middleware/rateLimiter.js';
+import { validate } from '../../shared/middleware/validate.js';
 import {
   changePasswordSchema,
   forgotPasswordSchema,
@@ -15,7 +15,7 @@ import {
   registerSchema,
   resetPasswordSchema,
   updateProfileSchema,
-} from '../validators/auth.validator.js';
+} from './auth.validator.js';
 
 const router = Router();
 
