@@ -105,16 +105,21 @@ export async function verifyEmail(token: string): Promise<SafeUser> {
 
   const user = await User.findOne({
     verificationToken: hashToken(token),
-    verificationExpires: { $gt: new Date() },
     deletedAt: null,
   });
 
   if (!user) throw new AppError('Invalid or expired verification link', 400);
 
+  if (user.emailVerified && user.status === USER_STATUS.ACTIVE) {
+    return user.toSafeObject();
+  }
+
+  if (!user.verificationExpires || user.verificationExpires.getTime() < Date.now()) {
+    throw new AppError('Invalid or expired verification link', 400);
+  }
+
   user.emailVerified = true;
   user.status = USER_STATUS.ACTIVE;
-  user.verificationToken = undefined;
-  user.verificationExpires = undefined;
   await user.save();
 
   return user.toSafeObject();
