@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { OAuth2Client, type TokenPayload } from 'google-auth-library';
 import { env } from '../../config/env.js';
 import {
   RESET_PASSWORD_EXPIRES_MS,
@@ -16,6 +17,8 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../sha
 import { getUserByEmail, getUserById, getSafeUserById } from '../../shared/services/user.service.js';
 
 const MAX_REFRESH_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID || undefined);
 
 export interface RegisterInput {
   firstName: string;
@@ -120,9 +123,25 @@ export async function verifyEmail(token: string): Promise<SafeUser> {
 
   user.emailVerified = true;
   user.status = USER_STATUS.ACTIVE;
+  user.verificationToken = undefined;
+  user.verificationExpires = undefined;
   await user.save();
 
   return user.toSafeObject();
+}
+
+export async function resendVerificationEmail(email: string): Promise<void> {
+  const user = await getUserByEmail(email);
+  if (!user) return; // Do not reveal whether the email exists.
+  if (user.emailVerified) return;
+  if (user.status === USER_STATUS.BLOCKED) return;
+
+  const { raw, hashed } = generateEmailToken();
+  user.verificationToken = hashed;
+  user.verificationExpires = new Date(Date.now() + VERIFY_EMAIL_EXPIRES_MS);
+  await user.save();
+
+  await sendVerifyEmail(user.email, user.firstName, raw);
 }
 
 export async function login(email: string, password: string, client: ClientInfo): Promise<AuthResult> {
@@ -149,6 +168,36 @@ export async function logoutAll(userId: string): Promise<void> {
   await Session.deleteMany({ user: userId });
 }
 
+export interface SessionInfo {
+  id: string;
+  browser: string;
+  ip: string;
+  userAgent: string;
+  createdAt: Date;
+  lastSeenAt: Date;
+  expiresAt: Date;
+  isCurrent: boolean;
+}
+
+export async function listSessions(userId: string, currentSessionId?: string): Promise<SessionInfo[]> {
+  const sessions = await Session.find({ user: userId }).sort({ createdAt: -1 });
+  return sessions.map((session) => ({
+    id: session._id.toString(),
+    browser: session.browser,
+    ip: session.ip,
+    userAgent: session.userAgent,
+    createdAt: session.createdAt,
+    lastSeenAt: session.lastSeenAt ?? session.createdAt,
+    expiresAt: session.expiresAt,
+    isCurrent: session._id.toString() === currentSessionId,
+  }));
+}
+
+export async function revokeSession(userId: string, sessionId: string): Promise<void> {
+  const session = await Session.findOneAndDelete({ _id: sessionId, user: userId });
+  if (!session) throw new AppError('Session not found', 404);
+}
+
 export async function refresh(refreshToken: string, client: ClientInfo): Promise<AuthResult> {
   let payload;
   try {
@@ -158,7 +207,11 @@ export async function refresh(refreshToken: string, client: ClientInfo): Promise
   }
 
   const session = await Session.findById(payload.sessionId);
-  if (!session || session.refreshToken !== hashToken(refreshToken)) {
+  if (!session) throw new AppError('Session expired. Please login again.', 401);
+  if (session.refreshToken !== hashToken(refreshToken)) {
+    // A token that does not match the stored hash was likely stolen or
+    // replayed after rotation, so the whole session is revoked.
+    await session.deleteOne();
     throw new AppError('Session expired. Please login again.', 401);
   }
   if (session.expiresAt.getTime() < Date.now()) {
@@ -238,6 +291,27 @@ export async function changePassword(
   await Session.deleteMany(query);
 }
 
+export async function setPassword(
+  userId: string,
+  newPassword: string,
+  currentSessionId?: string,
+): Promise<void> {
+  const user = await getUserById(userId, true);
+  if (!user) throw new AppError('User not found', 404);
+
+  if (user.password) {
+    throw new AppError('This account already has a password', 400);
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  // Log out every device except the current one.
+  const query: Record<string, unknown> = { user: userId };
+  if (currentSessionId) query._id = { $ne: currentSessionId };
+  await Session.deleteMany(query);
+}
+
 export async function getCurrentUser(userId: string): Promise<SafeUser> {
   return getSafeUserById(userId);
 }
@@ -263,27 +337,40 @@ interface GoogleProfile {
   email_verified?: string | boolean;
   name?: string;
   picture?: string;
-  error?: string;
 }
 
+/**
+ * Verifies a Google ID token locally (signature, issuer and expiry) using
+ * google-auth-library. When GOOGLE_CLIENT_ID is configured the audience is
+ * also checked, so tokens minted for other apps are rejected.
+ */
 async function verifyGoogleToken(credential: string): Promise<GoogleProfile> {
-  let res: globalThis.Response;
+  let payload: TokenPayload | undefined;
   try {
-    res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: env.GOOGLE_CLIENT_ID || undefined,
+    });
+    payload = ticket.getPayload();
   } catch {
-    throw new AppError('Could not verify Google token', 502);
-  }
-
-  if (!res.ok) throw new AppError('Invalid Google token', 401);
-  const profile = (await res.json()) as GoogleProfile;
-  if (profile.error || !profile.sub) throw new AppError('Invalid Google token', 401);
-
-  // If a client ID is configured, reject tokens issued for another app.
-  if (env.GOOGLE_CLIENT_ID && profile.aud !== env.GOOGLE_CLIENT_ID) {
     throw new AppError('Invalid Google token', 401);
   }
 
-  return profile;
+  if (!payload || !payload.sub) throw new AppError('Invalid Google token', 401);
+
+  // If a client ID is configured, reject tokens issued for another app.
+  if (env.GOOGLE_CLIENT_ID && payload.aud !== env.GOOGLE_CLIENT_ID) {
+    throw new AppError('Invalid Google token', 401);
+  }
+
+  return {
+    sub: payload.sub,
+    aud: payload.aud,
+    email: payload.email,
+    email_verified: payload.email_verified,
+    name: payload.name,
+    picture: payload.picture,
+  };
 }
 
 export async function googleAuth(
@@ -306,6 +393,9 @@ export async function googleAuth(
   let isNewUser = false;
 
   if (user) {
+    if (user.status === USER_STATUS.BLOCKED) {
+      throw new AppError('Your account has been blocked. Please contact support.', 403);
+    }
     // Link Google to the existing account instead of creating a duplicate.
     let changed = false;
     if (!user.googleId) {

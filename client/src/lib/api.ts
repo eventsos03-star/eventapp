@@ -1,20 +1,14 @@
-import type { ApiErrorBody, ApiSuccess, AuthResult, LoginInput, RegisterInput, SafeUser } from '../types'
+import type {
+  ApiErrorBody,
+  ApiSuccess,
+  AuthResult,
+  LoginInput,
+  RegisterInput,
+  SafeUser,
+  SessionInfo,
+} from '../types'
 
 const API_BASE = '/api'
-
-const ACCESS_TOKEN_KEY = 'eventos.accessToken'
-
-export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY)
-}
-
-export function setAccessToken(token: string | null): void {
-  if (token) {
-    localStorage.setItem(ACCESS_TOKEN_KEY, token)
-  } else {
-    localStorage.removeItem(ACCESS_TOKEN_KEY)
-  }
-}
 
 export class ApiError extends Error {
   status: number
@@ -43,15 +37,13 @@ async function refreshAccessToken(): Promise<ApiSuccess<AuthResult>> {
 }
 
 async function rawRequest<T>(path: string, options: RequestOptions = {}): Promise<ApiSuccess<T>> {
-  const { method = 'GET', body, auth = false } = options
+  const { method = 'GET', body } = options
 
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
-  if (auth) {
-    const token = getAccessToken()
-    if (token) headers['Authorization'] = `Bearer ${token}`
-  }
 
+  // Auth relies on the httpOnly access cookie set by the server. The
+  // Authorization header is intentionally not used in the browser.
   const response = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
@@ -77,10 +69,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<A
       try {
         const { data } = await refreshAccessToken()
         if (!data) throw error
-        setAccessToken(data.accessToken)
         return await rawRequest<T>(path, options)
       } catch {
-        setAccessToken(null)
         throw error
       }
     }
@@ -109,8 +99,14 @@ export const api = {
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
     request<void>('/auth/change-password', { method: 'POST', body, auth: true }),
 
+  setPassword: (newPassword: string) =>
+    request<void>('/auth/set-password', { method: 'POST', body: { newPassword }, auth: true }),
+
   verifyEmail: (token: string) =>
     request<SafeUser>(`/auth/verify-email?token=${encodeURIComponent(token)}`),
+
+  resendVerification: (email: string) =>
+    request<void>('/auth/resend-verification', { method: 'POST', body: { email } }),
 
   forgotPassword: (email: string) =>
     request<void>('/auth/forgot-password', { method: 'POST', body: { email } }),
@@ -120,4 +116,9 @@ export const api = {
 
   google: (credential: string) =>
     request<AuthResult & { isNewUser: boolean }>('/auth/google', { method: 'POST', body: { credential } }),
+
+  listSessions: () => request<SessionInfo[]>('/auth/sessions', { auth: true }),
+
+  revokeSession: (sessionId: string) =>
+    request<void>(`/auth/sessions/${sessionId}`, { method: 'DELETE', auth: true }),
 }

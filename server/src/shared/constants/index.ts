@@ -15,9 +15,13 @@ export const USER_ROLE = {
 } as const;
 
 export const REFRESH_COOKIE_NAME = 'refreshToken';
+export const ACCESS_COOKIE_NAME = 'accessToken';
 
 // 30 days in milliseconds
 export const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+// 15 minutes in milliseconds (matches ACCESS_TOKEN_EXPIRE)
+export const ACCESS_COOKIE_MAX_AGE_MS = 15 * 60 * 1000;
 
 // 24 hours for email verification links
 export const VERIFY_EMAIL_EXPIRES_MS = 24 * 60 * 60 * 1000;

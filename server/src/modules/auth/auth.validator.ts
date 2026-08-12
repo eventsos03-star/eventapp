@@ -3,7 +3,7 @@ import { z } from 'zod';
 const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
-  .max(100, 'Password must be at most 100 characters');
+  .max(72, 'Password must be at most 72 characters');
 
 const emailSchema = z.string().trim().toLowerCase().email('Invalid email address');
 
@@ -57,5 +57,17 @@ export const updateProfileSchema = z.object({
 export const googleSchema = z.object({
   body: z.object({
     credential: z.string().min(1, 'Google credential is required'),
+  }),
+});
+
+export const setPasswordSchema = z.object({
+  body: z.object({
+    newPassword: passwordSchema,
+  }),
+});
+
+export const resendVerificationSchema = z.object({
+  body: z.object({
+    email: emailSchema,
   }),
 });

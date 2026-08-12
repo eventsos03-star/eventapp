@@ -5,6 +5,7 @@ import type { FormEvent } from 'react'
 import Link from 'next/link'
 import { GuestRoute } from '../../components/GuestRoute'
 import { useAuth } from '../../context/AuthContext'
+import { api } from '../../lib/api'
 
 function EventOpsHeroPanel() {
   const activityData = [
@@ -96,6 +97,21 @@ function RegisterForm() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendMessage, setResendMessage] = useState<string | null>(null)
+
+  async function handleResend() {
+    setResending(true)
+    setResendMessage(null)
+    try {
+      await api.resendVerification(email)
+      setResendMessage('A new verification link has been sent.')
+    } catch (err) {
+      setResendMessage(err instanceof Error ? err.message : 'Could not resend the verification email')
+    } finally {
+      setResending(false)
+    }
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -145,6 +161,21 @@ function RegisterForm() {
               <div className="mt-6 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700 border border-emerald-200">
                 Your account has been created. You&apos;ll be able to sign in as soon as your email is verified.
               </div>
+
+              <button
+                type="button"
+                onClick={() => void handleResend()}
+                disabled={resending}
+                className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-300 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+              >
+                {resending && (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" />
+                )}
+                Resend verification email
+              </button>
+              {resendMessage && (
+                <p className="mt-3 text-center text-xs text-slate-600">{resendMessage}</p>
+              )}
 
               <Link
                 href="/login"

@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { api, getAccessToken, setAccessToken } from '../lib/api'
+import { api } from '../lib/api'
 import type { LoginInput, RegisterInput, SafeUser } from '../types'
 
 interface AuthContextValue {
@@ -28,21 +28,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function bootstrap() {
       try {
-        if (getAccessToken()) {
-          const { data } = await api.me()
-          if (active) setUser(data ?? null)
-          return
-        }
-        try {
-          const { data } = await api.refresh()
-          if (!data) throw new Error('Refresh failed')
-          setAccessToken(data.accessToken)
-          if (active) setUser(data.user)
-        } catch {
-          setAccessToken(null)
-        }
+        // me() automatically refreshes via the httpOnly refresh cookie when
+        // the access token is expired, so one call is enough.
+        const { data } = await api.me()
+        if (active) setUser(data ?? null)
       } catch {
-        setAccessToken(null)
+        // No valid session: stay signed out.
       } finally {
         if (active) setInitializing(false)
       }
@@ -54,8 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const applyAuthResult = useCallback((accessToken: string, nextUser: SafeUser) => {
-    setAccessToken(accessToken)
+  const applyAuthResult = useCallback((nextUser: SafeUser) => {
     setUser(nextUser)
   }, [])
 
@@ -63,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (input: LoginInput) => {
       const { data } = await api.login(input)
       if (!data) throw new Error('Login failed')
-      applyAuthResult(data.accessToken, data.user)
+      applyAuthResult(data.user)
       return data.user
     },
     [applyAuthResult],
@@ -77,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (credential: string) => {
       const { data } = await api.google(credential)
       if (!data) throw new Error('Google login failed')
-      applyAuthResult(data.accessToken, data.user)
+      applyAuthResult(data.user)
       return data.user
     },
     [applyAuthResult],
@@ -87,7 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.logout()
     } finally {
-      setAccessToken(null)
       setUser(null)
     }
   }, [])
@@ -96,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.logoutAll()
     } finally {
-      setAccessToken(null)
       setUser(null)
     }
   }, [])

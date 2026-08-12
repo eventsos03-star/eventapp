@@ -33,6 +33,17 @@ export interface AuthResult {
   user: SafeUser
 }
 
+export interface SessionInfo {
+  id: string
+  browser: string
+  ip: string
+  userAgent: string
+  createdAt: string
+  lastSeenAt: string
+  expiresAt: string
+  isCurrent: boolean
+}
+
 export interface RegisterInput {
   firstName: string
   lastName: string
