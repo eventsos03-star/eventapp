@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { UserRole } from '../../shared/types/index.js';
-import { AppError } from '../../shared/utils/AppError.js';
+import type { UserRole } from '../types/index.js';
+import { AppError } from '../utils/AppError.js';
 
 /**
  * Restricts a route to certain roles, e.g. authorize('ADMIN').

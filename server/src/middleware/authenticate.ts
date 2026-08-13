@@ -1,10 +1,10 @@
 import type { NextFunction, Response } from 'express';
-import User from '../../models/user.model.js';
-import { AppError } from '../../shared/utils/AppError.js';
-import { asyncHandler } from '../../shared/utils/asyncHandler.js';
-import { verifyAccessToken } from '../../shared/services/token.service.js';
-import { ACCESS_COOKIE_NAME } from '../../shared/constants/index.js';
-import { USER_STATUS } from '../../shared/constants/index.js';
+import User from '../modules/auth/user.model.js';
+import { AppError } from '../utils/AppError.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { verifyAccessToken } from '../services/token.service.js';
+import { ACCESS_COOKIE_NAME } from '../constants/index.js';
+import { USER_STATUS } from '../constants/index.js';
 
 /**
  * Protects routes. Requires a valid access token from the httpOnly access

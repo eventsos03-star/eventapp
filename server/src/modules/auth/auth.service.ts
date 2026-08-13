@@ -6,15 +6,15 @@ import {
   USER_PROVIDER,
   USER_STATUS,
   VERIFY_EMAIL_EXPIRES_MS,
-} from '../../shared/constants/index.js';
-import { sendPasswordResetEmail, sendVerifyEmail } from '../../shared/emails/index.js';
-import User, { type SafeUser } from '../../models/user.model.js';
-import Session from '../../models/session.model.js';
-import { AppError } from '../../shared/utils/AppError.js';
-import type { ClientInfo } from '../../shared/utils/getClientInfo.js';
-import { generateEmailToken, hashToken } from '../../shared/utils/token.js';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/services/token.service.js';
-import { getUserByEmail, getUserById, getSafeUserById } from '../../shared/services/user.service.js';
+} from '../../constants/index.js';
+import { sendPasswordResetEmail, sendVerifyEmail } from '../../emails/index.js';
+import User, { type SafeUser } from './user.model.js';
+import Session from './session.model.js';
+import { AppError } from '../../utils/AppError.js';
+import type { ClientInfo } from '../../utils/getClientInfo.js';
+import { generateEmailToken, hashToken } from '../../utils/token.js';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../services/token.service.js';
+import { getUserByEmail, getUserById, getSafeUserById } from '../../services/user.service.js';
 
 const MAX_REFRESH_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 

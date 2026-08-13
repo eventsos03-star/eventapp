@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import * as authController from './auth.controller.js';
-import { authenticate } from '../../shared/middleware/authenticate.js';
+import { authenticate } from '../../middleware/authenticate.js';
 import {
   authLimiter,
   forgotPasswordLimiter,
   loginLimiter,
-} from '../../shared/middleware/rateLimiter.js';
-import { validate } from '../../shared/middleware/validate.js';
+} from '../../middleware/rateLimiter.js';
+import { validate } from '../../middleware/validate.js';
 import {
   changePasswordSchema,
   forgotPasswordSchema,
