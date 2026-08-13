@@ -1,4 +1,4 @@
-import User, { type SafeUser, type UserDoc } from '../models/user.model.js';
+import User, { type SafeUser, type UserDoc } from '../modules/auth/user.model.js';
 import { AppError } from '../utils/AppError.js';
 
 export async function getUserByEmail(email: string, includePassword = false): Promise<UserDoc | null> {

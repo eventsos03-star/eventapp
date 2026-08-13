@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import mongoose, { type HydratedDocument, type Model, Schema } from 'mongoose';
-import { USER_PROVIDER, USER_ROLE, USER_STATUS } from '../constants/index.js';
-import type { UserProvider, UserRole, UserStatus } from '../types/index.js';
+import { USER_PROVIDER, USER_ROLE, USER_STATUS } from '../../constants/index.js';
+import type { UserProvider, UserRole, UserStatus } from '../../types/index.js';
 
 export interface IUser {
   firstName: string;
