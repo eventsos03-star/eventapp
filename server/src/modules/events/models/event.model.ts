@@ -1,30 +1,6 @@
 import mongoose ,{Schema,type Types} from "mongoose";
+import { IEvent } from "../event.types.js";
 
-
-export interface IBannerImage{
-    url:string;
-    publicId:string;
-}
-
-export interface IEvent{
-    organizationId:Types.ObjectId;
-    venueBookingId?:Types.ObjectId;
-    eventName:string;
-    description:string;
-    bannerImage:IBannerImage;
-    eventType: 'free' | 'paid';
-    registrationType: 'team' | 'individual';
-    maxParticipants:number;
-    registrationStartDate:Date;
-    registrationEndDate:Date;
-    eventDate:Date;
-    certificateEnabled:boolean;
-    status:'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
-    ticketPrice?:number;
-    teamSize?: number;
-    createdAt:Date;
-    updatedAt:Date;
-}
 
 const eventSchema =new Schema<IEvent>({
     organizationId:{type:Schema.Types.ObjectId,ref:'Organization',required:true},
@@ -35,8 +11,8 @@ const eventSchema =new Schema<IEvent>({
         url:{type:String},
         publicId:{type:String}
     },
-    eventType:{type:String,enum:[ 'free' , 'paid']},
-    registrationType: {type:String,enum:['team' , 'individual']},
+    eventType:{type:String,enum:[ 'free' , 'paid'],required : true},
+    registrationType: {type:String,enum:['team' , 'individual'],required :true},
     maxParticipants:{type:Number,required:true},
     registrationStartDate:{type:Date,required:true},
     registrationEndDate:{type:Date,required:true},
@@ -50,6 +26,7 @@ const eventSchema =new Schema<IEvent>({
 },{timestamps:true});
 
 
-const Event=mongoose.model('Event',eventSchema);
+const Event = mongoose.models.Event as mongoose.Model<IEvent> 
+  ?? mongoose.model<IEvent>('Event', eventSchema);
 
 export default Event;
