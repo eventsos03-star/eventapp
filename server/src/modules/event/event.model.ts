@@ -58,3 +58,5 @@ export default Event;
 export type CreateEventInput = Omit<IEvent,
  'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId'> 
  & { organizationId: string; venueBookingId?: string; };
+
+ 
