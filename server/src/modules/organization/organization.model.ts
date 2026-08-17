@@ -9,6 +9,7 @@ export interface IOrganization{
     address:string;
     ownerId:Types.ObjectId;
     status:'pending' | 'approved' | 'rejected' | 'blocked';
+    isDeleted:boolean;
     createdAt:Date;
     updatedAt:Date;
 
@@ -30,6 +31,7 @@ const organizationSchema=new Schema<IOrganization>(
         address:{type:String,required:true},
         ownerId:{type:Schema.Types.ObjectId,ref:'User',required:true},
         status:{type:String,enum:['pending', 'approved', 'rejected', 'blocked'],default:'pending'},
+        isDeleted:{type:Boolean,default:false}
   },{timestamps:true}
 );
 

@@ -22,6 +22,7 @@ export interface IEvent{
     status:'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
     ticketPrice?:number;
     teamSize?: number;
+    isDeleted:boolean;
     createdAt:Date;
     updatedAt:Date;
 }
@@ -45,6 +46,7 @@ const eventSchema =new Schema<IEvent>({
     status:{type:String,enum:['draft' , 'published' , 'ongoing' , 'completed' , 'cancelled'],default:'draft'},
     ticketPrice:{type:Number},
     teamSize: {type:Number},
+    isDeleted:{type:Boolean,default:false}
    
 
 },{timestamps:true});
