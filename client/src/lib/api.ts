@@ -61,7 +61,7 @@ async function rawRequest<T>(path: string, options: RequestOptions = {}): Promis
   return payload as ApiSuccess<T>
 }
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<ApiSuccess<T>> {
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<ApiSuccess<T>> {
   try {
     return await rawRequest<T>(path, options)
   } catch (error) {

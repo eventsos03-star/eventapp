@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import Link from 'next/link'
 import { ProtectedRoute } from '../../components/ProtectedRoute'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
@@ -172,7 +173,14 @@ function DashboardContent() {
             EventOS
           </span>
         </div>
-        <span className="text-sm text-paper-dim/50">{user.email}</span>
+        <div className="flex items-center gap-4">
+          {user.role === 'ADMIN' && (
+            <Link href="/admin" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
+              Admin
+            </Link>
+          )}
+          <span className="text-sm text-paper-dim/50">{user.email}</span>
+        </div>
       </nav>
 
       <main className="mx-auto max-w-5xl px-5 pb-24 pt-12 sm:px-10 lg:px-16">
