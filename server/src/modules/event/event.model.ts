@@ -22,8 +22,9 @@ export interface IEvent {
     status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
     ticketPrice?: number;
     teamSize?: number;
-    createdAt: Date;
-    updatedAt: Date;
+    isDeleted:boolean;
+    createdAt:Date;
+    updatedAt:Date;
 }
 
 const eventSchema = new Schema<IEvent>({
@@ -35,17 +36,18 @@ const eventSchema = new Schema<IEvent>({
         url: { type: String },
         publicId: { type: String }
     },
-    eventType: { type: String, enum: ['free', 'paid'] },
-    registrationType: { type: String, enum: ['team', 'individual'] },
-    maxParticipants: { type: Number, required: true },
-    registrationStartDate: { type: Date, required: true },
-    registrationEndDate: { type: Date, required: true },
-    eventDate: { type: Date, required: true },
-    certificateEnabled: { type: Boolean, default: false },
-    status: { type: String, enum: ['draft', 'published', 'ongoing', 'completed', 'cancelled'], default: 'draft' },
-    ticketPrice: { type: Number },
-    teamSize: { type: Number },
-
+    eventType:{type:String,enum:[ 'free' , 'paid']},
+    registrationType: {type:String,enum:['team' , 'individual']},
+    maxParticipants:{type:Number,required:true},
+    registrationStartDate:{type:Date,required:true},
+    registrationEndDate:{type:Date,required:true},
+    eventDate:{type:Date,required:true},
+    certificateEnabled:{type:Boolean,default:false},
+    status:{type:String,enum:['draft' , 'published' , 'ongoing' , 'completed' , 'cancelled'],default:'draft'},
+    ticketPrice:{type:Number},
+    teamSize: {type:Number},
+    isDeleted:{type:Boolean,default:false}
+   
 
 }, { timestamps: true });
 
