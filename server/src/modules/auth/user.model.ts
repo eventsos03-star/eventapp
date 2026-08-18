@@ -18,7 +18,8 @@ export interface IUser {
   verificationExpires?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
-  deletedAt?: Date | null;
+  isDeleted:boolean;
+ 
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,15 +71,16 @@ const userSchema = new Schema<IUser, UserModel, UserMethods>(
     verificationExpires: { type: Date },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
+    isDeleted:{type:Boolean,default:false},
     // Soft delete ready: set this to a date instead of removing the document.
-    deletedAt: { type: Date, default: null },
+  
   },
   { timestamps: true },
 );
 
 userSchema.index({ status: 1 });
 userSchema.index({ googleId: 1 }, { sparse: true });
-userSchema.index({ deletedAt: 1 });
+
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password') || !this.password) return next();
