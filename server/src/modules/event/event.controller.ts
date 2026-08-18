@@ -11,10 +11,32 @@ export const create = asyncHandler(async (req, res) => {
 export const publishEvent = asyncHandler(async (req, res) => {
     const { id } = req.params
   const event = await eventService.publishEvent(id);
-  return success(res, 201, "event published successfully", event);
+  return success(res, 200, "event published successfully", event);
 });
 
 export const getPublishedEventLists = asyncHandler(async (req, res) => {
   const events = await eventService.getPublishedLists();
-  return success(res, 201, "events fetched successfully", events);
+  return success(res, 200, "events fetched successfully", events);
 });
+
+export const getEventById = asyncHandler(async (req, res) => {
+   const { id } = req.params
+  const events = await eventService.getEventById(id);
+  return success(res, 200, "event fetched successfully", events);
+});
+
+
+export const deleteEvent = asyncHandler(async (req, res) => {
+   const { id } = req.params
+  const events = await eventService.deleteEvent(id);
+  return success(res, 200, "event fetched successfully", events);
+});
+
+
+export const updateEvent = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const event = await eventService.updateEvent(id, req.body);
+  return success(res, 200, "event updated successfully", event);
+});
+
+

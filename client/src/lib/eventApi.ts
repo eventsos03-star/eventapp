@@ -51,7 +51,6 @@ eventApi.interceptors.response.use(
 );
 
 // -- Typed helpers for your three event endpoints --
-
 export interface CreateEventPayload {
   organizationId: string;
   venueBookingId?: string;
@@ -67,6 +66,27 @@ export interface CreateEventPayload {
   ticketPrice?: number;
   teamSize?: number;
 }
+export interface UpdateEventPayload {
+  eventName?: string;
+  description?: string;
+  bannerImage?: { url: string; publicId: string };
+  eventType?: "free" | "paid";
+  registrationType?: "team" | "individual";
+  maxParticipants?: number;
+  registrationStartDate?: string;
+  registrationEndDate?: string;
+  eventDate?: string;
+  certificateEnabled?: boolean;
+  ticketPrice?: number;
+  teamSize?: number;
+}
+export interface EventRecord extends CreateEventPayload {
+  _id: string;
+  status: "draft" | "published" | "ongoing" | "completed" | "cancelled";
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export const eventService = {
   create: (payload: CreateEventPayload) =>
@@ -77,4 +97,12 @@ export const eventService = {
 
   list: () =>
     eventApi.get("/events").then((res) => res.data),
+    getById: (id: string) =>
+    eventApi.get(`/events/${id}`).then((res) => res.data),
+
+  update: (id: string, payload: UpdateEventPayload) =>
+    eventApi.patch(`/events/${id}`, payload).then((res) => res.data),
+
+  remove: (id: string) =>
+    eventApi.delete(`/events/${id}`).then((res) => res.data),
 };

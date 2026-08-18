@@ -58,7 +58,10 @@ const Event = mongoose.models.Event as mongoose.Model<IEvent>
 export default Event;
 
 export type CreateEventInput = Omit<IEvent,
- 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId'> 
+ 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted'> 
  & { organizationId: string; venueBookingId?: string; };
 
+ export type UpdateEventInput = Partial<
+  Omit<IEvent, 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted'>
+>;
  
