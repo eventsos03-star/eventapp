@@ -32,6 +32,7 @@ function StatCard({ label, value }: { label: string; value: number | null }) {
       <p className="mt-2 font-display text-3xl font-semibold text-ink">{value ?? '—'}</p>
     </div>
   )
+  
 }
 
 function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
