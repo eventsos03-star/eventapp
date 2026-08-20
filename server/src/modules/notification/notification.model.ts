@@ -16,7 +16,7 @@ const notificationSchema=new Schema<INotification>({
     userId:{type:Schema.Types.ObjectId,ref:'User',required:true},
     title:{type:String,required:true},
     message:{type:String,required:true},
-    type : {type:String,enum:['team' , 'organization' , 'venuBooking' , 'task' ,'General']},
+    type : {type:String,enum:['team' , 'organization' , 'venuBooking' , 'task' ,'General'],required:true},
     referenceId:{type:Schema.Types.ObjectId},
     isRead: {type:Boolean,default:false},
     

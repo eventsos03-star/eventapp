@@ -7,6 +7,7 @@ export interface IOrganizationMember{
     role:'owner'  | 'manager' | 'member';
     inviteStatus: 'pending' | 'accepted'| 'rejected';
     invitedBy:Types.ObjectId;
+    isDeleted:boolean;
     createdAt:Date;
     updatedAt:Date;
 
@@ -20,6 +21,7 @@ const organizationMemberSchema=new Schema<IOrganizationMember>({
     role:{type:String,enum:["owner", 'manager', 'member'],required:true},
     inviteStatus:{type:String,enum:['pending' ,'accepted' ,'rejected'],default:'pending'},
     invitedBy:{type:Schema.Types.ObjectId,ref:'User'},
+    isDeleted:{type:Boolean,default:false}
 
 },{timestamps:true}
 

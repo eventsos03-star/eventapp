@@ -17,6 +17,7 @@ export interface IVenue{
     bookingPaymentPolicy: 'fullpayment' | 'advanceAllowed' |'payAfterEvent' ;
     advancePercentage?:number;
     status:'pending'|'approved'| 'rejected' | 'blocked';
+    isDeleted:boolean;
     createdAt:Date;
     updatedAt:Date;
 
@@ -49,6 +50,7 @@ const venueSchema=new Schema<IVenue>({
     bookingPaymentPolicy:{type:String,enum:['fullpayment' ,'advanceAllowed' ,'payAfterEvent' ],required:true},
     advancePercentage:{type:Number},
     status:{type:String,enum:['pending','approved','rejected','blocked'],default:'pending',required:true},
+    isDeleted:{type:Boolean,default:false}
 
 },{timestamps:true});
 
