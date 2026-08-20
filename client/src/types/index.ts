@@ -55,3 +55,46 @@ export interface LoginInput {
   email: string
   password: string
 }
+
+export type VenueStatus = 'pending' | 'approved' | 'rejected' | 'blocked'
+
+export type BookingPaymentPolicy = 'fullpayment' | 'advanceAllowed' | 'payAfterEvent'
+
+export interface VenueImage {
+  url: string
+  publicId: string
+}
+
+export interface VenueLocation {
+  address: string
+  city: string
+  state: string
+}
+
+export interface Venue {
+  _id: string
+  ownerId: string
+  venueName: string
+  description: string
+  images: VenueImage[]
+  location: VenueLocation
+  capacity: number
+  pricePerDay: number
+  bookingPaymentPolicy: BookingPaymentPolicy
+  advancePercentage?: number
+  status: VenueStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateVenueInput {
+  ownerId: string
+  venueName: string
+  description: string
+  images: VenueImage[]
+  location: VenueLocation
+  capacity: number
+  pricePerDay: number
+  bookingPaymentPolicy: BookingPaymentPolicy
+  advancePercentage?: number
+}
