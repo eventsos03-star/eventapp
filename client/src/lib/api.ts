@@ -6,6 +6,8 @@ import type {
   RegisterInput,
   SafeUser,
   SessionInfo,
+  Venue,
+  CreateVenueInput,
 } from '../types'
 
 const API_BASE = '/api'
@@ -121,4 +123,14 @@ export const api = {
 
   revokeSession: (sessionId: string) =>
     request<void>(`/auth/sessions/${sessionId}`, { method: 'DELETE', auth: true }),
+
+  listVenues: (city?: string) => {
+    const query = city ? `?city=${encodeURIComponent(city)}` : ''
+    return request<Venue[]>(`/venues${query}`)
+  },
+
+  getVenue: (id: string) => request<Venue>(`/venues/${id}`),
+
+  createVenue: (input: CreateVenueInput) =>
+    request<Venue>('/venues', { method: 'POST', body: input, auth: true }),
 }

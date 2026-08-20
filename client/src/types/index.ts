@@ -58,6 +58,10 @@ export interface LoginInput {
 
 export type ResourceStatus = 'pending' | 'approved' | 'rejected' | 'blocked'
 
+export type VenueStatus = ResourceStatus
+
+export type BookingPaymentPolicy = 'fullpayment' | 'advanceAllowed' | 'payAfterEvent'
+
 export type OrganizationType = 'college' | 'company' | 'startup' | 'ngo' | 'community' | 'event_org' | 'other'
 
 export interface OrganizationAddress {
@@ -103,18 +107,24 @@ export interface VenueImage {
   publicId: string
 }
 
+export interface VenueLocation {
+  address: string
+  city: string
+  state: string
+}
+
 export interface Venue {
-  id: string
+  _id: string
   ownerId: string
   venueName: string
   description: string
   images: VenueImage[]
-  location: { address: string; city: string; state: string }
+  location: VenueLocation
   capacity: number
   pricePerDay: number
-  bookingPaymentPolicy: 'fullpayment' | 'advanceAllowed' | 'payAfterEvent'
+  bookingPaymentPolicy: BookingPaymentPolicy
   advancePercentage?: number
-  status: ResourceStatus
+  status: VenueStatus
   createdAt: string
   updatedAt: string
 }
@@ -133,4 +143,16 @@ export interface AdminStats {
   pendingOrganizations: number
   totalVenueOwners: number
   pendingVenueOwners: number
+}
+
+export interface CreateVenueInput {
+  ownerId: string
+  venueName: string
+  description: string
+  images: VenueImage[]
+  location: VenueLocation
+  capacity: number
+  pricePerDay: number
+  bookingPaymentPolicy: BookingPaymentPolicy
+  advancePercentage?: number
 }
