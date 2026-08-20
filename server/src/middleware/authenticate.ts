@@ -25,7 +25,7 @@ export const authenticate = asyncHandler(async (req, _res: Response, next: NextF
     throw new AppError('Session expired. Please login again.', 401);
   }
 
-  const user = await User.findById(payload.id).where({ deletedAt: null });
+  const user = await User.findById(payload.id).where({ $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
   if (!user) throw new AppError('Account no longer exists', 401);
   if (user.status !== USER_STATUS.ACTIVE) {
     throw new AppError(user.status === 'BLOCKED' ? 'Your account has been blocked' : 'Please verify your email before logging in', 403);

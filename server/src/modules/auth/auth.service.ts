@@ -108,7 +108,7 @@ export async function verifyEmail(token: string): Promise<SafeUser> {
 
   const user = await User.findOne({
     verificationToken: hashToken(token),
-    deletedAt: null,
+    $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
   });
 
   if (!user) throw new AppError('Invalid or expired verification link', 400);
@@ -251,7 +251,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
   const user = await User.findOne({
     resetPasswordToken: hashToken(token),
     resetPasswordExpires: { $gt: new Date() },
-    deletedAt: null,
+    $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
   });
 
   if (!user) throw new AppError('Invalid or expired reset token', 400);
@@ -389,7 +389,7 @@ export async function googleAuth(
   const firstName = nameParts[0] || 'Google';
   const lastName = nameParts.slice(1).join(' ') || 'User';
 
-  let user = await User.findOne({ email, deletedAt: null });
+  let user = await User.findOne({ email, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
   let isNewUser = false;
 
   if (user) {
