@@ -12,8 +12,8 @@ import { authenticate } from "../../middleware/authenticate.js";
 const router = Router();
 router.post("/", authenticate, createVenue);
 router.get("/", getVenues);
-router.get("/admin", authenticate, getAllVenuesForAdmin);
+router.get("/admin", authenticate,getAllVenuesForAdmin);
 router.get("/:id", getVenueById);
-router.patch("/:id/approve",approveVenue);
+router.patch("/:id/approve",authenticate,approveVenue);
 
 export default router;
