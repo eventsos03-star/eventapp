@@ -4,7 +4,7 @@ import { success } from "../../utils/response.js";
 
 
 export const create = asyncHandler(async (req, res) => {
-  const event = await eventService.createEvent(req.body);
+  const event = await eventService.createEvent(req.body, req.user!.id);
   return success(res, 201, "event created successfully", event);
 });
 

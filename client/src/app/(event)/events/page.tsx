@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { eventService } from "@/lib/eventApi";
+import { useAuth } from "@/context/AuthContext"; // adjust path to your actual auth context
 
 export default function EventsListPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  const hasOrganization = Boolean(user?.organizationId);
+  console.log(user)
 
   useEffect(() => {
     let cancelled = false;
@@ -58,12 +63,16 @@ export default function EventsListPage() {
             </p>
           </div>
 
-          <Link
-            href="/events/new"
-            className="self-start sm:self-auto inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition shadow-sm"
-          >
-            + Create Event
-          </Link>
+          {hasOrganization &&
+            <Link
+              href={`/events/new?orgId=${user!.organizationId}`}
+              className="self-start sm:self-auto inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition shadow-sm"
+            >
+              + Create Event
+            </Link>
+         
+          
+          }
         </div>
 
         {/* Loading State */}

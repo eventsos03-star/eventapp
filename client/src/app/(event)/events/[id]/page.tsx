@@ -1,18 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { eventService, type EventRecord } from "@/lib/eventApi";
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<"publish" | "delete" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,30 +34,6 @@ export default function EventDetailPage() {
       cancelled = true;
     };
   }, [id]);
-
-  async function handlePublish() {
-    setActionLoading("publish");
-    try {
-      const res = await eventService.publish(id);
-      setEvent(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? "Failed to publish event");
-    } finally {
-      setActionLoading(null);
-    }
-  }
-
-  async function handleDelete() {
-    if (!confirm("Delete this event? This can't be undone.")) return;
-    setActionLoading("delete");
-    try {
-      await eventService.remove(id);
-      router.push("/events");
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? "Failed to delete event");
-      setActionLoading(null);
-    }
-  }
 
   if (loading) {
     return (
@@ -103,12 +77,6 @@ export default function EventDetailPage() {
         <Link href="/events" className="text-xs text-slate-400 hover:text-amber-400 transition">
           &larr; Back to events
         </Link>
-
-        {error && (
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-400">
-            {error}
-          </div>
-        )}
 
         <div className="rounded-2xl border border-white/10 bg-[#111726]/80 p-6 sm:p-8 backdrop-blur-xl space-y-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -170,32 +138,19 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          {/* Organizer actions — only relevant while not published/complete */}
-          <div className="flex flex-wrap gap-3 pt-4 border-t border-white/5">
-            {event.status === "draft" && (
-              <button
-                onClick={handlePublish}
-                disabled={actionLoading !== null}
-                className="rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-400 transition disabled:opacity-60"
+          {/* View-only page — register/buy is the only action here.
+              Publish/Edit/Delete now live under the organization's event management page. */}
+          <div className="pt-4 border-t border-white/5">
+            {event.status === "published" ? (
+              <Link
+                href={`/events/${event._id}/register`}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-md transition hover:bg-amber-400 active:scale-[0.98]"
               >
-                {actionLoading === "publish" ? "Publishing..." : "Publish Event"}
-              </button>
+                {isPaid ? "Buy Tickets" : "Register Now"} &rarr;
+              </Link>
+            ) : (
+              <p className="text-xs text-slate-500">Registration opens once this event is published.</p>
             )}
-
-            <Link
-              href={`/events/${event._id}/edit`}
-              className="rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 transition"
-            >
-              Edit
-            </Link>
-
-            <button
-              onClick={handleDelete}
-              disabled={actionLoading !== null}
-              className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-400 hover:bg-red-500/20 transition disabled:opacity-60"
-            >
-              {actionLoading === "delete" ? "Deleting..." : "Delete"}
-            </button>
           </div>
         </div>
       </div>

@@ -13,6 +13,7 @@ export interface SafeUser {
   emailVerified: boolean
   status: UserStatus
   role: UserRole
+  organizationId: string | null        // NEW
   createdAt: string
   updatedAt: string
 }

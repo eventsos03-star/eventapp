@@ -9,6 +9,7 @@ export interface IBannerImage {
 export interface IEvent {
     organizationId: Types.ObjectId;
     venueBookingId?: Types.ObjectId;
+    createdBy: Types.ObjectId;
     eventName: string;
     description: string;
     bannerImage: IBannerImage;
@@ -30,6 +31,7 @@ export interface IEvent {
 const eventSchema = new Schema<IEvent>({
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     venueBookingId: { type: Schema.Types.ObjectId, ref: 'VenueBooking' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     eventName: { type: String, required: true },
     description: { type: String, required: true },
     bannerImage: {
@@ -58,10 +60,9 @@ const Event = mongoose.models.Event as mongoose.Model<IEvent>
 export default Event;
 
 export type CreateEventInput = Omit<IEvent,
- 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted'> 
+ 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted' | 'createdBy'> 
  & { organizationId: string; venueBookingId?: string; };
 
  export type UpdateEventInput = Partial<
-  Omit<IEvent, 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted'>
->;
- 
+  Omit<IEvent, 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted' | 'createdBy'>
+>

@@ -12,6 +12,7 @@ export interface AuthUser {
 export interface AccessTokenPayload {
   id: string;
   role: UserRole;
+    organizationId: string | null;
   sessionId: string;
 }
 

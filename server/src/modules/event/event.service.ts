@@ -2,9 +2,10 @@ import { AppError } from "../../utils/AppError.js";
 import Event from "./event.model.js";
 import type { CreateEventInput, UpdateEventInput } from "./event.model.js";
 
-export async function createEvent(data: CreateEventInput) {
+export async function createEvent(data: CreateEventInput, userId: string) {
   const event = await Event.create({
     ...data,
+    createdBy: userId,
     status: "draft",
   });
   return event;
