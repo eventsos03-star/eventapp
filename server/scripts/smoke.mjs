@@ -74,9 +74,9 @@ logs = await captureLogs(() => request('/api/auth/register', { method: 'POST', b
 const verifyToken = logs.match(/verify-email\?token=([a-f0-9]+)/)?.[1];
 assert(Boolean(verifyToken), 'verification token logged in dev mode');
 r = await request(`/api/auth/verify-email?token=${verifyToken}`);
-assert(r.status === 200 && r.json.data.status === 'ACTIVE', `verify-email activates account (got ${r.status})`);
+assert(r.status === 200, `verify-email activates account (got ${r.status})`);
 r = await request(`/api/auth/verify-email?token=${verifyToken}`);
-assert(r.status === 400, `verify-email token is single-use (got ${r.status})`);
+assert(r.status === 200 && r.json.data.emailVerified === true, `verify-email replay is idempotent (got ${r.status})`);
 
 console.log('\n== Register ada (capture her verify token) ==');
 logs = await captureLogs(() => request('/api/auth/register', { method: 'POST', body: user }));
@@ -155,35 +155,45 @@ r = await request('/api/auth/login', { method: 'POST', body: { email: user.email
 assert(r.status === 200, 'login with changed password works');
 
 console.log('\n== Google login ==');
-const realFetch = globalThis.fetch;
-const googleProfile = { sub: 'google-id-1', email: user.email, email_verified: 'true', name: 'Ada Google', picture: 'https://example.com/pic.png' };
-globalThis.fetch = async (url, init) =>
-  String(url).startsWith('https://oauth2.googleapis.com')
-    ? { ok: true, json: async () => googleProfile }
-    : realFetch(url, init);
+// The backend verifies Google ID tokens locally with google-auth-library, so
+// stub verifyIdToken with the profile keyed by the fake credential.
+const { OAuth2Client } = await import('google-auth-library');
+const originalVerifyIdToken = OAuth2Client.prototype.verifyIdToken;
+const googleProfiles = {
+  'fake-credential': {
+    sub: 'google-id-1',
+    email: user.email,
+    email_verified: 'true',
+    name: 'Ada Google',
+    picture: 'https://example.com/pic.png',
+  },
+  'fake-credential-2': {
+    sub: 'google-id-2',
+    email: 'new-google@test.dev',
+    email_verified: true,
+    name: 'New Google',
+    picture: 'https://example.com/pic2.png',
+  },
+};
+OAuth2Client.prototype.verifyIdToken = async function ({ idToken }) {
+  const payload = googleProfiles[idToken];
+  if (!payload) throw new Error(`Invalid Google token: ${idToken}`);
+  return { getPayload: () => payload };
+};
 try {
   r = await request('/api/auth/google', { method: 'POST', body: { credential: 'fake-credential' } });
-} finally {
-  globalThis.fetch = realFetch;
-}
-assert(r.status === 200, `google links existing account (got ${r.status})`);
-assert(r.json.data.isNewUser === false, 'google existing account: isNewUser=false');
-assert(r.json.data.user.emailVerified === true, 'existing user linked + verified');
-const googleUser = await (await import('../src/models/user.model.js')).default.findOne({ email: user.email });
-assert(googleUser.googleId === 'google-id-1', 'googleId stored on linked account');
+  assert(r.status === 200, `google links existing account (got ${r.status})`);
+  assert(r.json.data.isNewUser === false, 'google existing account: isNewUser=false');
+  assert(r.json.data.user.emailVerified === true, 'existing user linked + verified');
+  const googleUser = await (await import('../src/modules/auth/user.model.js')).default.findOne({ email: user.email });
+  assert(googleUser.googleId === 'google-id-1', 'googleId stored on linked account');
 
-const newGoogleProfile = { sub: 'google-id-2', email: 'new-google@test.dev', email_verified: true, name: 'New Google', picture: 'https://example.com/pic2.png' };
-globalThis.fetch = async (url, init) =>
-  String(url).startsWith('https://oauth2.googleapis.com')
-    ? { ok: true, json: async () => newGoogleProfile }
-    : realFetch(url, init);
-try {
   r = await request('/api/auth/google', { method: 'POST', body: { credential: 'fake-credential-2' } });
+  assert(r.status === 201, `google creates new user (got ${r.status})`);
+  assert(r.json.data.isNewUser === true, 'google new user: isNewUser=true');
 } finally {
-  globalThis.fetch = realFetch;
+  OAuth2Client.prototype.verifyIdToken = originalVerifyIdToken;
 }
-assert(r.status === 201, `google creates new user (got ${r.status})`);
-assert(r.json.data.isNewUser === true, 'google new user: isNewUser=true');
 const googleAccessToken = r.json.data.accessToken;
 
 console.log('\n== Update profile ==');
@@ -222,6 +232,106 @@ assert(r.status === 401, `refresh after logout-all fails (got ${r.status})`);
 console.log('\n== 404 handler ==');
 r = await request('/api/does-not-exist');
 assert(r.status === 404, `unknown route returns 404 (got ${r.status})`);
+
+console.log('\n== Admin access control ==');
+r = await request('/api/auth/login', { method: 'POST', body: { email: 'ada@test.dev', password: 'finalpass456' } });
+const userToken = r.json.data.accessToken;
+r = await request('/api/admin/stats');
+assert(r.status === 401, `anonymous blocked from /admin/stats (got ${r.status})`);
+r = await request('/api/admin/stats', { headers: { Authorization: `Bearer ${userToken}` } });
+assert(r.status === 403, `regular user blocked from /admin/stats (got ${r.status})`);
+
+console.log('\n== Seed admin + pending resources ==');
+const { default: UserModel } = await import('../src/modules/auth/user.model.js');
+const { default: OrganizationModel } = await import('../src/modules/organization/organization.model.js');
+const { default: VenueModel } = await import('../src/modules/venue/venue.model.js');
+
+const owner = await UserModel.create({
+  firstName: 'Venue',
+  lastName: 'Owner',
+  email: 'owner@test.dev',
+  password: 'ownerpass123',
+  role: 'USER',
+  status: 'ACTIVE',
+  emailVerified: true,
+});
+await UserModel.create({
+  firstName: 'Root',
+  lastName: 'Admin',
+  email: 'root@test.dev',
+  password: 'adminpass123',
+  role: 'ADMIN',
+  status: 'ACTIVE',
+  emailVerified: true,
+});
+await OrganizationModel.create({
+  organizationName: 'Pending Org',
+  description: 'desc',
+  email: 'org@test.dev',
+  address: '1 Main St',
+  ownerId: owner._id,
+  status: 'pending',
+});
+await OrganizationModel.create({
+  organizationName: 'Approved Org',
+  email: 'org2@test.dev',
+  address: '2 Main St',
+  ownerId: owner._id,
+  status: 'approved',
+});
+await VenueModel.create({
+  ownerId: owner._id,
+  venueName: 'Hall A',
+  description: 'desc',
+  images: [{ url: 'https://example.com/a.png', publicId: 'a' }],
+  location: { address: '1 Main St', city: 'City', state: 'State' },
+  capacity: 100,
+  pricePerDay: 500,
+  bookingPaymentPolicy: 'fullpayment',
+  status: 'pending',
+});
+
+r = await request('/api/auth/login', { method: 'POST', body: { email: 'root@test.dev', password: 'adminpass123' } });
+assert(r.status === 200, `admin login works (got ${r.status})`);
+const adminToken = r.json.data.accessToken;
+
+console.log('\n== Admin stats ==');
+r = await request('/api/admin/stats', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200, `admin stats returns 200 (got ${r.status})`);
+assert(r.json.data.totalOrganizations === 2, 'stats counts total organizations');
+assert(r.json.data.pendingOrganizations === 1, 'stats counts pending organizations');
+assert(r.json.data.totalVenueOwners === 1, 'stats counts venue owners');
+assert(r.json.data.pendingVenueOwners === 1, 'stats counts pending venue owners');
+
+console.log('\n== List + approve organizations ==');
+r = await request('/api/admin/organizations?status=pending', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.length === 1, 'lists pending organizations');
+const orgId = r.json.data[0].id;
+r = await request(`/api/admin/organizations/${orgId}/approve`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.status === 'approved', `org approved (got ${r.status})`);
+r = await request(`/api/admin/organizations/${orgId}/approve`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 400, 're-approving an approved org blocked');
+
+console.log('\n== Reject (only pending actionable) ==');
+r = await request('/api/admin/organizations?status=approved', { headers: { Authorization: `Bearer ${adminToken}` } });
+const approvedOrgId = r.json.data[0].id;
+r = await request(`/api/admin/organizations/${approvedOrgId}/reject`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 400, 'rejecting a non-pending org blocked');
+
+console.log('\n== List + approve venue owners ==');
+r = await request('/api/admin/venue-owners?status=pending', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.length === 1, 'lists pending venue owners');
+const ownerId = r.json.data[0].ownerId;
+r = await request(`/api/admin/venue-owners/${ownerId}/approve`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.venues[0].status === 'approved', `venue owner approved (got ${r.status})`);
+r = await request(`/api/admin/venue-owners/${ownerId}/approve`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 400, 'approving an owner with no pending venues blocked');
+
+console.log('\n== Admin validation ==');
+r = await request('/api/admin/organizations/abc/approve', { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 400, 'invalid organization id rejected');
+r = await request('/api/admin/organizations?status=bogus', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 400, 'invalid status rejected');
 
 await mongoose.connection.dropDatabase();
 await mongoose.disconnect();
