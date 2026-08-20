@@ -20,8 +20,13 @@ export const approveOrganization = asyncHandler(async (req, res) => {
 });
 
 export const rejectOrganization = asyncHandler(async (req, res) => {
-  const organization = await adminService.rejectOrganization(req.params.id);
+  const organization = await adminService.rejectOrganization(req.params.id, req.body.reason);
   success(res, 200, 'Organization rejected successfully', organization);
+});
+
+export const getOrganizationDetail = asyncHandler(async (req, res) => {
+  const organization = await adminService.getOrganizationDetail(req.params.id);
+  success(res, 200, 'Organization fetched successfully', organization);
 });
 
 export const listVenueOwners = asyncHandler(async (req, res) => {

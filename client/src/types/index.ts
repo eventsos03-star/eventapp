@@ -58,16 +58,42 @@ export interface LoginInput {
 
 export type ResourceStatus = 'pending' | 'approved' | 'rejected' | 'blocked'
 
+export type OrganizationType = 'college' | 'company' | 'startup' | 'ngo' | 'community' | 'event_org' | 'other'
+
+export interface OrganizationAddress {
+  street: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
+}
+
 export interface Organization {
   id: string
   organizationName: string
+  organizationType: OrganizationType
   description?: string
   logo?: string
   email: string
   phoneNumber?: string
-  address: string
-  ownerId: string
+  address: OrganizationAddress
+  ownerId: string | { firstName: string; lastName: string; email: string }
   status: ResourceStatus
+  approvedAt?: string
+  approvedBy?: string | { firstName: string; lastName: string; email: string }
+  rejectionReason?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface OrganizationMember {
+  id: string
+  organizationId: string
+  userId: string | { firstName: string; lastName: string; email: string; avatar?: string }
+  inviteEmail?: string
+  role: 'owner' | 'organizer' | 'member'
+  inviteStatus: 'pending' | 'accepted' | 'rejected'
+  invitedBy: string
   createdAt: string
   updatedAt: string
 }

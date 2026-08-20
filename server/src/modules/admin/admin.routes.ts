@@ -7,18 +7,19 @@ import {
   listOrganizationsSchema,
   listVenueOwnersSchema,
   organizationActionSchema,
+  rejectOrganizationSchema,
   venueOwnerActionSchema,
 } from './admin.validator.js';
 
 const router = Router();
 
-// Every admin endpoint requires an authenticated platform admin.
 router.use(authenticate, authorize('ADMIN'));
 
 router.get('/stats', adminController.getAdminStats);
 router.get('/organizations', validate(listOrganizationsSchema), adminController.listOrganizations);
+router.get('/organizations/:id', validate(organizationActionSchema), adminController.getOrganizationDetail);
 router.patch('/organizations/:id/approve', validate(organizationActionSchema), adminController.approveOrganization);
-router.patch('/organizations/:id/reject', validate(organizationActionSchema), adminController.rejectOrganization);
+router.patch('/organizations/:id/reject', validate(rejectOrganizationSchema), adminController.rejectOrganization);
 router.get('/venue-owners', validate(listVenueOwnersSchema), adminController.listVenueOwners);
 router.patch('/venue-owners/:id/approve', validate(venueOwnerActionSchema), adminController.approveVenueOwner);
 router.patch('/venue-owners/:id/reject', validate(venueOwnerActionSchema), adminController.rejectVenueOwner);

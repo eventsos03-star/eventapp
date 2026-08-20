@@ -72,11 +72,43 @@ async function updateOrganizationStatus(id: string, target: ResourceStatus): Pro
 }
 
 export async function approveOrganization(id: string): Promise<OrganizationResponse> {
-  return updateOrganizationStatus(id, 'approved');
+  const organization = await Organization.findById(id);
+  if (!organization) throw new AppError('Organization not found', 404);
+  if (organization.status !== DEFAULT_STATUS) {
+    throw new AppError(`Organization is already ${organization.status}`, 400);
+  }
+
+  organization.status = 'approved';
+  organization.approvedAt = new Date();
+  organization.rejectionReason = undefined;
+  await organization.save();
+
+  return serializeOrganization(organization.toObject());
 }
 
-export async function rejectOrganization(id: string): Promise<OrganizationResponse> {
-  return updateOrganizationStatus(id, 'rejected');
+export async function rejectOrganization(id: string, reason: string): Promise<OrganizationResponse> {
+  const organization = await Organization.findById(id);
+  if (!organization) throw new AppError('Organization not found', 404);
+  if (organization.status !== DEFAULT_STATUS) {
+    throw new AppError(`Organization is already ${organization.status}`, 400);
+  }
+
+  organization.status = 'rejected';
+  organization.rejectionReason = reason;
+  organization.approvedAt = undefined;
+  organization.approvedBy = undefined;
+  await organization.save();
+
+  return serializeOrganization(organization.toObject());
+}
+
+export async function getOrganizationDetail(id: string): Promise<OrganizationResponse> {
+  const organization = await Organization.findById(id)
+    .populate('ownerId', 'firstName lastName email')
+    .populate('approvedBy', 'firstName lastName email')
+    .lean();
+  if (!organization) throw new AppError('Organization not found', 404);
+  return serializeOrganization(organization as unknown as object);
 }
 
 /**
@@ -97,7 +129,7 @@ export async function listVenueOwners(status: ResourceStatus = DEFAULT_STATUS): 
   }
 
   const ownerIds = [...venuesByOwner.keys()];
-  const users = await User.find({ _id: { $in: ownerIds }, deletedAt: null })
+  const users = await User.find({ _id: { $in: ownerIds }, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] })
     .select('firstName lastName email')
     .lean();
   const userById = new Map(users.map((user) => [String(user._id), user]));
@@ -121,7 +153,7 @@ export async function listVenueOwners(status: ResourceStatus = DEFAULT_STATUS): 
 }
 
 async function updateVenueOwnerStatus(ownerId: string, target: ResourceStatus): Promise<VenueOwnerSummary> {
-  const user = await User.findOne({ _id: ownerId, deletedAt: null });
+  const user = await User.findOne({ _id: ownerId, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
   if (!user) throw new AppError('Venue owner not found', 404);
 
   const pendingVenues = await Venue.countDocuments({ ownerId: user._id, status: DEFAULT_STATUS });

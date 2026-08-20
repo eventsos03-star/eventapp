@@ -22,6 +22,15 @@ export const organizationActionSchema = z.object({
   }),
 });
 
+export const rejectOrganizationSchema = z.object({
+  params: z.object({
+    id: objectIdSchema,
+  }),
+  body: z.object({
+    reason: z.string().min(1, 'Rejection reason is required').max(500),
+  }),
+});
+
 export const venueOwnerActionSchema = z.object({
   params: z.object({
     id: objectIdSchema,
