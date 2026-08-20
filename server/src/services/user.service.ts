@@ -24,6 +24,6 @@ export async function getSafeUserById(id: string): Promise<SafeUser> {
 
   return {
     ...user.toSafeObject(),
-    organizationId,
+    organizationId ,
   };
 }
