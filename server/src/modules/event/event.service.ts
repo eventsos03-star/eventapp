@@ -30,6 +30,12 @@ export async function getPublishedLists(){
     return event
 }
 
+export async function getalleventsforadmin(){
+    const event = await Event.find({ isDeleted: false}).sort({eventDate : 1})
+    return event
+}
+
+
 
 export async function getEventById(eventId : string){
     const event = await Event.findOne({ _id : eventId ,status: "published", isDeleted: false}).sort({eventDate : 1})

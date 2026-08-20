@@ -7,11 +7,15 @@ import * as eventController from "./event.controller.js";
 const router = express.Router();
 
 // router.post("/create", authenticate, validate(createEventSchema), eventController.create);
+router.get("/",eventController.getPublishedEventLists)
+router.get("/admin/allevents",eventController.getAlleventsforadmin)
 router.post("/", authenticate, validate(createEventSchema), eventController.create);
 router.patch("/:id/publish" ,authenticate,validate(publishEventSchema),eventController.publishEvent)
-router.get("/",eventController.getPublishedEventLists)
 router.get("/:id",authenticate,eventController.getEventById)
 router.patch("/:id", authenticate, validate(updateEventSchema), eventController.updateEvent);
 router.delete("/:id",authenticate,eventController.deleteEvent)
+
+
+
 
 export default router;
