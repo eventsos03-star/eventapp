@@ -56,9 +56,51 @@ export interface LoginInput {
   password: string
 }
 
-export type VenueStatus = 'pending' | 'approved' | 'rejected' | 'blocked'
+export type ResourceStatus = 'pending' | 'approved' | 'rejected' | 'blocked'
+
+export type VenueStatus = ResourceStatus
 
 export type BookingPaymentPolicy = 'fullpayment' | 'advanceAllowed' | 'payAfterEvent'
+
+export type OrganizationType = 'college' | 'company' | 'startup' | 'ngo' | 'community' | 'event_org' | 'other'
+
+export interface OrganizationAddress {
+  street: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
+}
+
+export interface Organization {
+  id: string
+  organizationName: string
+  organizationType: OrganizationType
+  description?: string
+  logo?: string
+  email: string
+  phoneNumber?: string
+  address: OrganizationAddress
+  ownerId: string | { firstName: string; lastName: string; email: string }
+  status: ResourceStatus
+  approvedAt?: string
+  approvedBy?: string | { firstName: string; lastName: string; email: string }
+  rejectionReason?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface OrganizationMember {
+  id: string
+  organizationId: string
+  userId: string | { firstName: string; lastName: string; email: string; avatar?: string }
+  inviteEmail?: string
+  role: 'owner' | 'organizer' | 'member'
+  inviteStatus: 'pending' | 'accepted' | 'rejected'
+  invitedBy: string
+  createdAt: string
+  updatedAt: string
+}
 
 export interface VenueImage {
   url: string
@@ -85,6 +127,22 @@ export interface Venue {
   status: VenueStatus
   createdAt: string
   updatedAt: string
+}
+
+export interface VenueOwner {
+  ownerId: string
+  firstName: string
+  lastName: string
+  email: string
+  venueCount: number
+  venues: Venue[]
+}
+
+export interface AdminStats {
+  totalOrganizations: number
+  pendingOrganizations: number
+  totalVenueOwners: number
+  pendingVenueOwners: number
 }
 
 export interface CreateVenueInput {

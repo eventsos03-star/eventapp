@@ -173,10 +173,18 @@ function DashboardContent() {
             EventOS
           </span>
         </div>
-        <div className="flex items-center gap-6">
-          <Link href="/venues" className="text-sm text-paper-dim/60 hover:text-paper-dim">
+        <div className="flex items-center gap-4">
+          <Link href="/venues" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
             Venues
           </Link>
+          <Link href="/organization" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
+            Organization
+          </Link>
+          {user.role === 'ADMIN' && (
+            <Link href="/admin" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
+              Admin
+            </Link>
+          )}
           <span className="text-sm text-paper-dim/50">{user.email}</span>
         </div>
       </nav>
