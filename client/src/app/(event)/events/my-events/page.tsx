@@ -2,22 +2,35 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { eventService } from "@/lib/eventApi";
 import { useAuth } from "@/context/AuthContext"; // adjust path to your actual auth context
 
-export default function EventsListPage() {
+export default function MyEventsPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, initializing } = useAuth();
+  const router = useRouter();
 
   const hasOrganization = Boolean(user?.organizationId);
 
+  // Kick out anyone without an organization once auth has finished loading.
   useEffect(() => {
+    if (!initializing && !hasOrganization) {
+      router.replace("/events");
+    }
+  }, [initializing, hasOrganization, router]);
+
+  useEffect(() => {
+    if (!hasOrganization) return;
+
     let cancelled = false;
+    setLoading(true);
+    setError(null);
 
     eventService
-      .list()
+      .byOrganization()
       .then((res) => {
         if (!cancelled) {
           setEvents(res.data);
@@ -26,7 +39,7 @@ export default function EventsListPage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err?.response?.data?.message ?? "Failed to load events");
+          setError(err?.response?.data?.message ?? "Failed to load your events");
           setLoading(false);
         }
       });
@@ -34,7 +47,11 @@ export default function EventsListPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hasOrganization]);
+
+  if (!initializing && !hasOrganization) {
+    return null; // redirecting
+  }
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#090d16] text-white font-sans antialiased p-5 sm:p-10 lg:p-12">
@@ -55,29 +72,27 @@ export default function EventsListPage() {
               </span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Upcoming <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">Live Events</span>
+              My <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">Events</span>
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-slate-400">
-              Explore scheduled venues, secure entry passes, and track live command schedules.
+              Manage and track events created under your organization.
             </p>
           </div>
 
-          {hasOrganization && (
-            <div className="flex items-center gap-3 self-start sm:self-auto">
-              <Link
-                href="/events/my-events"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition shadow-sm"
-              >
-                My Events
-              </Link>
-              <Link
-                href={`/events/new?orgId=${user!.organizationId}`}
-                className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-400 transition shadow-sm"
-              >
-                + Create Event
-              </Link>
-            </div>
-          )}
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            <Link
+              href="/events"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition shadow-sm"
+            >
+              &larr; All Events
+            </Link>
+            <Link
+              href={`/events/new?orgId=${user?.organizationId}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-400 transition shadow-sm"
+            >
+              + Create Event
+            </Link>
+          </div>
         </div>
 
         {/* Loading State */}
@@ -111,9 +126,9 @@ export default function EventsListPage() {
             <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400 mb-4">
               ⚡ Command Center Empty
             </span>
-            <h3 className="text-xl font-bold text-white">No published events found</h3>
+            <h3 className="text-xl font-bold text-white">No events created yet</h3>
             <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
-              There are currently no active live experiences. Check back later or publish a new event.
+              Your organization hasn't created any events yet. Get started by creating one.
             </p>
           </div>
         )}
@@ -122,7 +137,7 @@ export default function EventsListPage() {
         {!loading && !error && events.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {events.map((event) => {
-              const isPaid = event.eventType === "paid";
+              const isPublished = event.status === "published";
 
               return (
                 <div
@@ -143,12 +158,12 @@ export default function EventsListPage() {
 
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border ${
-                          isPaid
-                            ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                            : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          isPublished
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                            : "border-slate-500/30 bg-slate-500/10 text-slate-300"
                         }`}
                       >
-                        {isPaid ? `$${event.ticketPrice || "0"} Ticket` : "Free Entry"}
+                        {isPublished ? "Published" : "Draft"}
                       </span>
                     </div>
 
@@ -175,7 +190,7 @@ export default function EventsListPage() {
                       href={`/events/${event._id}`}
                       className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md transition hover:bg-amber-400 active:scale-[0.98]"
                     >
-                      {isPaid ? "Buy Tickets" : "Register Now"} &rarr;
+                      Manage &rarr;
                     </Link>
                   </div>
                 </div>

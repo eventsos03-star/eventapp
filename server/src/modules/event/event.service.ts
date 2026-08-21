@@ -31,6 +31,19 @@ export async function getPublishedLists(){
     return event
 }
 
+export async function getEventByOrganizationID(organizationId: string) {
+  if (!organizationId) {
+    throw new AppError("organizationId is required", 400);
+  }
+
+  const event = await Event.find({
+    organizationId,
+    isDeleted: false,
+  }).sort({ eventDate: 1 });
+
+  return event;
+}
+
 export async function getalleventsforadmin(){
     const event = await Event.find({ isDeleted: false })
       .sort({ eventDate: 1 })
@@ -53,6 +66,7 @@ export async function deleteEvent(eventId : string){
     }
     event.isDeleted=true
     await event.save()
+    return event
 }
 
 export async function updateEvent(eventId: string, data: UpdateEventInput) {

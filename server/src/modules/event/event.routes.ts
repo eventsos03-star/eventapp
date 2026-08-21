@@ -9,6 +9,7 @@ const router = express.Router();
 // router.post("/create", authenticate, validate(createEventSchema), eventController.create);
 router.get("/",eventController.getPublishedEventLists)
 router.get("/admin/allevents",eventController.getAlleventsforadmin)
+router.get("/organization",authenticate,eventController.getEventByOrganizationID)
 router.post("/", authenticate, validate(createEventSchema), eventController.create);
 router.patch("/:id/publish" ,authenticate,validate(publishEventSchema),eventController.publishEvent)
 router.get("/:id",authenticate,eventController.getEventById)

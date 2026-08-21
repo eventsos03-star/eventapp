@@ -19,6 +19,11 @@ export const getPublishedEventLists = asyncHandler(async (req, res) => {
   return success(res, 200, "events fetched successfully", events);
 });
 
+export const getEventByOrganizationID = asyncHandler(async (req, res) => {
+  const events = await eventService.getEventByOrganizationID(req.user!.organizationId);
+  return success(res, 200, "events fetched successfully", events);
+});
+
 export const getAlleventsforadmin = asyncHandler(async (req, res) => {
   const events = await eventService.getalleventsforadmin();
   return success(res, 200, "events fetched successfully", events);

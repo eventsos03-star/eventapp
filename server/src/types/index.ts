@@ -7,6 +7,7 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   status: UserStatus;
+  organizationId: string | null;
 }
 
 export interface AccessTokenPayload {

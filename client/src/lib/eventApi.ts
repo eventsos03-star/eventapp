@@ -105,4 +105,9 @@ export const eventService = {
 
   remove: (id: string) =>
     eventApi.delete(`/events/${id}`).then((res) => res.data),
+
+   byOrganization: () =>
+    eventApi.get("/events/organization").then((res) => res.data),
+
+  
 };
