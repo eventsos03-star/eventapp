@@ -5,7 +5,16 @@ import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, notFound } from "next/navigation";
 import { eventService } from "@/lib/eventApi";
+import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext"; // adjust path
+
+// Adjust this to match your real Venue type/interface
+interface Venue {
+  _id: string;
+  venueName: string;
+  city?: string;
+  status?: string;
+}
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -32,6 +41,9 @@ export default function CreateEventPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [venuesLoading, setVenuesLoading] = useState(false);
+
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -41,6 +53,15 @@ export default function CreateEventPage() {
       notFound();
     }
   }, [initializing, user, canCreateEvent]);
+
+  useEffect(() => {
+    setVenuesLoading(true);
+    api
+      .listVenues()
+      .then((res: any) => setVenues(res.data ?? []))
+      .catch(() => setVenues([]))
+      .finally(() => setVenuesLoading(false));
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -84,7 +105,6 @@ export default function CreateEventPage() {
     );
   }
 
-
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#090d16] text-white font-sans antialiased flex flex-col justify-between p-5 sm:p-10 lg:p-12">
       {/* Background Glow Elements */}
@@ -125,34 +145,30 @@ export default function CreateEventPage() {
           )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            {/* Organization & Venue IDs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Organization ID <span className="text-amber-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.organizationId}
-                  onChange={(e) => update("organizationId", e.target.value)}
-                  placeholder="Paste dev organizationId"
-                  required
-                  className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Venue Booking ID <span className="text-xs text-slate-500">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.venueBookingId}
-                  onChange={(e) => update("venueBookingId", e.target.value)}
-                  placeholder="Leave blank if none"
-                  className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                />
-              </div>
+            {/* Venue Selection */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Venue <span className="text-xs text-slate-500">(Optional)</span>
+              </label>
+              <select
+                value={form.venueBookingId}
+                onChange={(e) => update("venueBookingId", e.target.value)}
+                disabled={venuesLoading}
+                className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+              >
+                <option value="" className="bg-slate-900 text-white">
+                  {venuesLoading ? "Loading venues..." : "No venue selected"}
+                </option>
+{venues.map((v) => (
+  <option key={v._id} value={v._id} className="bg-slate-900 text-white">
+    {v.venueName}
+    {v.city ? ` — ${v.city}` : ""}
+  </option>
+))}
+              </select>
+              {!venuesLoading && venues.length === 0 && (
+                <p className="mt-1 text-[11px] text-slate-500">No venues available.</p>
+              )}
             </div>
 
             {/* Event Name */}
