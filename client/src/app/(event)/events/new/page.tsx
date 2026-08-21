@@ -1,16 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, notFound } from "next/navigation";
 import { eventService } from "@/lib/eventApi";
+import { useAuth } from "@/context/AuthContext"; // adjust path
 
 export default function CreateEventPage() {
   const router = useRouter();
+  const { user, initializing } = useAuth();
+
+  const organizationId = (user as any)?.organizationId;
+  const canCreateEvent = Boolean(organizationId);
 
   const [form, setForm] = useState({
-    organizationId: "",
     venueBookingId: "",
     eventName: "",
     description: "",
@@ -32,14 +36,27 @@ export default function CreateEventPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  useEffect(() => {
+    if (!initializing && (!user || !canCreateEvent)) {
+      notFound();
+    }
+  }, [initializing, user, canCreateEvent]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!organizationId) {
+      setError("You're not associated with an organization yet, so you can't create an event.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const payload = {
         ...form,
+        organizationId,
         maxParticipants: Number(form.maxParticipants),
         ticketPrice: form.eventType === "paid" ? Number(form.ticketPrice) : undefined,
         teamSize: form.registrationType === "team" ? Number(form.teamSize) : undefined,
@@ -50,7 +67,7 @@ export default function CreateEventPage() {
       };
 
       const res = await eventService.create(payload);
-      router.push("/events")
+      router.push("/events");
       // router.push(`/events/${res.data._id}`);
     } catch (err: any) {
       setError(err?.response?.data?.message ?? "Failed to create event");
@@ -58,6 +75,15 @@ export default function CreateEventPage() {
       setLoading(false);
     }
   }
+
+  if (initializing || !user || !canCreateEvent) {
+    return (
+      <div className="min-h-screen w-full bg-[#090d16] flex items-center justify-center text-slate-400 text-sm">
+        Loading...
+      </div>
+    );
+  }
+
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#090d16] text-white font-sans antialiased flex flex-col justify-between p-5 sm:p-10 lg:p-12">

@@ -6,15 +6,22 @@ import { AdminRoute } from '../../components/AdminRoute'
 import { Spinner } from '../../components/Spinner'
 import { useAuth } from '../../context/AuthContext'
 import { adminApi } from '../../lib/adminApi'
-import type { AdminStats, Organization, ResourceStatus, VenueOwner } from '../../types'
+import type { AdminStats, Organization, ResourceStatus, VenueOwner, AdminEvent } from '../../types'
 
 type Message = { type: 'success' | 'error'; text: string } | null
 type Tab = 'pending' | 'approved' | 'rejected'
+type EventTab = 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled'
 
 const STATUS_TABS: { value: Tab; label: string }[] = [
   { value: 'pending', label: 'Pending' },
   { value: 'approved', label: 'Approved' },
   { value: 'rejected', label: 'Rejected' },
+]
+
+const EVENT_TABS: { value: EventTab; label: string }[] = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'published', label: 'Published' },
+ 
 ]
 
 const STATUS_STYLES: Record<ResourceStatus, string> = {
@@ -38,6 +45,27 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
   return (
     <div className="flex gap-1 rounded-lg border border-paper-dim bg-ink-soft p-1">
       {STATUS_TABS.map((tab) => (
+        <button
+          key={tab.value}
+          type="button"
+          onClick={() => onChange(tab.value)}
+          className={`rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${
+            active === tab.value
+              ? 'bg-amber text-ink'
+              : 'text-paper-dim/60 hover:text-paper-dim'
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function EventTabBar({ active, onChange }: { active: EventTab; onChange: (t: EventTab) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1 rounded-lg border border-paper-dim bg-ink-soft p-1">
+      {EVENT_TABS.map((tab) => (
         <button
           key={tab.value}
           type="button"
@@ -111,27 +139,32 @@ function AdminContent() {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [venueOwners, setVenueOwners] = useState<VenueOwner[]>([])
+  const [events, setEvents] = useState<AdminEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<Message>(null)
 
   const [orgTab, setOrgTab] = useState<Tab>('pending')
   const [venueTab, setVenueTab] = useState<Tab>('pending')
+  const [eventTab, setEventTab] = useState<EventTab>('draft')
   const [action, setAction] = useState<string | null>(null)
+  const [eventAction, setEventAction] = useState<string | null>(null)
 
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectTarget, setRejectTarget] = useState<{ kind: 'org' | 'venue'; id: string } | null>(null)
   const [rejecting, setRejecting] = useState(false)
 
   const fetchData = useCallback(async () => {
-    const [statsRes, orgsRes, ownersRes] = await Promise.all([
+    const [statsRes, orgsRes, ownersRes, eventsRes] = await Promise.all([
       adminApi.getStats(),
       adminApi.getOrganizations(orgTab),
       adminApi.getVenueOwners(venueTab),
+      adminApi.getAllEvents(),
     ])
     setStats(statsRes.data ?? null)
     setOrganizations(orgsRes.data ?? [])
     setVenueOwners(ownersRes.data ?? [])
+    setEvents(eventsRes.data ?? [])
   }, [orgTab, venueTab])
 
   const loadAll = useCallback(async () => {
@@ -200,7 +233,39 @@ function AdminContent() {
     }
   }
 
+  async function handlePublishEvent(id: string) {
+    if (eventAction) return
+    setEventAction(id)
+    setMessage(null)
+    try {
+      await adminApi.publishEvent(id)
+      setMessage({ type: 'success', text: 'Event published' })
+      await fetchData()
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Publish failed' })
+    } finally {
+      setEventAction(null)
+    }
+  }
+
+  async function handleDeleteEvent(id: string) {
+    if (eventAction) return
+    if (!confirm('Delete this event? This cannot be undone.')) return
+    setEventAction(id)
+    setMessage(null)
+    try {
+      await adminApi.deleteEvent(id)
+      setMessage({ type: 'success', text: 'Event deleted' })
+      await fetchData()
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Delete failed' })
+    } finally {
+      setEventAction(null)
+    }
+  }
+
   const isBusy = (key: string) => action === key
+  const filteredEvents = events.filter((e) => e.status === eventTab)
 
   if (loading) {
     return (
@@ -292,7 +357,7 @@ function AdminContent() {
           )}
         </section>
 
-        <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
+        <section className="relative mb-8 rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
           <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-xl font-semibold text-ink">Venue Owners</h2>
@@ -322,6 +387,60 @@ function AdminContent() {
                       </button>
                     </div>
                   )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
+          <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-xl font-semibold text-ink">Events</h2>
+            <EventTabBar active={eventTab} onChange={setEventTab} />
+          </div>
+          {filteredEvents.length === 0 ? (
+            <p className="text-sm text-ink/45">No {eventTab} events.</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {filteredEvents.map((event) => (
+                <li key={event._id} className="flex items-start justify-between gap-4 rounded-lg border border-paper-dim px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-ink">{event.eventName}</span>
+                      <span className="inline-block rounded-full bg-ink-soft px-2.5 py-0.5 text-xs font-semibold text-ink/70">
+                        {event.status}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-ink/45">
+                      Org: {event.organizationId?.organizationName ?? 'Unknown / deleted org'} · {event.eventType} · {event.registrationType}
+                    </p>
+                    <p className="mt-0.5 text-xs text-ink/35">
+                      Event date {new Date(event.eventDate).toLocaleDateString()} · Created {new Date(event.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    {event.status === 'draft' && (
+                      <button
+                        type="button"
+                        disabled={eventAction !== null}
+                        onClick={() => void handlePublishEvent(event._id)}
+                        className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {eventAction === event._id && <Spinner size={12} />}
+                        Publish
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      disabled={eventAction !== null}
+                      onClick={() => void handleDeleteEvent(event._id)}
+                      className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {eventAction === event._id && <Spinner size={12} />}
+                      Delete
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

@@ -32,8 +32,11 @@ export async function getPublishedLists(){
 }
 
 export async function getalleventsforadmin(){
-    const event = await Event.find({ isDeleted: false}).sort({eventDate : 1})
-    return event
+    const event = await Event.find({ isDeleted: false })
+      .sort({ eventDate: 1 })
+      .populate("organizationId", "organizationName")
+      .populate("createdBy", "firstName lastName email");
+    return event;
 }
 
 

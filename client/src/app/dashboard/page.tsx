@@ -173,10 +173,15 @@ function DashboardContent() {
             EventOS
           </span>
         </div>
+        
         <div className="flex items-center gap-4">
           <Link href="/venues" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
             Venues
           </Link>
+          <Link href="/events" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
+            Events
+          </Link>
+
           <Link href="/organization" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
             Organization
           </Link>
