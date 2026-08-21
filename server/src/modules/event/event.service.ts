@@ -55,7 +55,7 @@ export async function getalleventsforadmin(){
 
 
 export async function getEventById(eventId : string){
-    const event = await Event.findOne({ _id : eventId ,status: "published", isDeleted: false}).sort({eventDate : 1})
+    const event = await Event.findOne({ _id : eventId , isDeleted: false}).sort({eventDate : 1})
     return event
 }
 

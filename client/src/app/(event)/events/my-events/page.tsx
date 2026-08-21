@@ -10,6 +10,9 @@ export default function MyEventsPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const { user, initializing } = useAuth();
   const router = useRouter();
 
@@ -23,9 +26,9 @@ export default function MyEventsPage() {
   }, [initializing, hasOrganization, router]);
 
   useEffect(() => {
+    let cancelled = false;
     if (!hasOrganization) return;
 
-    let cancelled = false;
     setLoading(true);
     setError(null);
 
@@ -48,6 +51,20 @@ export default function MyEventsPage() {
       cancelled = true;
     };
   }, [hasOrganization]);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    setDeleteError(null);
+    try {
+      await eventService.remove(id);
+      setEvents((prev) => prev.filter((e) => e._id !== id));
+      setConfirmId(null);
+    } catch (err: any) {
+      setDeleteError(err?.response?.data?.message ?? "Failed to delete event");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (!initializing && !hasOrganization) {
     return null; // redirecting
@@ -95,6 +112,13 @@ export default function MyEventsPage() {
           </div>
         </div>
 
+        {/* Delete error banner */}
+        {deleteError && (
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center backdrop-blur-xl">
+            <p className="text-sm font-medium text-red-400">{deleteError}</p>
+          </div>
+        )}
+
         {/* Loading State */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -138,6 +162,8 @@ export default function MyEventsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {events.map((event) => {
               const isPublished = event.status === "published";
+              const isConfirming = confirmId === event._id;
+              const isDeleting = deletingId === event._id;
 
               return (
                 <div
@@ -180,18 +206,58 @@ export default function MyEventsPage() {
                     )}
                   </div>
 
-                  {/* Card Bottom CTA Actions */}
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between gap-3">
-                    <div className="text-[11px] text-slate-400">
-                      Cap: <span className="font-semibold text-slate-200">{event.maxParticipants} max</span>
+                  {/* Card Bottom Actions */}
+                  <div className="mt-6 pt-4 border-t border-white/5">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="text-[11px] text-slate-400">
+                        Cap: <span className="font-semibold text-slate-200">{event.maxParticipants} max</span>
+                      </div>
                     </div>
 
-                    <Link
-                      href={`/events/${event._id}`}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md transition hover:bg-amber-400 active:scale-[0.98]"
-                    >
-                      Manage &rarr;
-                    </Link>
+                    {isConfirming ? (
+                      <div className="flex items-center justify-between gap-2 rounded-xl bg-red-500/10 border border-red-500/30 p-2.5">
+                        <span className="text-[11px] font-medium text-red-300 pl-1">
+                          Delete this event?
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setConfirmId(null)}
+                            disabled={isDeleting}
+                            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-slate-300 hover:text-white transition disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleDelete(event._id)}
+                            disabled={isDeleting}
+                            className="rounded-lg bg-red-500 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-red-400 transition disabled:opacity-50"
+                          >
+                            {isDeleting ? "Deleting..." : "Confirm"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/events/${event._id}/edit`}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => setConfirmId(event._id)}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-400 hover:bg-red-500/20 transition"
+                        >
+                          Delete
+                        </button>
+                        <Link
+                          href={`/events/${event._id}`}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md transition hover:bg-amber-400 active:scale-[0.98]"
+                        >
+                          View &rarr;
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
