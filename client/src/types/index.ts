@@ -138,11 +138,23 @@ export interface VenueOwner {
   venues: Venue[]
 }
 
+export interface UserSummary {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role: UserRole
+  status: UserStatus
+  provider: UserProvider
+  createdAt: string
+}
+
 export interface AdminStats {
   totalOrganizations: number
   pendingOrganizations: number
   totalVenueOwners: number
   pendingVenueOwners: number
+  totalUsers: number
 }
 
 export interface CreateVenueInput {
