@@ -1,5 +1,5 @@
 import { request } from './api'
-import type { AdminStats, Organization, ResourceStatus, UserRole, UserSummary, VenueOwner } from '../types'
+import type { AdminEvent, AdminStats, Organization, ResourceStatus, UserRole, UserSummary, VenueOwner } from '../types'
 
 export const adminApi = {
   getStats: () => request<AdminStats>('/admin/stats', { auth: true }),
@@ -38,4 +38,13 @@ export const adminApi = {
 
   updateUserRole: (userId: string, role: UserRole) =>
     request<UserSummary>(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role }, auth: true }),
+
+  getAllEvents: () =>
+    request<AdminEvent[]>('/events/admin/allevents', { auth: true }),
+
+  deleteEvent: (id: string) =>
+    request<void>(`/events/${id}`, { method: 'DELETE', auth: true }),
+
+  publishEvent: (id: string) =>
+    request<AdminEvent>(`/events/${id}/publish`, { method: 'PATCH', auth: true }),
 }
