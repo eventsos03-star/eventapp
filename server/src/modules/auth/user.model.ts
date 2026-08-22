@@ -35,6 +35,7 @@ export interface SafeUser {
   emailVerified: boolean;
   status: UserStatus;
   role: UserRole;
+  organizationId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

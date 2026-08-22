@@ -15,7 +15,8 @@ import type { ClientInfo } from '../../utils/getClientInfo.js';
 import { generateEmailToken, hashToken } from '../../utils/token.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../services/token.service.js';
 import { getUserByEmail, getUserById, getSafeUserById } from '../../services/user.service.js';
-
+import {getOwnedOrganizationId} from "../../middleware/getOwnedOrganizationId.js"
+import { log } from 'console';
 const MAX_REFRESH_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID || undefined);
@@ -55,9 +56,42 @@ async function createSession(
   return sessionId.toString();
 }
 
+// async function issueTokens(user: SafeUser, client: ClientInfo): Promise<AuthResult> {
+//   const sessionId = new Types.ObjectId();
+//   const refreshToken = signRefreshToken({ id: user.id, sessionId: sessionId.toString() });
+
+//   await Session.create({
+//     _id: sessionId,
+//     user: user.id,
+//     refreshToken: hashToken(refreshToken),
+//     browser: client.browser,
+//     ip: client.ip,
+//     userAgent: client.userAgent,
+//     expiresAt: new Date(Date.now() + MAX_REFRESH_AGE_MS),
+//   });
+
+//   console.log("hellooo")
+//     const organizationId = await getOwnedOrganizationId(user.id);
+//     console.log('DEBUG organizationId:', organizationId);
+//   const userWithOrg = { ...user, organizationId };
+
+  
+//   const accessToken = signAccessToken({
+//     id: user.id,
+//     role: user.role,
+//     organizationId,
+//     sessionId: sessionId.toString(),
+//   });
+
+//   return { accessToken, refreshToken, user : userWithOrg };
+// }
 async function issueTokens(user: SafeUser, client: ClientInfo): Promise<AuthResult> {
+  console.log('\n========== issueTokens START ==========');
+  console.log('[1] Input user:', JSON.stringify(user, null, 2));
+
   const sessionId = new Types.ObjectId();
   const refreshToken = signRefreshToken({ id: user.id, sessionId: sessionId.toString() });
+  console.log('[2] sessionId:', sessionId.toString());
 
   await Session.create({
     _id: sessionId,
@@ -68,14 +102,27 @@ async function issueTokens(user: SafeUser, client: ClientInfo): Promise<AuthResu
     userAgent: client.userAgent,
     expiresAt: new Date(Date.now() + MAX_REFRESH_AGE_MS),
   });
+  console.log('[3] Session created for user:', user.id);
+
+  const organizationId = await getOwnedOrganizationId(user.id);
+  console.log('[4] getOwnedOrganizationId returned:', organizationId, '| typeof:', typeof organizationId);
+
+  const userWithOrg = { ...user, organizationId };
+  console.log('[5] userWithOrg:', JSON.stringify(userWithOrg, null, 2));
 
   const accessToken = signAccessToken({
     id: user.id,
     role: user.role,
+    organizationId,
     sessionId: sessionId.toString(),
   });
+  console.log('[6] accessToken signed (payload had organizationId):', organizationId);
 
-  return { accessToken, refreshToken, user };
+  const result = { accessToken, refreshToken, user: userWithOrg };
+  console.log('[7] Final return object user key:', JSON.stringify(result.user, null, 2));
+  console.log('========== issueTokens END ==========\n');
+
+  return result;
 }
 
 export async function registerUser(input: RegisterInput): Promise<SafeUser> {

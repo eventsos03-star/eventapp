@@ -2,7 +2,12 @@ import jwt, { type SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import type { AccessTokenPayload, RefreshTokenPayload, UserRole } from '../types/index.js';
 
-export function signAccessToken(payload: { id: string; role: UserRole; sessionId: string }): string {
+export function signAccessToken(payload: {
+  id: string;
+  role: UserRole;
+  sessionId: string;
+  organizationId?: string | null;
+}): string {
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
     expiresIn: env.ACCESS_TOKEN_EXPIRE,
   } as SignOptions);

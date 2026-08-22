@@ -13,6 +13,7 @@ export interface SafeUser {
   emailVerified: boolean
   status: UserStatus
   role: UserRole
+  organizationId: string | null        // NEW
   createdAt: string
   updatedAt: string
 }
@@ -155,4 +156,26 @@ export interface CreateVenueInput {
   pricePerDay: number
   bookingPaymentPolicy: BookingPaymentPolicy
   advancePercentage?: number
+}
+
+
+export interface AdminEvent {
+  _id: string
+  eventName: string
+  description: string
+  eventType: 'free' | 'paid'
+  registrationType: 'team' | 'individual'
+  maxParticipants: number
+  ticketPrice?: number
+  teamSize?: number
+  status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled'
+  eventDate: string
+  registrationStartDate: string
+  registrationEndDate: string
+  certificateEnabled: boolean
+  organizationId: { _id: string; organizationName: string } | null
+  venueBookingId?: string
+  createdBy: { _id: string; firstName: string; lastName: string; email: string } | string
+  createdAt: string
+  updatedAt: string
 }
