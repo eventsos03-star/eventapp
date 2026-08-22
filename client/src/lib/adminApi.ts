@@ -1,5 +1,5 @@
 import { request } from './api'
-import type { AdminStats, Organization, ResourceStatus, VenueOwner ,AdminEvent } from '../types'
+import type { AdminEvent, AdminStats, Organization, ResourceStatus, UserRole, UserSummary, VenueOwner } from '../types'
 
 export const adminApi = {
   getStats: () => request<AdminStats>('/admin/stats', { auth: true }),
@@ -25,12 +25,26 @@ export const adminApi = {
   rejectVenueOwner: (ownerId: string) =>
     request<VenueOwner>(`/admin/venue-owners/${ownerId}/reject`, { method: 'PATCH', auth: true }),
 
+  getUsers: (search?: string, page?: number) => {
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    if (page) params.set('page', String(page))
+    const query = params.toString()
+    return request<{ users: UserSummary[]; total: number; page: number; totalPages: number }>(
+      `/admin/users${query ? `?${query}` : ''}`,
+      { auth: true },
+    )
+  },
+
+  updateUserRole: (userId: string, role: UserRole) =>
+    request<UserSummary>(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role }, auth: true }),
+
   getAllEvents: () =>
-  request<AdminEvent[]>('/events/admin/allevents', { auth: true }),
+    request<AdminEvent[]>('/events/admin/allevents', { auth: true }),
 
-deleteEvent: (id: string) =>
-  request<void>(`/events/${id}`, { method: 'DELETE', auth: true }),
+  deleteEvent: (id: string) =>
+    request<void>(`/events/${id}`, { method: 'DELETE', auth: true }),
 
-publishEvent: (id: string) =>
-  request<AdminEvent>(`/events/${id}/publish`, { method: 'PATCH', auth: true }),
+  publishEvent: (id: string) =>
+    request<AdminEvent>(`/events/${id}/publish`, { method: 'PATCH', auth: true }),
 }

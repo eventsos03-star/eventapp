@@ -36,3 +36,20 @@ export const venueOwnerActionSchema = z.object({
     id: objectIdSchema,
   }),
 });
+
+export const listUsersSchema = z.object({
+  query: z.object({
+    search: z.string().optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  }),
+});
+
+export const updateUserRoleSchema = z.object({
+  params: z.object({
+    id: objectIdSchema,
+  }),
+  body: z.object({
+    role: z.enum(['USER', 'ADMIN']),
+  }),
+});

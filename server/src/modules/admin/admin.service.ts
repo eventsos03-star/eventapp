@@ -2,6 +2,7 @@ import User from '../auth/user.model.js';
 import Organization from '../organization/organization.model.js';
 import Venue from '../venue/venue.model.js';
 import { AppError } from '../../utils/AppError.js';
+import type { UserRole } from '../../types/index.js';
 
 export type ResourceStatus = 'pending' | 'approved' | 'rejected' | 'blocked';
 
@@ -12,6 +13,18 @@ export interface AdminStats {
   pendingOrganizations: number;
   totalVenueOwners: number;
   pendingVenueOwners: number;
+  totalUsers: number;
+}
+
+export interface UserSummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: UserRole;
+  status: string;
+  provider: string;
+  createdAt: string;
 }
 
 export interface VenueOwnerSummary {
@@ -37,12 +50,13 @@ function serializeVenue<T extends object>(doc: T): VenueResponse {
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
-  const [totalOrganizations, pendingOrganizations, totalVenueOwners, pendingVenueOwners] =
+  const [totalOrganizations, pendingOrganizations, totalVenueOwners, pendingVenueOwners, totalUsers] =
     await Promise.all([
       Organization.countDocuments({}),
       Organization.countDocuments({ status: DEFAULT_STATUS }),
       Venue.distinct('ownerId', {}),
       Venue.distinct('ownerId', { status: DEFAULT_STATUS }),
+      User.countDocuments({ $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] }),
     ]);
 
   return {
@@ -50,6 +64,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     pendingOrganizations,
     totalVenueOwners: totalVenueOwners.length,
     pendingVenueOwners: pendingVenueOwners.length,
+    totalUsers,
   };
 }
 
@@ -181,4 +196,85 @@ export async function approveVenueOwner(ownerId: string): Promise<VenueOwnerSumm
 
 export async function rejectVenueOwner(ownerId: string): Promise<VenueOwnerSummary> {
   return updateVenueOwnerStatus(ownerId, 'rejected');
+}
+
+function serializeUser(doc: { _id: unknown; firstName: string; lastName: string; email: string; role: string; status: string; provider: string; createdAt: unknown }): UserSummary {
+  return {
+    id: String(doc._id),
+    firstName: doc.firstName,
+    lastName: doc.lastName,
+    email: doc.email,
+    role: doc.role as UserRole,
+    status: doc.status,
+    provider: doc.provider,
+    createdAt: String(doc.createdAt),
+  };
+}
+
+export async function listUsers(
+  search?: string,
+  page = 1,
+  limit = 20,
+): Promise<{ users: UserSummary[]; total: number; page: number; totalPages: number }> {
+  const filter: Record<string, unknown> = {
+    $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+  };
+
+  if (search) {
+    const regex = new RegExp(search, 'i');
+    filter.$and = [
+      {
+        $or: [
+          { firstName: regex },
+          { lastName: regex },
+          { email: regex },
+        ],
+      },
+    ];
+  }
+
+  const [total, docs] = await Promise.all([
+    User.countDocuments(filter),
+    User.find(filter)
+      .select('firstName lastName email role status provider createdAt')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+  ]);
+
+  return {
+    users: docs.map(serializeUser),
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
+export async function updateUserRole(userId: string, role: UserRole, requesterId: string): Promise<UserSummary> {
+  if (userId === requesterId) {
+    throw new AppError('You cannot change your own role', 400);
+  }
+
+  const user = await User.findOne({ _id: userId, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
+  if (!user) throw new AppError('User not found', 404);
+
+  if (user.role === role) {
+    throw new AppError(`User already has role ${role}`, 400);
+  }
+
+  if (user.role === 'ADMIN' && role === 'USER') {
+    const adminCount = await User.countDocuments({
+      role: 'ADMIN',
+      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+    });
+    if (adminCount <= 1) {
+      throw new AppError('Cannot remove the last admin', 400);
+    }
+  }
+
+  user.role = role;
+  await user.save();
+
+  return serializeUser(user.toObject());
 }

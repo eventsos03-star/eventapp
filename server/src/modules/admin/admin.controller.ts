@@ -45,3 +45,14 @@ export const rejectVenueOwner = asyncHandler(async (req, res) => {
   const venueOwner = await adminService.rejectVenueOwner(req.params.id);
   success(res, 200, 'Venue owner rejected successfully', venueOwner);
 });
+
+export const listUsers = asyncHandler(async (req, res) => {
+  const { search, page, limit } = req.query as { search?: string; page?: number; limit?: number };
+  const result = await adminService.listUsers(search, page, limit);
+  success(res, 200, 'Users fetched successfully', result);
+});
+
+export const updateUserRole = asyncHandler(async (req, res) => {
+  const result = await adminService.updateUserRole(req.params.id, req.body.role, req.user!.id);
+  success(res, 200, 'User role updated successfully', result);
+});
