@@ -1,5 +1,5 @@
 import { request } from './api'
-import type { AdminStats, Organization, ResourceStatus, VenueOwner } from '../types'
+import type { AdminStats, Organization, ResourceStatus, UserRole, UserSummary, VenueOwner } from '../types'
 
 export const adminApi = {
   getStats: () => request<AdminStats>('/admin/stats', { auth: true }),
@@ -24,4 +24,18 @@ export const adminApi = {
 
   rejectVenueOwner: (ownerId: string) =>
     request<VenueOwner>(`/admin/venue-owners/${ownerId}/reject`, { method: 'PATCH', auth: true }),
+
+  getUsers: (search?: string, page?: number) => {
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    if (page) params.set('page', String(page))
+    const query = params.toString()
+    return request<{ users: UserSummary[]; total: number; page: number; totalPages: number }>(
+      `/admin/users${query ? `?${query}` : ''}`,
+      { auth: true },
+    )
+  },
+
+  updateUserRole: (userId: string, role: UserRole) =>
+    request<UserSummary>(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role }, auth: true }),
 }
