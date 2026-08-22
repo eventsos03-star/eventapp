@@ -340,10 +340,11 @@ function AdminContent() {
           </div>
         )}
 
-        <section className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard label="Total organizations" value={stats?.totalOrganizations ?? null} />
           <StatCard label="Pending organizations" value={stats?.pendingOrganizations ?? null} />
           <StatCard label="Total venue owners" value={stats?.totalVenueOwners ?? null} />
+          <StatCard label="Pending venue owners" value={stats?.pendingVenueOwners ?? null} />
           <StatCard label="Total users" value={stats?.totalUsers ?? null} />
         </section>
 
