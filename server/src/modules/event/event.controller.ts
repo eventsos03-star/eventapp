@@ -1,6 +1,7 @@
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import * as eventService from "./event.service.js";
 import { success } from "../../utils/response.js";
+import { AppError } from "../../utils/AppError.js";
 
 
 export const create = asyncHandler(async (req, res) => {
@@ -20,7 +21,13 @@ export const getPublishedEventLists = asyncHandler(async (req, res) => {
 });
 
 export const getEventByOrganizationID = asyncHandler(async (req, res) => {
-  const events = await eventService.getEventByOrganizationID(req.user!.organizationId);
+  const organizationId = req.user!.organizationId;
+
+  if (!organizationId) {
+    throw new AppError("No organization associated with this user", 403);
+  }
+
+  const events = await eventService.getEventByOrganizationID(organizationId);
   return success(res, 200, "events fetched successfully", events);
 });
 
