@@ -73,3 +73,12 @@ export const restoreUserSchema = z.object({
     id: objectIdSchema,
   }),
 });
+
+export const permanentDeleteSchema = z.object({
+  params: z.object({
+    id: objectIdSchema,
+  }),
+  body: z.object({
+    confirmName: z.string().min(1, 'Confirmation name is required').max(200),
+  }),
+});

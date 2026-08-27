@@ -67,6 +67,15 @@ export const adminApi = {
   restoreUser: (userId: string) =>
     request<UserSummary>(`/admin/users/${userId}/restore`, { method: 'PATCH', auth: true }),
 
+  permanentDeleteUser: (userId: string, confirmName: string) =>
+    request<void>(`/admin/users/${userId}/permanent`, { method: 'DELETE', body: { confirmName }, auth: true }),
+
+  permanentDeleteOrganization: (orgId: string, confirmName: string) =>
+    request<void>(`/admin/organizations/${orgId}/permanent`, { method: 'DELETE', body: { confirmName }, auth: true }),
+
+  permanentDeleteVenueOwner: (ownerId: string, confirmName: string) =>
+    request<void>(`/admin/venue-owners/${ownerId}/permanent`, { method: 'DELETE', body: { confirmName }, auth: true }),
+
   getAllEvents: () =>
     request<AdminEvent[]>('/events/admin/allevents', { auth: true }),
 

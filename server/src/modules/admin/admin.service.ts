@@ -1,6 +1,9 @@
 import User from '../auth/user.model.js';
+import Session from '../auth/session.model.js';
 import Organization from '../organization/organization.model.js';
+import OrganizationMember from '../organization/organizationMember.model.js';
 import Venue from '../venue/venue.model.js';
+import Event from '../event/event.model.js';
 import { AppError } from '../../utils/AppError.js';
 import type { UserRole } from '../../types/index.js';
 
@@ -428,4 +431,64 @@ export async function restoreVenueOwner(ownerId: string): Promise<VenueOwnerSumm
     isOwnerDeleted: false,
     venues: venues.map(serializeVenue),
   };
+}
+
+function fullName(firstName: string, lastName: string): string {
+  return `${firstName} ${lastName}`.trim();
+}
+
+export async function permanentDeleteUser(userId: string, requesterId: string, confirmName: string): Promise<void> {
+  if (userId === requesterId) {
+    throw new AppError('You cannot permanently delete yourself', 400);
+  }
+
+  const user = await User.findOne({ _id: userId, isDeleted: true });
+  if (!user) throw new AppError('Deleted user not found', 404);
+
+  if (user.role === 'ADMIN') {
+    throw new AppError('Cannot permanently delete an admin user', 400);
+  }
+
+  if (confirmName !== fullName(user.firstName, user.lastName)) {
+    throw new AppError('Confirmation name does not match', 400);
+  }
+
+  const orgs = await Organization.find({ ownerId: user._id }).select('_id').lean();
+  const orgIds = orgs.map((org) => org._id);
+
+  await Promise.all([
+    OrganizationMember.deleteMany({ organizationId: { $in: orgIds } }),
+    OrganizationMember.deleteMany({ userId: user._id }),
+    Event.deleteMany({ organizationId: { $in: orgIds } }),
+    Organization.deleteMany({ ownerId: user._id }),
+    Venue.deleteMany({ ownerId: user._id }),
+    Session.deleteMany({ user: user._id }),
+    User.deleteOne({ _id: user._id }),
+  ]);
+}
+
+export async function permanentDeleteOrganization(id: string, confirmName: string): Promise<void> {
+  const organization = await Organization.findOne({ _id: id, isDeleted: true });
+  if (!organization) throw new AppError('Deleted organization not found', 404);
+
+  if (confirmName !== organization.organizationName) {
+    throw new AppError('Confirmation name does not match', 400);
+  }
+
+  await Promise.all([
+    OrganizationMember.deleteMany({ organizationId: organization._id }),
+    Event.deleteMany({ organizationId: organization._id }),
+    Organization.deleteOne({ _id: organization._id }),
+  ]);
+}
+
+export async function permanentDeleteVenueOwner(ownerId: string, confirmName: string): Promise<void> {
+  const user = await User.findById(ownerId);
+  if (!user) throw new AppError('Venue owner not found', 404);
+
+  if (confirmName !== fullName(user.firstName, user.lastName)) {
+    throw new AppError('Confirmation name does not match', 400);
+  }
+
+  await Venue.deleteMany({ ownerId: user._id, isDeleted: true });
 }

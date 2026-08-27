@@ -87,3 +87,18 @@ export const restoreUser = asyncHandler(async (req, res) => {
   const result = await adminService.restoreUser(req.params.id, req.user!.id);
   success(res, 200, 'User restored successfully', result);
 });
+
+export const permanentDeleteUser = asyncHandler(async (req, res) => {
+  await adminService.permanentDeleteUser(req.params.id, req.user!.id, req.body.confirmName);
+  success(res, 200, 'User permanently deleted');
+});
+
+export const permanentDeleteOrganization = asyncHandler(async (req, res) => {
+  await adminService.permanentDeleteOrganization(req.params.id, req.body.confirmName);
+  success(res, 200, 'Organization permanently deleted');
+});
+
+export const permanentDeleteVenueOwner = asyncHandler(async (req, res) => {
+  await adminService.permanentDeleteVenueOwner(req.params.id, req.body.confirmName);
+  success(res, 200, 'Venues permanently deleted');
+});

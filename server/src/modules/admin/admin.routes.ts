@@ -10,6 +10,7 @@ import {
   listVenueOwnersSchema,
   listUsersSchema,
   organizationActionSchema,
+  permanentDeleteSchema,
   rejectOrganizationSchema,
   restoreUserSchema,
   updateUserRoleSchema,
@@ -27,15 +28,18 @@ router.patch('/organizations/:id/approve', validate(organizationActionSchema), a
 router.patch('/organizations/:id/reject', validate(rejectOrganizationSchema), adminController.rejectOrganization);
 router.patch('/organizations/:id/restore', validate(organizationActionSchema), adminController.restoreOrganization);
 router.delete('/organizations/:id', validate(organizationActionSchema), adminController.deleteOrganization);
+router.delete('/organizations/:id/permanent', validate(permanentDeleteSchema), adminController.permanentDeleteOrganization);
 router.get('/venue-owners', validate(listVenueOwnersSchema), adminController.listVenueOwners);
 router.patch('/venue-owners/:id/approve', validate(venueOwnerActionSchema), adminController.approveVenueOwner);
 router.patch('/venue-owners/:id/reject', validate(venueOwnerActionSchema), adminController.rejectVenueOwner);
 router.patch('/venue-owners/:id/restore', validate(venueOwnerActionSchema), adminController.restoreVenueOwner);
+router.delete('/venue-owners/:id/permanent', validate(permanentDeleteSchema), adminController.permanentDeleteVenueOwner);
 
 router.get('/users', validate(listUsersSchema), adminController.listUsers);
 router.get('/users/deleted', validate(listDeletedUsersSchema), adminController.listDeletedUsers);
 router.patch('/users/:id/role', validate(updateUserRoleSchema), adminController.updateUserRole);
 router.patch('/users/:id/restore', validate(restoreUserSchema), adminController.restoreUser);
 router.delete('/users/:id', validate(deleteUserSchema), adminController.deleteUser);
+router.delete('/users/:id/permanent', validate(permanentDeleteSchema), adminController.permanentDeleteUser);
 
 export default router;

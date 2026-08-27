@@ -336,6 +336,67 @@ function ConfirmDialog({
   )
 }
 
+function PermanentDeleteModal({
+  open,
+  title,
+  subject,
+  confirmName,
+  loading,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean
+  title: string
+  subject: string
+  confirmName: string
+  loading: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const [phrase, setPhrase] = useState('')
+
+  if (!open) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 px-5">
+      <div className="w-full max-w-md rounded-2xl border border-red-300 bg-paper p-6">
+        <h3 className="font-display text-lg font-semibold text-red-700">{title}</h3>
+        <p className="mt-1 text-sm text-ink/60">
+          Deleting <span className="font-semibold text-ink">{subject}</span> is permanent and cannot be undone. Please type{' '}
+          <span className="rounded bg-red-100 px-1.5 py-0.5 font-mono text-xs font-semibold text-red-700">{confirmName}</span>{' '}
+          to confirm.
+        </p>
+        <input
+          type="text"
+          value={phrase}
+          onChange={(e) => setPhrase(e.target.value)}
+          placeholder={confirmName}
+          className="mt-4 w-full rounded-lg border border-paper-dim bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35 outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-400/30"
+        />
+        <div className="mt-4 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="rounded-lg border border-paper-dim px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper-dim/10 disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={phrase !== confirmName || loading}
+            onClick={onConfirm}
+            className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading && <Spinner size={14} />}
+            Delete permanently
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AdminContent() {
   const { user } = useAuth()
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -382,6 +443,15 @@ function AdminContent() {
 
   const [venueRestoreModal, setVenueRestoreModal] = useState<{ open: boolean; owner: VenueOwner | null }>({ open: false, owner: null })
   const [venueRestoreLoading, setVenueRestoreLoading] = useState(false)
+
+  const [permUserModal, setPermUserModal] = useState<{ open: boolean; user: UserSummary | null }>({ open: false, user: null })
+  const [permUserLoading, setPermUserLoading] = useState(false)
+
+  const [permOrgModal, setPermOrgModal] = useState<{ open: boolean; org: Organization | null }>({ open: false, org: null })
+  const [permOrgLoading, setPermOrgLoading] = useState(false)
+
+  const [permVenueModal, setPermVenueModal] = useState<{ open: boolean; owner: VenueOwner | null }>({ open: false, owner: null })
+  const [permVenueLoading, setPermVenueLoading] = useState(false)
 
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectTarget, setRejectTarget] = useState<{ kind: 'org' | 'venue'; id: string } | null>(null)
@@ -640,6 +710,55 @@ function AdminContent() {
     }
   }
 
+  async function handlePermanentDeleteUser() {
+    if (!permUserModal.user || permUserLoading) return
+    setPermUserLoading(true)
+    setMessage(null)
+    try {
+      await adminApi.permanentDeleteUser(permUserModal.user.id, `${permUserModal.user.firstName} ${permUserModal.user.lastName}`)
+      setMessage({ type: 'success', text: 'User permanently deleted' })
+      setPermUserModal({ open: false, user: null })
+      await fetchDeletedUsers(deletedUserSearch, deletedUserPage)
+      await adminApi.getStats().then(({ data }) => { if (data) setStats(data) })
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Delete failed' })
+    } finally {
+      setPermUserLoading(false)
+    }
+  }
+
+  async function handlePermanentDeleteOrganization() {
+    if (!permOrgModal.org || permOrgLoading) return
+    setPermOrgLoading(true)
+    setMessage(null)
+    try {
+      await adminApi.permanentDeleteOrganization(permOrgModal.org.id, permOrgModal.org.organizationName)
+      setMessage({ type: 'success', text: 'Organization permanently deleted' })
+      setPermOrgModal({ open: false, org: null })
+      await fetchData()
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Delete failed' })
+    } finally {
+      setPermOrgLoading(false)
+    }
+  }
+
+  async function handlePermanentDeleteVenueOwner() {
+    if (!permVenueModal.owner || permVenueLoading) return
+    setPermVenueLoading(true)
+    setMessage(null)
+    try {
+      await adminApi.permanentDeleteVenueOwner(permVenueModal.owner.ownerId, `${permVenueModal.owner.firstName} ${permVenueModal.owner.lastName}`)
+      setMessage({ type: 'success', text: 'Venues permanently deleted' })
+      setPermVenueModal({ open: false, owner: null })
+      await fetchData()
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Delete failed' })
+    } finally {
+      setPermVenueLoading(false)
+    }
+  }
+
   const isBusy = (key: string) => action === key
   const filteredEvents = events.filter((e) => e.status === eventTab)
 
@@ -740,6 +859,11 @@ function AdminContent() {
                           Restore
                         </button>
                       )}
+                      {orgTab === 'deleted' && (
+                        <button type="button" disabled={action !== null} onClick={() => setPermOrgModal({ open: true, org })} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                          Delete permanently
+                        </button>
+                      )}
                       {orgTab !== 'deleted' && (
                         <button type="button" disabled={action !== null} onClick={() => setOrgDeleteModal({ open: true, org })} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
                           Delete
@@ -790,6 +914,13 @@ function AdminContent() {
                     <div className="flex shrink-0 gap-2">
                       <button type="button" disabled={action !== null} onClick={() => setVenueRestoreModal({ open: true, owner })} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
                         Restore venues
+                      </button>
+                    </div>
+                  )}
+                  {venueTab === 'deleted' && (
+                    <div className="flex shrink-0 gap-2">
+                      <button type="button" disabled={action !== null} onClick={() => setPermVenueModal({ open: true, owner })} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                        Delete permanently
                       </button>
                     </div>
                   )}
@@ -862,14 +993,24 @@ function AdminContent() {
                             <td className="py-2.5 pl-4 text-right text-xs text-ink/30">Cannot restore admin</td>
                           ) : (
                             <td className="py-2.5 pl-4 text-right">
-                              <button
-                                type="button"
-                                disabled={action !== null}
-                                onClick={() => setRestoreModal({ open: true, user: u })}
-                                className="rounded-lg border border-teal/40 px-3 py-1 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                Restore
-                              </button>
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  disabled={action !== null}
+                                  onClick={() => setRestoreModal({ open: true, user: u })}
+                                  className="rounded-lg border border-teal/40 px-3 py-1 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Restore
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={action !== null}
+                                  onClick={() => setPermUserModal({ open: true, user: u })}
+                                  className="rounded-lg border border-red-300 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Delete permanently
+                                </button>
+                              </div>
                             </td>
                           )}
                         </tr>
@@ -1082,6 +1223,34 @@ function AdminContent() {
         onConfirm={handleRestoreVenueOwner}
         onCancel={() => setVenueRestoreModal({ open: false, owner: null })}
         loading={venueRestoreLoading}
+      />
+
+      <PermanentDeleteModal
+        open={permUserModal.open}
+        title="Permanently delete user"
+        subject={permUserModal.user ? `${permUserModal.user.firstName} ${permUserModal.user.lastName}` : ''}
+        confirmName={permUserModal.user ? `${permUserModal.user.firstName} ${permUserModal.user.lastName}` : ''}
+        loading={permUserLoading}
+        onConfirm={handlePermanentDeleteUser}
+        onCancel={() => setPermUserModal({ open: false, user: null })}
+      />
+      <PermanentDeleteModal
+        open={permOrgModal.open}
+        title="Permanently delete organization"
+        subject={permOrgModal.org?.organizationName ?? ''}
+        confirmName={permOrgModal.org?.organizationName ?? ''}
+        loading={permOrgLoading}
+        onConfirm={handlePermanentDeleteOrganization}
+        onCancel={() => setPermOrgModal({ open: false, org: null })}
+      />
+      <PermanentDeleteModal
+        open={permVenueModal.open}
+        title="Permanently delete venues"
+        subject={permVenueModal.owner ? `${permVenueModal.owner.firstName} ${permVenueModal.owner.lastName}` : ''}
+        confirmName={permVenueModal.owner ? `${permVenueModal.owner.firstName} ${permVenueModal.owner.lastName}` : ''}
+        loading={permVenueLoading}
+        onConfirm={handlePermanentDeleteVenueOwner}
+        onCancel={() => setPermVenueModal({ open: false, owner: null })}
       />
     </div>
   )
