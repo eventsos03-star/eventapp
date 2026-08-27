@@ -39,6 +39,23 @@ export const adminApi = {
   updateUserRole: (userId: string, role: UserRole) =>
     request<UserSummary>(`/admin/users/${userId}/role`, { method: 'PATCH', body: { role }, auth: true }),
 
+  deleteUser: (userId: string) =>
+    request<void>(`/admin/users/${userId}`, { method: 'DELETE', auth: true }),
+
+  getDeletedUsers: (search?: string, page?: number) => {
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    if (page) params.set('page', String(page))
+    const query = params.toString()
+    return request<{ users: UserSummary[]; total: number; page: number; totalPages: number }>(
+      `/admin/users/deleted${query ? `?${query}` : ''}`,
+      { auth: true },
+    )
+  },
+
+  restoreUser: (userId: string) =>
+    request<UserSummary>(`/admin/users/${userId}/restore`, { method: 'PATCH', auth: true }),
+
   getAllEvents: () =>
     request<AdminEvent[]>('/events/admin/allevents', { auth: true }),
 

@@ -10,6 +10,7 @@ import type { AdminEvent, AdminStats, Organization, ResourceStatus, UserSummary,
 
 type Message = { type: 'success' | 'error'; text: string } | null
 type Tab = 'pending' | 'approved' | 'rejected'
+type UserTab = 'all' | 'deleted'
 type EventTab = 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled'
 
 const STATUS_TABS: { value: Tab; label: string }[] = [
@@ -186,6 +187,98 @@ function ConfirmRoleModal({
   )
 }
 
+function ConfirmDeleteModal({
+  open,
+  user,
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  open: boolean
+  user: UserSummary | null
+  onConfirm: () => void
+  onCancel: () => void
+  loading: boolean
+}) {
+  if (!open || !user) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 px-5">
+      <div className="w-full max-w-md rounded-2xl border border-paper-dim bg-paper p-6">
+        <h3 className="font-display text-lg font-semibold text-ink">Delete User</h3>
+        <p className="mt-1 text-sm text-ink/50">
+          Are you sure you want to delete {user.firstName} {user.lastName}? This action cannot be undone.
+        </p>
+        <div className="mt-4 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="rounded-lg border border-paper-dim px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper-dim/10 disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onConfirm}
+            className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading && <Spinner size={14} />}
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ConfirmRestoreModal({
+  open,
+  user,
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  open: boolean
+  user: UserSummary | null
+  onConfirm: () => void
+  onCancel: () => void
+  loading: boolean
+}) {
+  if (!open || !user) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 px-5">
+      <div className="w-full max-w-md rounded-2xl border border-paper-dim bg-paper p-6">
+        <h3 className="font-display text-lg font-semibold text-ink">Restore User</h3>
+        <p className="mt-1 text-sm text-ink/50">
+          Are you sure you want to restore {user.firstName} {user.lastName}? They will regain access to their account.
+        </p>
+        <div className="mt-4 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="rounded-lg border border-paper-dim px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper-dim/10 disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onConfirm}
+            className="flex items-center gap-2 rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal/80 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading && <Spinner size={14} />}
+            Restore
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AdminContent() {
   const { user } = useAuth()
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -211,6 +304,19 @@ function AdminContent() {
   const [roleModal, setRoleModal] = useState<{ open: boolean; user: UserSummary | null }>({ open: false, user: null })
   const [roleLoading, setRoleLoading] = useState(false)
 
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; user: UserSummary | null }>({ open: false, user: null })
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
+  const [userTab, setUserTab] = useState<UserTab>('all')
+  const [deletedUsers, setDeletedUsers] = useState<UserSummary[]>([])
+  const [deletedUserPage, setDeletedUserPage] = useState(1)
+  const [deletedUserTotalPages, setDeletedUserTotalPages] = useState(1)
+  const [deletedUserSearch, setDeletedUserSearch] = useState('')
+  const [deletedUserSearchInput, setDeletedUserSearchInput] = useState('')
+  const deletedSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [restoreModal, setRestoreModal] = useState<{ open: boolean; user: UserSummary | null }>({ open: false, user: null })
+  const [restoreLoading, setRestoreLoading] = useState(false)
+
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectTarget, setRejectTarget] = useState<{ kind: 'org' | 'venue'; id: string } | null>(null)
   const [rejecting, setRejecting] = useState(false)
@@ -220,6 +326,14 @@ function AdminContent() {
     if (data) {
       setUsers(data.users)
       setUserTotalPages(data.totalPages)
+    }
+  }, [])
+
+  const fetchDeletedUsers = useCallback(async (search: string, page: number) => {
+    const { data } = await adminApi.getDeletedUsers(search || undefined, page)
+    if (data) {
+      setDeletedUsers(data.users)
+      setDeletedUserTotalPages(data.totalPages)
     }
   }, [])
 
@@ -240,13 +354,13 @@ function AdminContent() {
     setLoading(true)
     setError(null)
     try {
-      await Promise.all([fetchData(), fetchUsers(userSearch, userPage)])
+      await Promise.all([fetchData(), fetchUsers(userSearch, userPage), fetchDeletedUsers(deletedUserSearch, deletedUserPage)])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load admin data')
     } finally {
       setLoading(false)
     }
-  }, [fetchData, fetchUsers, userSearch, userPage])
+  }, [fetchData, fetchUsers, fetchDeletedUsers, userSearch, userPage, deletedUserSearch, deletedUserPage])
 
   useEffect(() => {
     void loadAll()
@@ -260,12 +374,25 @@ function AdminContent() {
     void fetchUsers(userSearch, userPage)
   }, [userSearch, userPage, fetchUsers])
 
+  useEffect(() => {
+    void fetchDeletedUsers(deletedUserSearch, deletedUserPage)
+  }, [deletedUserSearch, deletedUserPage, fetchDeletedUsers])
+
   function handleUserSearchInput(value: string) {
     setUserSearchInput(value)
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
       setUserSearch(value)
       setUserPage(1)
+    }, 400)
+  }
+
+  function handleDeletedUserSearchInput(value: string) {
+    setDeletedUserSearchInput(value)
+    if (deletedSearchTimerRef.current) clearTimeout(deletedSearchTimerRef.current)
+    deletedSearchTimerRef.current = setTimeout(() => {
+      setDeletedUserSearch(value)
+      setDeletedUserPage(1)
     }, 400)
   }
 
@@ -284,6 +411,41 @@ function AdminContent() {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Action failed' })
     } finally {
       setRoleLoading(false)
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!deleteModal.user || deleteLoading) return
+    setDeleteLoading(true)
+    setMessage(null)
+    try {
+      await adminApi.deleteUser(deleteModal.user.id)
+      setMessage({ type: 'success', text: 'User deleted successfully' })
+      setDeleteModal({ open: false, user: null })
+      await fetchUsers(userSearch, userPage)
+      await adminApi.getStats().then(({ data }) => { if (data) setStats(data) })
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Delete failed' })
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  async function handleRestoreUser() {
+    if (!restoreModal.user || restoreLoading) return
+    setRestoreLoading(true)
+    setMessage(null)
+    try {
+      await adminApi.restoreUser(restoreModal.user.id)
+      setMessage({ type: 'success', text: 'User restored successfully' })
+      setRestoreModal({ open: false, user: null })
+      await fetchDeletedUsers(deletedUserSearch, deletedUserPage)
+      await fetchUsers(userSearch, userPage)
+      await adminApi.getStats().then(({ data }) => { if (data) setStats(data) })
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Restore failed' })
+    } finally {
+      setRestoreLoading(false)
     }
   }
 
@@ -496,17 +658,107 @@ function AdminContent() {
 
         <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
           <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-xl font-semibold text-ink">Users</h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <h2 className="font-display text-xl font-semibold text-ink">Users</h2>
+              <div className="flex gap-1 rounded-lg border border-paper-dim bg-ink-soft p-1">
+                {(['all', 'deleted'] as UserTab[]).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setUserTab(tab)}
+                    className={`rounded-md px-3 py-1 text-xs font-semibold capitalize transition ${
+                      userTab === tab
+                        ? 'bg-amber text-ink'
+                        : 'text-paper-dim/60 hover:text-paper-dim'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
             <input
               type="text"
-              value={userSearchInput}
-              onChange={(e) => handleUserSearchInput(e.target.value)}
+              value={userTab === 'deleted' ? deletedUserSearchInput : userSearchInput}
+              onChange={(e) => (userTab === 'deleted' ? handleDeletedUserSearchInput(e.target.value) : handleUserSearchInput(e.target.value))}
               placeholder="Search by name or email…"
               className="w-56 rounded-lg border border-paper-dim bg-white px-3 py-1.5 text-xs text-ink placeholder:text-ink/35 outline-none transition focus:border-amber focus:ring-2 focus:ring-amber/30"
             />
           </div>
-          {users.length === 0 ? (
+          {userTab === 'deleted' ? (
+            deletedUsers.length === 0 ? (
+              <p className="text-sm text-ink/45">No deleted users found.</p>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-paper-dim text-xs text-ink/45">
+                        <th className="pb-2 pr-4 font-semibold">Name</th>
+                        <th className="pb-2 pr-4 font-semibold">Email</th>
+                        <th className="pb-2 pr-4 font-semibold">Role</th>
+                        <th className="pb-2 pr-4 font-semibold">Provider</th>
+                        <th className="pb-2 font-semibold">Joined</th>
+                        <th className="pb-2 pl-4 text-right font-semibold">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {deletedUsers.map((u) => (
+                        <tr key={u.id} className="border-b border-paper-dim/50 last:border-0">
+                          <td className="py-2.5 pr-4 font-semibold text-ink">{u.firstName} {u.lastName}</td>
+                          <td className="py-2.5 pr-4 text-ink/60">{u.email}</td>
+                          <td className="py-2.5 pr-4">
+                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.role === 'ADMIN' ? 'bg-amber/20 text-amber-deep' : 'bg-amber/20 text-amber-deep'}`}>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className="py-2.5 pr-4 text-ink/50">{u.provider}</td>
+                          <td className="py-2.5 text-ink/45">{new Date(u.createdAt).toLocaleDateString()}</td>
+                          {u.role === 'ADMIN' ? (
+                            <td className="py-2.5 pl-4 text-right text-xs text-ink/30">Cannot restore admin</td>
+                          ) : (
+                            <td className="py-2.5 pl-4 text-right">
+                              <button
+                                type="button"
+                                disabled={action !== null}
+                                onClick={() => setRestoreModal({ open: true, user: u })}
+                                className="rounded-lg border border-teal/40 px-3 py-1 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Restore
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {deletedUserTotalPages > 1 && (
+                  <div className="mt-4 flex items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      disabled={deletedUserPage <= 1}
+                      onClick={() => setDeletedUserPage((p) => p - 1)}
+                      className="rounded-lg border border-paper-dim px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-paper-dim/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      ← Prev
+                    </button>
+                    <span className="text-xs text-ink/45">Page {deletedUserPage} of {deletedUserTotalPages}</span>
+                    <button
+                      type="button"
+                      disabled={deletedUserPage >= deletedUserTotalPages}
+                      onClick={() => setDeletedUserPage((p) => p + 1)}
+                      className="rounded-lg border border-paper-dim px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-paper-dim/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </>
+            )
+          ) : (
+          users.length === 0 ? (
             <p className="text-sm text-ink/45">No users found.</p>
           ) : (
             <>
@@ -530,7 +782,7 @@ function AdminContent() {
                           <td className="py-2.5 pr-4 font-semibold text-ink">{u.firstName} {u.lastName}</td>
                           <td className="py-2.5 pr-4 text-ink/60">{u.email}</td>
                           <td className="py-2.5 pr-4">
-                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.role === 'ADMIN' ? 'bg-amber/20 text-amber-deep' : 'bg-ink-soft text-ink/60'}`}>
+                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.role === 'ADMIN' ? 'bg-amber/20 text-amber-deep' : 'bg-amber/20 text-amber-deep'}`}>
                               {u.role}
                             </span>
                           </td>
@@ -539,15 +791,34 @@ function AdminContent() {
                           <td className="py-2.5 pl-4 text-right">
                             {isSelf ? (
                               <span className="text-xs text-ink/30">You</span>
-                            ) : (
+                            ) : u.role === 'ADMIN' ? (
                               <button
                                 type="button"
                                 disabled={action !== null}
                                 onClick={() => setRoleModal({ open: true, user: u })}
                                 className="rounded-lg border border-paper-dim px-3 py-1 text-xs font-semibold text-ink transition hover:bg-paper-dim/10 disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                {u.role === 'ADMIN' ? 'Remove Admin' : 'Make Admin'}
+                                Remove Admin
                               </button>
+                            ) : (
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  disabled={action !== null}
+                                  onClick={() => setRoleModal({ open: true, user: u })}
+                                  className="rounded-lg border border-paper-dim px-3 py-1 text-xs font-semibold text-ink transition hover:bg-paper-dim/10 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Make Admin
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={action !== null}
+                                  onClick={() => setDeleteModal({ open: true, user: u })}
+                                  className="rounded-lg border border-red-300 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -578,7 +849,7 @@ function AdminContent() {
                 </div>
               )}
             </>
-          )}
+          ))}
         </section>
 
         <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
@@ -638,6 +909,8 @@ function AdminContent() {
 
       <RejectModal open={rejectOpen} onReject={handleReject} onCancel={() => { setRejectOpen(false); setRejectTarget(null) }} loading={rejecting} />
       <ConfirmRoleModal open={roleModal.open} user={roleModal.user} onConfirm={handleRoleChange} onCancel={() => setRoleModal({ open: false, user: null })} loading={roleLoading} />
+      <ConfirmDeleteModal open={deleteModal.open} user={deleteModal.user} onConfirm={handleDeleteUser} onCancel={() => setDeleteModal({ open: false, user: null })} loading={deleteLoading} />
+      <ConfirmRestoreModal open={restoreModal.open} user={restoreModal.user} onConfirm={handleRestoreUser} onCancel={() => setRestoreModal({ open: false, user: null })} loading={restoreLoading} />
     </div>
   )
 }

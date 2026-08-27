@@ -278,3 +278,71 @@ export async function updateUserRole(userId: string, role: UserRole, requesterId
 
   return serializeUser(user.toObject());
 }
+
+export async function deleteUser(userId: string, requesterId: string): Promise<void> {
+  if (userId === requesterId) {
+    throw new AppError('You cannot delete yourself', 400);
+  }
+
+  const user = await User.findOne({ _id: userId, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
+  if (!user) throw new AppError('User not found', 404);
+
+  if (user.role === 'ADMIN') {
+    throw new AppError('Cannot delete an admin user', 400);
+  }
+
+  user.isDeleted = true;
+  await user.save();
+}
+
+export async function listDeletedUsers(
+  search?: string,
+  page = 1,
+  limit = 20,
+): Promise<{ users: UserSummary[]; total: number; page: number; totalPages: number }> {
+  const filter: Record<string, unknown> = { isDeleted: true };
+
+  if (search) {
+    const regex = new RegExp(search, 'i');
+    filter.$and = [
+      {
+        $or: [
+          { firstName: regex },
+          { lastName: regex },
+          { email: regex },
+        ],
+      },
+    ];
+  }
+
+  const [total, docs] = await Promise.all([
+    User.countDocuments(filter),
+    User.find(filter)
+      .select('firstName lastName email role status provider createdAt')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+  ]);
+
+  return {
+    users: docs.map(serializeUser),
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
+export async function restoreUser(userId: string, requesterId: string): Promise<UserSummary> {
+  if (userId === requesterId) {
+    throw new AppError('You cannot restore yourself', 400);
+  }
+
+  const user = await User.findOne({ _id: userId, isDeleted: true });
+  if (!user) throw new AppError('Deleted user not found', 404);
+
+  user.isDeleted = false;
+  await user.save();
+
+  return serializeUser(user.toObject());
+}

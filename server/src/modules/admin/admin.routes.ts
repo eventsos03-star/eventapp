@@ -4,11 +4,14 @@ import { authorize } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
 import * as adminController from './admin.controller.js';
 import {
+  deleteUserSchema,
+  listDeletedUsersSchema,
   listOrganizationsSchema,
   listVenueOwnersSchema,
   listUsersSchema,
   organizationActionSchema,
   rejectOrganizationSchema,
+  restoreUserSchema,
   updateUserRoleSchema,
   venueOwnerActionSchema,
 } from './admin.validator.js';
@@ -27,6 +30,9 @@ router.patch('/venue-owners/:id/approve', validate(venueOwnerActionSchema), admi
 router.patch('/venue-owners/:id/reject', validate(venueOwnerActionSchema), adminController.rejectVenueOwner);
 
 router.get('/users', validate(listUsersSchema), adminController.listUsers);
+router.get('/users/deleted', validate(listDeletedUsersSchema), adminController.listDeletedUsers);
 router.patch('/users/:id/role', validate(updateUserRoleSchema), adminController.updateUserRole);
+router.patch('/users/:id/restore', validate(restoreUserSchema), adminController.restoreUser);
+router.delete('/users/:id', validate(deleteUserSchema), adminController.deleteUser);
 
 export default router;

@@ -56,3 +56,19 @@ export const updateUserRole = asyncHandler(async (req, res) => {
   const result = await adminService.updateUserRole(req.params.id, req.body.role, req.user!.id);
   success(res, 200, 'User role updated successfully', result);
 });
+
+export const deleteUser = asyncHandler(async (req, res) => {
+  await adminService.deleteUser(req.params.id, req.user!.id);
+  success(res, 200, 'User deleted successfully');
+});
+
+export const listDeletedUsers = asyncHandler(async (req, res) => {
+  const { search, page, limit } = req.query as { search?: string; page?: number; limit?: number };
+  const result = await adminService.listDeletedUsers(search, page, limit);
+  success(res, 200, 'Deleted users fetched successfully', result);
+});
+
+export const restoreUser = asyncHandler(async (req, res) => {
+  const result = await adminService.restoreUser(req.params.id, req.user!.id);
+  success(res, 200, 'User restored successfully', result);
+});
