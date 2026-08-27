@@ -1,10 +1,12 @@
 import { request } from './api'
 import type { AdminEvent, AdminStats, Organization, ResourceStatus, UserRole, UserSummary, VenueOwner } from '../types'
 
+export type AdminStatus = ResourceStatus | 'deleted'
+
 export const adminApi = {
   getStats: () => request<AdminStats>('/admin/stats', { auth: true }),
 
-  getOrganizations: (status: ResourceStatus) =>
+  getOrganizations: (status: AdminStatus) =>
     request<Organization[]>(`/admin/organizations?status=${status}`, { auth: true }),
 
   getOrganizationDetail: (id: string) =>
@@ -16,7 +18,13 @@ export const adminApi = {
   rejectOrganization: (id: string, reason: string) =>
     request<Organization>(`/admin/organizations/${id}/reject`, { method: 'PATCH', body: { reason }, auth: true }),
 
-  getVenueOwners: (status: ResourceStatus) =>
+  deleteOrganization: (id: string) =>
+    request<Organization>(`/admin/organizations/${id}`, { method: 'DELETE', auth: true }),
+
+  restoreOrganization: (id: string) =>
+    request<Organization>(`/admin/organizations/${id}/restore`, { method: 'PATCH', auth: true }),
+
+  getVenueOwners: (status: AdminStatus) =>
     request<VenueOwner[]>(`/admin/venue-owners?status=${status}`, { auth: true }),
 
   approveVenueOwner: (ownerId: string) =>
@@ -24,6 +32,9 @@ export const adminApi = {
 
   rejectVenueOwner: (ownerId: string) =>
     request<VenueOwner>(`/admin/venue-owners/${ownerId}/reject`, { method: 'PATCH', auth: true }),
+
+  restoreVenueOwner: (ownerId: string) =>
+    request<VenueOwner>(`/admin/venue-owners/${ownerId}/restore`, { method: 'PATCH', auth: true }),
 
   getUsers: (search?: string, page?: number) => {
     const params = new URLSearchParams()

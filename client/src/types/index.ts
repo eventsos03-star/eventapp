@@ -87,6 +87,8 @@ export interface Organization {
   approvedAt?: string
   approvedBy?: string | { firstName: string; lastName: string; email: string }
   rejectionReason?: string
+  isDeleted?: boolean
+  isOwnerDeleted?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -136,6 +138,7 @@ export interface VenueOwner {
   lastName: string
   email: string
   venueCount: number
+  isOwnerDeleted: boolean
   venues: Venue[]
 }
 

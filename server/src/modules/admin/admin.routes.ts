@@ -25,9 +25,12 @@ router.get('/organizations', validate(listOrganizationsSchema), adminController.
 router.get('/organizations/:id', validate(organizationActionSchema), adminController.getOrganizationDetail);
 router.patch('/organizations/:id/approve', validate(organizationActionSchema), adminController.approveOrganization);
 router.patch('/organizations/:id/reject', validate(rejectOrganizationSchema), adminController.rejectOrganization);
+router.patch('/organizations/:id/restore', validate(organizationActionSchema), adminController.restoreOrganization);
+router.delete('/organizations/:id', validate(organizationActionSchema), adminController.deleteOrganization);
 router.get('/venue-owners', validate(listVenueOwnersSchema), adminController.listVenueOwners);
 router.patch('/venue-owners/:id/approve', validate(venueOwnerActionSchema), adminController.approveVenueOwner);
 router.patch('/venue-owners/:id/reject', validate(venueOwnerActionSchema), adminController.rejectVenueOwner);
+router.patch('/venue-owners/:id/restore', validate(venueOwnerActionSchema), adminController.restoreVenueOwner);
 
 router.get('/users', validate(listUsersSchema), adminController.listUsers);
 router.get('/users/deleted', validate(listDeletedUsersSchema), adminController.listDeletedUsers);

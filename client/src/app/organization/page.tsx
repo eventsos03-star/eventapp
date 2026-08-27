@@ -62,6 +62,7 @@ function OrgContent() {
     country: '',
   })
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const fetchOrg = useCallback(async () => {
     setLoading(true)
@@ -125,6 +126,22 @@ function OrgContent() {
     }
   }
 
+  async function handleDeleteOrg() {
+    if (deleting) return
+    if (!window.confirm('Delete your organization? It will be hidden until an admin restores it.')) return
+    setDeleting(true)
+    setMessage(null)
+    try {
+      await organizationApi.deleteMy()
+      setMessage({ type: 'success', text: 'Organization deleted' })
+      await fetchOrg()
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Delete failed' })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-ink">
@@ -154,6 +171,35 @@ function OrgContent() {
             <Link href="/organization/create" className="mt-6 inline-flex items-center gap-2 rounded-lg bg-amber px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-amber-deep">
               Create Organization
             </Link>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (org.isDeleted) {
+    return (
+      <div className="min-h-screen bg-ink font-sans text-paper-dim">
+        <nav className="flex items-center justify-between border-b border-ink-line px-5 py-6 sm:px-10 lg:px-16">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">E</span>
+            <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">EventOS</span>
+          </div>
+          <div className="flex items-center gap-4">
+            {user?.role === 'ADMIN' && <Link href="/admin" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Admin</Link>}
+            <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
+            <span className="text-sm text-paper-dim/50">{user?.email}</span>
+          </div>
+        </nav>
+        <main className="mx-auto max-w-2xl px-5 pb-24 pt-16 sm:px-10">
+          <div className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-10 text-center">
+            <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+            <h1 className="mt-4 font-display text-2xl font-semibold text-ink">{org.organizationName}</h1>
+            <p className="mt-1 text-xs font-semibold tracking-wide text-red-600">DELETED</p>
+            <p className="mt-3 text-sm text-ink/50">This organization was deleted. Contact an admin to restore it.</p>
+            <div className="mt-6 flex justify-center gap-3">
+              <Link href="/dashboard" className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-ink transition hover:bg-amber-deep">Back to Dashboard</Link>
+            </div>
           </div>
         </main>
       </div>
@@ -341,6 +387,11 @@ function OrgContent() {
               <Link href="/organization/members" className="rounded-lg border border-paper-dim px-4 py-3 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Manage Members</Link>
               <Link href="/events/new" className="rounded-lg border border-paper-dim px-4 py-3 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Create Event</Link>
               <span className="rounded-lg border border-ink-line px-4 py-3 text-sm text-ink/30 cursor-not-allowed">Venue Booking — Coming Soon</span>
+              {org.status === 'approved' && (
+                <button type="button" disabled={deleting} onClick={() => void handleDeleteOrg()} className="rounded-lg border border-red-300 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                  {deleting ? 'Deleting…' : 'Delete Organization'}
+                </button>
+              )}
             </div>
           </section>
 

@@ -9,7 +9,7 @@ export const getAdminStats = asyncHandler(async (_req, res) => {
 
 export const listOrganizations = asyncHandler(async (req, res) => {
   const organizations = await adminService.listOrganizations(
-    req.query.status as adminService.ResourceStatus | undefined,
+    req.query.status as adminService.ResourceStatus | 'deleted' | undefined,
   );
   success(res, 200, 'Organizations fetched successfully', organizations);
 });
@@ -24,6 +24,16 @@ export const rejectOrganization = asyncHandler(async (req, res) => {
   success(res, 200, 'Organization rejected successfully', organization);
 });
 
+export const deleteOrganization = asyncHandler(async (req, res) => {
+  const organization = await adminService.deleteOrganization(req.params.id);
+  success(res, 200, 'Organization deleted successfully', organization);
+});
+
+export const restoreOrganization = asyncHandler(async (req, res) => {
+  const organization = await adminService.restoreOrganization(req.params.id);
+  success(res, 200, 'Organization restored successfully', organization);
+});
+
 export const getOrganizationDetail = asyncHandler(async (req, res) => {
   const organization = await adminService.getOrganizationDetail(req.params.id);
   success(res, 200, 'Organization fetched successfully', organization);
@@ -31,7 +41,7 @@ export const getOrganizationDetail = asyncHandler(async (req, res) => {
 
 export const listVenueOwners = asyncHandler(async (req, res) => {
   const venueOwners = await adminService.listVenueOwners(
-    req.query.status as adminService.ResourceStatus | undefined,
+    req.query.status as adminService.ResourceStatus | 'deleted' | undefined,
   );
   success(res, 200, 'Venue owners fetched successfully', venueOwners);
 });
@@ -44,6 +54,11 @@ export const approveVenueOwner = asyncHandler(async (req, res) => {
 export const rejectVenueOwner = asyncHandler(async (req, res) => {
   const venueOwner = await adminService.rejectVenueOwner(req.params.id);
   success(res, 200, 'Venue owner rejected successfully', venueOwner);
+});
+
+export const restoreVenueOwner = asyncHandler(async (req, res) => {
+  const venueOwner = await adminService.restoreVenueOwner(req.params.id);
+  success(res, 200, 'Venue owner restored successfully', venueOwner);
 });
 
 export const listUsers = asyncHandler(async (req, res) => {

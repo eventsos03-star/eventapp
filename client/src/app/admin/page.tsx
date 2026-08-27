@@ -6,10 +6,10 @@ import { AdminRoute } from '../../components/AdminRoute'
 import { Spinner } from '../../components/Spinner'
 import { useAuth } from '../../context/AuthContext'
 import { adminApi } from '../../lib/adminApi'
-import type { AdminEvent, AdminStats, Organization, ResourceStatus, UserSummary, VenueOwner } from '../../types'
+import type { AdminEvent, AdminStats, Organization, UserSummary, VenueOwner } from '../../types'
 
 type Message = { type: 'success' | 'error'; text: string } | null
-type Tab = 'pending' | 'approved' | 'rejected'
+type Tab = 'pending' | 'approved' | 'rejected' | 'deleted'
 type UserTab = 'all' | 'deleted'
 type EventTab = 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled'
 
@@ -17,6 +17,7 @@ const STATUS_TABS: { value: Tab; label: string }[] = [
   { value: 'pending', label: 'Pending' },
   { value: 'approved', label: 'Approved' },
   { value: 'rejected', label: 'Rejected' },
+  { value: 'deleted', label: 'Deleted' },
 ]
 
 const EVENT_TABS: { value: EventTab; label: string }[] = [
@@ -25,11 +26,12 @@ const EVENT_TABS: { value: EventTab; label: string }[] = [
  
 ]
 
-const STATUS_STYLES: Record<ResourceStatus, string> = {
+const STATUS_STYLES: Record<Tab | 'blocked', string> = {
   pending: 'bg-amber/20 text-amber-deep',
   approved: 'bg-teal/15 text-teal',
   rejected: 'bg-red-100 text-red-700',
   blocked: 'bg-red-100 text-red-700',
+  deleted: 'bg-ink-soft text-ink/60',
 }
 
 function StatCard({ label, value }: { label: string; value: number | null }) {
@@ -279,6 +281,61 @@ function ConfirmRestoreModal({
   )
 }
 
+function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel,
+  tone = 'teal',
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  open: boolean
+  title: string
+  message: string
+  confirmLabel: string
+  tone?: 'teal' | 'red'
+  onConfirm: () => void
+  onCancel: () => void
+  loading: boolean
+}) {
+  if (!open) return null
+
+  const confirmClass =
+    tone === 'red'
+      ? 'bg-red-600 text-white hover:bg-red-700'
+      : 'bg-teal text-white hover:bg-teal/80'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 px-5">
+      <div className="w-full max-w-md rounded-2xl border border-paper-dim bg-paper p-6">
+        <h3 className="font-display text-lg font-semibold text-ink">{title}</h3>
+        <p className="mt-1 text-sm text-ink/50">{message}</p>
+        <div className="mt-4 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="rounded-lg border border-paper-dim px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper-dim/10 disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onConfirm}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${confirmClass}`}
+          >
+            {loading && <Spinner size={14} />}
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AdminContent() {
   const { user } = useAuth()
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -316,6 +373,15 @@ function AdminContent() {
   const deletedSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [restoreModal, setRestoreModal] = useState<{ open: boolean; user: UserSummary | null }>({ open: false, user: null })
   const [restoreLoading, setRestoreLoading] = useState(false)
+
+  const [orgDeleteModal, setOrgDeleteModal] = useState<{ open: boolean; org: Organization | null }>({ open: false, org: null })
+  const [orgDeleteLoading, setOrgDeleteLoading] = useState(false)
+
+  const [orgRestoreModal, setOrgRestoreModal] = useState<{ open: boolean; org: Organization | null }>({ open: false, org: null })
+  const [orgRestoreLoading, setOrgRestoreLoading] = useState(false)
+
+  const [venueRestoreModal, setVenueRestoreModal] = useState<{ open: boolean; owner: VenueOwner | null }>({ open: false, owner: null })
+  const [venueRestoreLoading, setVenueRestoreLoading] = useState(false)
 
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectTarget, setRejectTarget] = useState<{ kind: 'org' | 'venue'; id: string } | null>(null)
@@ -526,6 +592,54 @@ function AdminContent() {
     }
   }
 
+  async function handleDeleteOrganization() {
+    if (!orgDeleteModal.org || orgDeleteLoading) return
+    setOrgDeleteLoading(true)
+    setMessage(null)
+    try {
+      await adminApi.deleteOrganization(orgDeleteModal.org.id)
+      setMessage({ type: 'success', text: 'Organization deleted' })
+      setOrgDeleteModal({ open: false, org: null })
+      await fetchData()
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Delete failed' })
+    } finally {
+      setOrgDeleteLoading(false)
+    }
+  }
+
+  async function handleRestoreOrganization() {
+    if (!orgRestoreModal.org || orgRestoreLoading) return
+    setOrgRestoreLoading(true)
+    setMessage(null)
+    try {
+      await adminApi.restoreOrganization(orgRestoreModal.org.id)
+      setMessage({ type: 'success', text: 'Organization restored' })
+      setOrgRestoreModal({ open: false, org: null })
+      await fetchData()
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Restore failed' })
+    } finally {
+      setOrgRestoreLoading(false)
+    }
+  }
+
+  async function handleRestoreVenueOwner() {
+    if (!venueRestoreModal.owner || venueRestoreLoading) return
+    setVenueRestoreLoading(true)
+    setMessage(null)
+    try {
+      await adminApi.restoreVenueOwner(venueRestoreModal.owner.ownerId)
+      setMessage({ type: 'success', text: 'Venues restored' })
+      setVenueRestoreModal({ open: false, owner: null })
+      await fetchData()
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Restore failed' })
+    } finally {
+      setVenueRestoreLoading(false)
+    }
+  }
+
   const isBusy = (key: string) => action === key
   const filteredEvents = events.filter((e) => e.status === eventTab)
 
@@ -593,7 +707,11 @@ function AdminContent() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-ink">{org.organizationName}</span>
-                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[org.status]}`}>{org.status}</span>
+                        {orgTab === 'deleted' ? (
+                          <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES.deleted}`}>deleted</span>
+                        ) : (
+                          <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[org.status]}`}>{org.status}</span>
+                        )}
                       </div>
                       <p className="mt-0.5 text-xs text-ink/45">
                         Owner: {ownerObj ? `${ownerObj.firstName} ${ownerObj.lastName}` : '—'} · {ownerObj?.email ?? '—'}
@@ -601,18 +719,33 @@ function AdminContent() {
                       {org.rejectionReason && org.status === 'rejected' && (
                         <p className="mt-1 text-xs text-red-600">Reason: {org.rejectionReason}</p>
                       )}
+                      {orgTab === 'deleted' && org.isOwnerDeleted && (
+                        <p className="mt-1 text-xs text-ink/45">Owner is deleted — restore via Users → Deleted</p>
+                      )}
                       <p className="mt-0.5 text-xs text-ink/35">Created {new Date(org.createdAt).toLocaleDateString()}</p>
                     </div>
-                    {org.status === 'pending' && (
-                      <div className="flex shrink-0 gap-2">
-                        <button type="button" disabled={action !== null} onClick={() => void handleApprove('org', org.id)} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
-                          {isBusy(`org-${org.id}`) && <Spinner size={12} />}Approve
+                    <div className="flex shrink-0 gap-2">
+                      {orgTab === 'pending' && org.status === 'pending' && (
+                        <>
+                          <button type="button" disabled={action !== null} onClick={() => void handleApprove('org', org.id)} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
+                            {isBusy(`org-${org.id}`) && <Spinner size={12} />}Approve
+                          </button>
+                          <button type="button" disabled={action !== null} onClick={() => openReject('org', org.id)} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                            Reject
+                          </button>
+                        </>
+                      )}
+                      {orgTab === 'deleted' && org.isOwnerDeleted === false && (
+                        <button type="button" disabled={action !== null} onClick={() => setOrgRestoreModal({ open: true, org })} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
+                          Restore
                         </button>
-                        <button type="button" disabled={action !== null} onClick={() => openReject('org', org.id)} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
-                          Reject
+                      )}
+                      {orgTab !== 'deleted' && (
+                        <button type="button" disabled={action !== null} onClick={() => setOrgDeleteModal({ open: true, org })} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                          Delete
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </li>
                 )
               })}
@@ -639,6 +772,9 @@ function AdminContent() {
                     </div>
                     <p className="mt-0.5 text-xs text-ink/45">{owner.email} · {owner.venueCount} venue{owner.venueCount === 1 ? '' : 's'}</p>
                     <p className="mt-1 truncate text-xs text-ink/60">{owner.venues.map((v) => v.venueName).join(' · ')}</p>
+                    {venueTab === 'deleted' && owner.isOwnerDeleted && (
+                      <p className="mt-1 text-xs text-ink/45">Owner is deleted — restore via Users → Deleted</p>
+                    )}
                   </div>
                   {venueTab === 'pending' && (
                     <div className="flex shrink-0 gap-2">
@@ -647,6 +783,13 @@ function AdminContent() {
                       </button>
                       <button type="button" disabled={action !== null} onClick={() => openReject('venue', owner.ownerId)} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
                         Reject
+                      </button>
+                    </div>
+                  )}
+                  {venueTab === 'deleted' && owner.isOwnerDeleted === false && (
+                    <div className="flex shrink-0 gap-2">
+                      <button type="button" disabled={action !== null} onClick={() => setVenueRestoreModal({ open: true, owner })} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
+                        Restore venues
                       </button>
                     </div>
                   )}
@@ -911,6 +1054,35 @@ function AdminContent() {
       <ConfirmRoleModal open={roleModal.open} user={roleModal.user} onConfirm={handleRoleChange} onCancel={() => setRoleModal({ open: false, user: null })} loading={roleLoading} />
       <ConfirmDeleteModal open={deleteModal.open} user={deleteModal.user} onConfirm={handleDeleteUser} onCancel={() => setDeleteModal({ open: false, user: null })} loading={deleteLoading} />
       <ConfirmRestoreModal open={restoreModal.open} user={restoreModal.user} onConfirm={handleRestoreUser} onCancel={() => setRestoreModal({ open: false, user: null })} loading={restoreLoading} />
+
+      <ConfirmDialog
+        open={orgDeleteModal.open}
+        title="Delete Organization"
+        message={`Delete ${orgDeleteModal.org?.organizationName ?? 'this organization'}? It will be moved to the Deleted tab and hidden from the owner.`}
+        confirmLabel="Delete"
+        tone="red"
+        onConfirm={handleDeleteOrganization}
+        onCancel={() => setOrgDeleteModal({ open: false, org: null })}
+        loading={orgDeleteLoading}
+      />
+      <ConfirmDialog
+        open={orgRestoreModal.open}
+        title="Restore Organization"
+        message={`Restore ${orgRestoreModal.org?.organizationName ?? 'this organization'}? The owner will regain access.`}
+        confirmLabel="Restore"
+        onConfirm={handleRestoreOrganization}
+        onCancel={() => setOrgRestoreModal({ open: false, org: null })}
+        loading={orgRestoreLoading}
+      />
+      <ConfirmDialog
+        open={venueRestoreModal.open}
+        title="Restore Venues"
+        message={`Restore all deleted venues of ${venueRestoreModal.owner ? `${venueRestoreModal.owner.firstName} ${venueRestoreModal.owner.lastName}` : 'this owner'}?`}
+        confirmLabel="Restore"
+        onConfirm={handleRestoreVenueOwner}
+        onCancel={() => setVenueRestoreModal({ open: false, owner: null })}
+        loading={venueRestoreLoading}
+      />
     </div>
   )
 }

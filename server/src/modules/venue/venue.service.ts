@@ -1,5 +1,7 @@
 import Venue from "./venue.model.js";
 
+const NOT_DELETED = { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
+
 export const createVenue = async (data: any) => {
   return await Venue.create(data);
 };
@@ -7,6 +9,7 @@ export const createVenue = async (data: any) => {
 export const getVenues = async (city?: string) => {
   const filter: Record<string, unknown> = {
     status: "approved",
+    ...NOT_DELETED,
   };
 
   if (city?.trim()) {
@@ -20,7 +23,7 @@ export const getVenues = async (city?: string) => {
 };
 
 export const getAllVenuesForAdmin = async (city?: string) => {
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { ...NOT_DELETED };
 
   if (city) {
     filter["location.city"] = city;
@@ -63,14 +66,18 @@ export const deleteVenue = async (
 ) => {
   // ADMIN can delete any venue
   if (userRole === "ADMIN") {
-    return await Venue.findByIdAndDelete(id);
+    return await Venue.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
   }
 
   // Normal user can delete only their own venue
-  return await Venue.findOneAndDelete({
-    _id: id,
-    ownerId: userId,
-  });
+  return await Venue.findOneAndUpdate(
+    {
+      _id: id,
+      ownerId: userId,
+    },
+    { isDeleted: true },
+    { new: true }
+  );
 };
 export const rejectVenue = async (id: string) => {
   return await Venue.findByIdAndUpdate(
@@ -80,5 +87,5 @@ export const rejectVenue = async (id: string) => {
   );
 };
 export const getMyVenues = async (ownerId: string) => {
-  return await Venue.find({ ownerId });
+  return await Venue.find({ ownerId, ...NOT_DELETED });
 };

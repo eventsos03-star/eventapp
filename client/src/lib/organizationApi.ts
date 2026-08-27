@@ -21,6 +21,9 @@ export const organizationApi = {
   update: (input: UpdateOrgInput) =>
     request<Organization>('/organizations/me', { method: 'PATCH', body: input, auth: true }),
 
+  deleteMy: () =>
+    request<void>('/organizations/me', { method: 'DELETE', auth: true }),
+
   getMembers: (orgId: string) =>
     request<OrganizationMember[]>(`/organizations/${orgId}/members`, { auth: true }),
 
