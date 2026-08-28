@@ -159,7 +159,7 @@ export interface AdminStats {
 }
 
 export interface CreateVenueInput {
-  ownerId: string
+  // ownerId: string
   venueName: string
   description: string
   images: VenueImage[]
