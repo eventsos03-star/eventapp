@@ -7,11 +7,13 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   status: UserStatus;
+  organizationId: string | null;
 }
 
 export interface AccessTokenPayload {
   id: string;
   role: UserRole;
+    organizationId: string | null;
   sessionId: string;
 }
 
