@@ -7,7 +7,15 @@ export const createVenue = async (data: Record<string, unknown>) => {
   return await Venue.create(data);
 };
 
-export const getVenues = async (city?: string) => {
+export const getVenues = async (
+  city?: string,
+  filters?: {
+    minCapacity?: number;
+    maxCapacity?: number;
+    minPrice?: number;
+    maxPrice?: number;
+  },
+) => {
   const filter: Record<string, unknown> = {
     status: 'approved',
     ...NOT_DELETED,
@@ -16,6 +24,18 @@ export const getVenues = async (city?: string) => {
   if (city?.trim()) {
     filter['location.city'] = { $regex: city.trim(), $options: 'i' };
   }
+
+  const { minCapacity, maxCapacity, minPrice, maxPrice } = filters ?? {};
+
+  const capacityFilter: Record<string, number> = {};
+  if (minCapacity !== undefined) capacityFilter.$gte = minCapacity;
+  if (maxCapacity !== undefined) capacityFilter.$lte = maxCapacity;
+  if (Object.keys(capacityFilter).length > 0) filter.capacity = capacityFilter;
+
+  const priceFilter: Record<string, number> = {};
+  if (minPrice !== undefined) priceFilter.$gte = minPrice;
+  if (maxPrice !== undefined) priceFilter.$lte = maxPrice;
+  if (Object.keys(priceFilter).length > 0) filter.pricePerDay = priceFilter;
 
   return await Venue.find(filter).sort({ createdAt: -1 });
 };

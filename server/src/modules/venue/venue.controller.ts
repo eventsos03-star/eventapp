@@ -30,7 +30,12 @@ export const getVenues = asyncHandler(async (req, res) => {
     });
     success(res, 200, 'Venues fetched successfully', result);
   } else {
-    const venues = await venueService.getVenues(city);
+    const venues = await venueService.getVenues(city, {
+      minCapacity: minCapacity ? parseInt(minCapacity, 10) : undefined,
+      maxCapacity: maxCapacity ? parseInt(maxCapacity, 10) : undefined,
+      minPrice: minPrice ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+    });
     success(res, 200, 'Venues fetched successfully', venues);
   }
 });
