@@ -9,6 +9,8 @@ interface VenueClusterMapProps {
   onVenueSelect: (venue: Venue) => void
   center?: [number, number]
   zoom?: number
+  height?: number
+  mapId?: string
   className?: string
 }
 
@@ -25,29 +27,52 @@ export default function VenueClusterMap({
   onVenueSelect,
   center = [20.5937, 78.9629],
   zoom = 5,
+  height = 500,
+  mapId = 'venue-cluster-map',
   className = '',
 }: VenueClusterMapProps) {
   const [mounted, setMounted] = useState(false)
   const [L, setL] = useState<any>(null)
   const mapRef = useRef<any>(null)
-  const markersRef = useRef<any[]>([])
   const clusterGroupRef = useRef<any>(null)
+  const markersRef = useRef<any[]>([])
+  // Keep the latest callback in a ref so effects don't re-run on identity changes.
+  const onVenueSelectRef = useRef(onVenueSelect)
+  useEffect(() => {
+    onVenueSelectRef.current = onVenueSelect
+  }, [onVenueSelect])
 
   useEffect(() => {
-    Promise.all([import('react-leaflet'), import('leaflet'), import('leaflet.markercluster')]).then(
-      ([_rl, leaflet, _cluster]) => {
+    let active = true
+    async function load() {
+      try {
+        const leaflet = (await import('leaflet')).default
+        // leaflet.markercluster (UMD) references the free global `L`. The bundler
+        // does not expose it, so expose window.L before markercluster evaluates.
+        const w = window as unknown as { L?: unknown }
+        w.L = leaflet
+        await import('leaflet.markercluster')
+
         // @ts-ignore — leaflet icon fix
-        delete leaflet.default.Icon.Default.prototype._getIconUrl
+        delete leaflet.Icon.Default.prototype._getIconUrl
         // @ts-ignore
-        leaflet.default.Icon.Default.mergeOptions({
+        leaflet.Icon.Default.mergeOptions({
           iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
           iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
           shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
         })
-        setL(leaflet.default)
-        setMounted(true)
+        if (active) {
+          setL(leaflet)
+          setMounted(true)
+        }
+      } catch {
+        // map stays in loading state if leaflet fails to load
       }
-    )
+    }
+    load()
+    return () => {
+      active = false
+    }
   }, [])
 
   const createPopupContent = useCallback(
@@ -68,9 +93,14 @@ export default function VenueClusterMap({
     []
   )
 
+  // Create the map once leaflet is ready + the DOM node exists.
   useEffect(() => {
     if (!mounted || !L) return
-    const map = L.map('venue-cluster-map', {
+    // The container may not be rendered yet if !mounted; wait until mounted renders it.
+    const node = document.getElementById(mapId)
+    if (!node) return
+
+    const map = L.map(mapId, {
       center,
       zoom,
       zoomControl: true,
@@ -81,15 +111,24 @@ export default function VenueClusterMap({
       maxZoom: 19,
     }).addTo(map)
     mapRef.current = map
-    return () => { map.remove() }
-  }, [mounted, L, center, zoom])
+    return () => {
+      mapRef.current = null
+      clusterGroupRef.current = null
+      markersRef.current = []
+      map.remove()
+    }
+  }, [mounted, L, mapId])
 
+  // (Re)build markers only when the venue set changes.
   useEffect(() => {
     if (!mapRef.current || !L) return
     const map = mapRef.current
+
     if (clusterGroupRef.current) {
       map.removeLayer(clusterGroupRef.current)
+      clusterGroupRef.current = null
     }
+
     const clusterGroup = L.markerClusterGroup({
       maxClusterRadius: 50,
       spiderfyOnMaxZoom: true,
@@ -97,21 +136,24 @@ export default function VenueClusterMap({
       chunkedLoading: true,
     })
     const validVenues = venues.filter(hasValidCoordinates)
+    const newMarkers: { id: string; marker: any }[] = []
     validVenues.forEach((venue) => {
       const [lng, lat] = venue.location.coordinates
       const marker = L.marker([lat, lng])
       marker.bindPopup(createPopupContent(venue))
-      marker.on('click', () => onVenueSelect(venue))
+      marker.on('click', () => onVenueSelectRef.current(venue))
       clusterGroup.addLayer(marker)
-      markersRef.current.push({ id: venue._id, marker })
+      newMarkers.push({ id: venue._id, marker })
     })
-    map.addLayer(clusterGroup)
+    markersRef.current = newMarkers
     clusterGroupRef.current = clusterGroup
+    map.addLayer(clusterGroup)
+
     if (validVenues.length > 0) {
       const bounds = L.latLngBounds(validVenues.map((v) => [v.location.coordinates[1], v.location.coordinates[0]]))
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
     }
-  }, [venues, L, createPopupContent, onVenueSelect])
+  }, [venues, L, createPopupContent])
 
   useEffect(() => {
     if (!mapRef.current || !L) return
@@ -141,7 +183,7 @@ export default function VenueClusterMap({
         rel="stylesheet"
         href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
       />
-      <div id="venue-cluster-map" style={{ height: 500, width: '100%' }} />
+      <div id={mapId} style={{ height, width: '100%' }} />
     </div>
   )
 }
