@@ -7,7 +7,10 @@ import type {
   SafeUser,
   SessionInfo,
   Venue,
+  VenueSearchResult,
   CreateVenueInput,
+  UpdateVenueInput,
+  GeocodingResult,
 } from '../types'
 
 const API_BASE = '/api'
@@ -276,89 +279,72 @@ export const api = {
   // -------------------------
 
   listVenues: (city?: string) => {
-    const query = city
-      ? `?city=${encodeURIComponent(city)}`
-      : ''
-
-    return request<Venue[]>(
-      `/venues${query}`
-    )
+    const query = city ? `?city=${encodeURIComponent(city)}` : ''
+    return request<Venue[]>(`/venues${query}`)
   },
-listVenuesForAdmin: (city?: string) => {
-  const query = city
-    ? `?city=${encodeURIComponent(city)}`
-    : ''
 
-  return request<Venue[]>(
-    `/venues/admin${query}`,
-    {
-      auth: true,
-    }
-  )
-},
-approveVenue: (id: string) =>
-  request<Venue>(
-    `/venues/${id}/approve`,
-    {
-      method: 'PATCH',
-      auth: true,
-    }
-  ),
+  searchVenues: (params: {
+    lat?: number
+    lng?: number
+    radius?: number
+    minCapacity?: number
+    maxCapacity?: number
+    minPrice?: number
+    maxPrice?: number
+    page?: number
+    limit?: number
+    city?: string
+  }) => {
+    const searchParams = new URLSearchParams()
+    if (params.lat !== undefined) searchParams.set('lat', String(params.lat))
+    if (params.lng !== undefined) searchParams.set('lng', String(params.lng))
+    if (params.radius !== undefined) searchParams.set('radius', String(params.radius))
+    if (params.minCapacity !== undefined) searchParams.set('minCapacity', String(params.minCapacity))
+    if (params.maxCapacity !== undefined) searchParams.set('maxCapacity', String(params.maxCapacity))
+    if (params.minPrice !== undefined) searchParams.set('minPrice', String(params.minPrice))
+    if (params.maxPrice !== undefined) searchParams.set('maxPrice', String(params.maxPrice))
+    if (params.page !== undefined) searchParams.set('page', String(params.page))
+    if (params.limit !== undefined) searchParams.set('limit', String(params.limit))
+    if (params.city) searchParams.set('city', params.city)
+    const qs = searchParams.toString()
+    return request<Venue[] | VenueSearchResult>(`/venues${qs ? `?${qs}` : ''}`)
+  },
 
-rejectVenue: (id: string) =>
-  request<Venue>(
-    `/venues/${id}/reject`,
-    {
-      method: 'PATCH',
-      auth: true,
-    }
-  ),
- getMyVenues: (city?: string) => {
-  const query = city
-    ? `?city=${encodeURIComponent(city)}`
-    : ''
+  listVenuesForAdmin: (city?: string) => {
+    const query = city ? `?city=${encodeURIComponent(city)}` : ''
+    return request<Venue[]>(`/venues/admin${query}`, { auth: true })
+  },
 
-  return request<Venue[]>(
-    `/venues/my${query}`,
-    {
-      auth: true,
-    }
-  )
-},
+  approveVenue: (id: string) =>
+    request<Venue>(`/venues/${id}/approve`, { method: 'PATCH', auth: true }),
+
+  rejectVenue: (id: string) =>
+    request<Venue>(`/venues/${id}/reject`, { method: 'PATCH', auth: true }),
+
+  getMyVenues: (city?: string) => {
+    const query = city ? `?city=${encodeURIComponent(city)}` : ''
+    return request<Venue[]>(`/venues/my${query}`, { auth: true })
+  },
+
   getVenue: (id: string) =>
-    request<Venue>(
-      `/venues/${id}`
-    ),
+    request<Venue>(`/venues/${id}`),
 
   createVenue: (input: CreateVenueInput) =>
-    request<Venue>(
-      '/venues',
-      {
-        method: 'POST',
-        body: input,
-        auth: true,
-      }
-    ),
+    request<Venue>('/venues', { method: 'POST', body: input, auth: true }),
 
-  updateVenue: (
-    id: string,
-    input: Partial<CreateVenueInput>
-  ) =>
-    request<Venue>(
-      `/venues/${id}`,
-      {
-        method: 'PATCH',
-        body: input,
-        auth: true,
-      }
-    ),
+  updateVenue: (id: string, input: UpdateVenueInput) =>
+    request<Venue>(`/venues/${id}`, { method: 'PATCH', body: input, auth: true }),
 
   deleteVenue: (id: string) =>
-    request<void>(
-      `/venues/${id}`,
-      {
-        method: 'DELETE',
-        auth: true,
-      }
-    ),
+    request<void>(`/venues/${id}`, { method: 'DELETE', auth: true }),
+
+  // -------------------------
+  // GEOCODING
+  // -------------------------
+
+  searchLocations: (query: string) =>
+    request<GeocodingResult[]>(`/venues/geocode/search?q=${encodeURIComponent(query)}`),
+
+  reverseLocation: (lat: number, lng: number) =>
+    request<GeocodingResult>(`/venues/geocode/reverse?lat=${lat}&lng=${lng}`),
 }
