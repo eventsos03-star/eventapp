@@ -16,7 +16,8 @@ import { generateEmailToken, hashToken } from '../../utils/token.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../services/token.service.js';
 import { getUserByEmail, getUserById, getSafeUserById } from '../../services/user.service.js';
 import {getOwnedOrganizationId} from "../../middleware/getOwnedOrganizationId.js"
-import { log } from 'console';
+import { log } from 'console'; 
+import redis from '../../config/redis.js';
 const MAX_REFRESH_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID || undefined);
@@ -125,7 +126,7 @@ async function issueTokens(user: SafeUser, client: ClientInfo): Promise<AuthResu
   return result;
 }
 
-export async function registerUser(input: RegisterInput): Promise<SafeUser> {
+export async function registerUser(input: RegisterInput): Promise<{ firstName: string; email: string }> {
   const { firstName, lastName, email, password } = input;
 
   const existing = await getUserByEmail(email);
@@ -133,62 +134,94 @@ export async function registerUser(input: RegisterInput): Promise<SafeUser> {
 
   const { raw, hashed } = generateEmailToken();
 
-  const user = await User.create({
+  const registrationData=JSON.stringify({
     firstName,
     lastName,
     email,
     password,
-    provider: USER_PROVIDER.LOCAL,
-    emailVerified: false,
-    status: USER_STATUS.PENDING,
-    verificationToken: hashed,
-    verificationExpires: new Date(Date.now() + VERIFY_EMAIL_EXPIRES_MS),
-  });
+    verificationToken:hashed,
+  })
 
-  await sendVerifyEmail(user.email, user.firstName, raw);
+  await redis.set(`registration:email:${email}`,
+    registrationData
+    
+  ,{ex:VERIFY_EMAIL_EXPIRES_MS /1000,});
 
-  return user.toSafeObject();
+  await redis.set(`registration:token:${hashed}`,email,{ex:VERIFY_EMAIL_EXPIRES_MS/1000})
+  
+  
+
+  await sendVerifyEmail(email,firstName, raw);
+
+  return {email,firstName}
 }
 
 export async function verifyEmail(token: string): Promise<SafeUser> {
   if (!token) throw new AppError('Verification token is required', 400);
 
-  const user = await User.findOne({
-    verificationToken: hashToken(token),
-    $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-  });
+  const hashedToken=hashToken(token);
 
-  if (!user) throw new AppError('Invalid or expired verification link', 400);
+  const email=await redis.get(`registration:token:${hashedToken}`);
 
-  // The link may be presented twice (React Strict Mode, email link scanners,
-  // page refresh). Replaying a used link on an already-verified account is
-  // a success, not an error. The token is intentionally kept so replays can
-  // find the account.
-  if (user.emailVerified) return user.toSafeObject();
-
-  if (user.verificationExpires && user.verificationExpires.getTime() < Date.now()) {
-    throw new AppError('Verification link has expired. Please request a new one.', 400);
+  if(!email){
+    throw new AppError('Invalid or expired verfication link',400);
   }
 
-  user.emailVerified = true;
-  user.status = USER_STATUS.ACTIVE;
-  await user.save();
+  const data=await redis.get(`registration:email:${email}`);
+
+ 
+  if (!data) throw new AppError('Invalid or expired verification link', 400);
+  
+   const registration = await redis.get<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+  }>(`registration:email:${email}`);
+
+  if (!registration) {
+    throw new AppError('Invalid or expired verification link', 400);
+  }
+
+
+
+  const user=await User.create({
+    firstName:registration.firstName,
+    lastName:registration.lastName,
+    email:registration.email,
+    password:registration.password,
+    provider:USER_PROVIDER.LOCAL,
+    emailVerified:true,
+    status:USER_STATUS.ACTIVE,
+  });
+
+ await redis.del(`registration:email:${email}`,`registration:token:${hashedToken}`);
 
   return user.toSafeObject();
 }
 
 export async function resendVerificationEmail(email: string): Promise<void> {
-  const user = await getUserByEmail(email);
-  if (!user) return; // Do not reveal whether the email exists.
-  if (user.emailVerified) return;
-  if (user.status === USER_STATUS.BLOCKED) return;
+  const data= await redis.get(`registration:email:${email}`);
+  if (!data) return; // Do not reveal whether the email exists.
+
+  const registration=JSON.parse(data as string)
 
   const { raw, hashed } = generateEmailToken();
-  user.verificationToken = hashed;
-  user.verificationExpires = new Date(Date.now() + VERIFY_EMAIL_EXPIRES_MS);
-  await user.save();
 
-  await sendVerifyEmail(user.email, user.firstName, raw);
+  if(registration.verificationToken){
+    await redis.del(`registration:token:${registration.verificationToken}`)
+  };
+
+ const updatedRegistration=JSON.stringify({
+  ...registration,
+  verificationToken:hashed,
+ });
+
+ await redis.set(`registration:email:${email}`,updatedRegistration,{ex:VERIFY_EMAIL_EXPIRES_MS/1000})
+
+ await redis.set(`registration:token:${hashed}`,email,{ex:VERIFY_EMAIL_EXPIRES_MS/1000});
+
+  await sendVerifyEmail(registration.email, registration.firstName, raw);
 }
 
 export async function login(email: string, password: string, client: ClientInfo): Promise<AuthResult> {
