@@ -28,27 +28,12 @@ export default function MyOrganizationPage() {
   }, []);
 
   const stats = useMemo(() => {
-    const now = new Date();
     const total = events.length;
-    const upcoming = events.filter(
-      (e) => new Date(e.eventDate) >= now && e.status === "published"
-    ).length;
+    const upcoming = events.filter((e) => e.status === "published").length;
+    const ongoing = events.filter((e) => e.status === "ongoing").length;
     const completed = events.filter((e) => e.status === "completed").length;
-    const drafts = events.filter((e) => e.status === "draft").length;
-    return { total, upcoming, completed, drafts };
+    return { total, upcoming, ongoing, completed };
   }, [events]);
-
-  const handlePublish = async (id: string) => {
-    setActionId(id);
-    try {
-      await eventService.publish(id);
-      fetchEvents();
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? "Failed to publish event");
-    } finally {
-      setActionId(null);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this event? This can't be undone.")) return;
@@ -108,7 +93,7 @@ export default function MyOrganizationPage() {
           </div>
 
           <Link
-            href="my-organization/events/new"
+            href="/my-organization/events/new"
             className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-400 transition shadow-sm"
           >
             + Create Event
@@ -119,9 +104,9 @@ export default function MyOrganizationPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: "Total Events", value: stats.total },
-            { label: "Upcoming Events", value: stats.upcoming },
+            { label: "Published", value: stats.upcoming },
+            { label: "Ongoing", value: stats.ongoing },
             { label: "Completed", value: stats.completed },
-            { label: "Drafts", value: stats.drafts },
           ].map((s) => (
             <div
               key={s.label}
@@ -200,20 +185,11 @@ export default function MyOrganizationPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-3 text-xs font-semibold">
                           <Link
-                            href={`my-organization/events/${event._id}/edit`}
+                            href={`/my-organization/events/${event._id}/edit`}
                             className="text-slate-300 hover:text-white"
                           >
                             Edit
                           </Link>
-                          {event.status === "draft" && (
-                            <button
-                              disabled={actionId === event._id}
-                            //   onClick={() => handlePublish(event._id)}
-                              className="text-amber-400 hover:text-amber-300 disabled:opacity-40"
-                            >
-                              Publish
-                            </button>
-                          )}
                           <button
                             disabled={actionId === event._id}
                             onClick={() => handleDelete(event._id)}
