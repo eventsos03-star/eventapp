@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { api, ApiError } from '../../../lib/api'
 import type { Venue, SafeUser } from '../../../types'
+import VenueMap from '../../../components/maps/VenueMap'
 
 export default function VenueDetailsPage() {
   const params = useParams()
@@ -342,6 +343,25 @@ export default function VenueDetailsPage() {
 
               </div>
 
+            </div>
+
+            {/* --------------------------------------------------
+                LOCATION MAP
+            -------------------------------------------------- */}
+
+            <div className="mt-7">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-base font-bold text-slate-900">Location</h2>
+                {canEditVenue && (
+                  <Link
+                    href={`/venues/${venue._id}/edit`}
+                    className="text-xs font-semibold text-amber-600 hover:underline"
+                  >
+                    Update location
+                  </Link>
+                )}
+              </div>
+              <VenueMap venue={venue} />
             </div>
 
             {/* --------------------------------------------------
