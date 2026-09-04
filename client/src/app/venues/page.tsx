@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { api, ApiError } from '../../lib/api'
 import type { Venue, VenueSearchResult } from '../../types'
 import VenueHeader from '../../components/venues/VenueHeader'
@@ -233,21 +234,32 @@ function VenuePageInner() {
           </div>
 
           {!isAdmin && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowMyVenues((p) => !p)
-                setLocation(null)
-                setSelectedVenueId(null)
-              }}
-              className={`rounded-lg border px-3.5 py-2 text-sm font-bold transition ${
-                showMyVenues
-                  ? 'border-slate-900 bg-slate-900 text-white'
-                  : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              {showMyVenues ? '← All Venues' : 'My Venues'}
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMyVenues((p) => !p)
+                  setLocation(null)
+                  setSelectedVenueId(null)
+                }}
+                className={`rounded-lg border px-3.5 py-2 text-sm font-bold transition ${
+                  showMyVenues
+                    ? 'border-slate-900 bg-slate-900 text-white'
+                    : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                {showMyVenues ? '← All Venues' : 'My Venues'}
+              </button>
+              <Link
+                href="/venue-owner"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-2 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-400"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Owner Dashboard
+              </Link>
+            </div>
           )}
         </div>
       </section>
