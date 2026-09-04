@@ -2,11 +2,13 @@ import type {
   ApiErrorBody,
   ApiSuccess,
   AuthResult,
+  CreateBookingInput,
   LoginInput,
   RegisterInput,
   SafeUser,
   SessionInfo,
   Venue,
+  VenueBooking,
   VenueSearchResult,
   CreateVenueInput,
   UpdateVenueInput,
@@ -337,6 +339,25 @@ export const api = {
 
   deleteVenue: (id: string) =>
     request<void>(`/venues/${id}`, { method: 'DELETE', auth: true }),
+
+  // -------------------------
+  // VENUE BOOKINGS
+  // -------------------------
+
+  createVenueBooking: (input: CreateBookingInput) =>
+    request<VenueBooking>('/bookings', { method: 'POST', body: input, auth: true }),
+
+  getVenueBookings: (venueId: string) =>
+    request<VenueBooking[]>(`/bookings/venue/${venueId}`, { auth: true }),
+
+  getVenueBooking: (id: string) =>
+    request<VenueBooking>(`/bookings/${id}`, { auth: true }),
+
+  approveVenueBooking: (id: string) =>
+    request<VenueBooking>(`/bookings/${id}/approve`, { method: 'PATCH', auth: true }),
+
+  rejectVenueBooking: (id: string) =>
+    request<VenueBooking>(`/bookings/${id}/reject`, { method: 'PATCH', auth: true }),
 
   // -------------------------
   // GEOCODING
