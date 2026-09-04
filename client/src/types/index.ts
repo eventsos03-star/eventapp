@@ -165,6 +165,40 @@ export interface VenueSearchResult {
   totalPages: number
 }
 
+export type VenueBookingStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'cancelled'
+  | 'completed'
+
+export interface VenueBooking {
+  _id: string
+  organizationId: string
+  venueId: string
+  requestedBy:
+    | string
+    | { _id: string; firstName: string; lastName: string; email: string }
+  startDate: string
+  endDate: string
+  bookingAmount: number
+  status: VenueBookingStatus
+  paymentStatus: 'pending' | 'advancePaid' | 'fullyPaid'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BookingDateRange {
+  startDate: string
+  endDate: string
+}
+
+export interface CreateBookingInput {
+  venueId: string
+  startDate: Date | string
+  endDate: Date | string
+}
+
 export interface UserSummary {
   id: string
   firstName: string
