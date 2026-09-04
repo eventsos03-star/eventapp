@@ -109,9 +109,14 @@ export interface VenueImage {
 }
 
 export interface VenueLocation {
+  type: 'Point'
+  coordinates: [number, number] // [longitude, latitude]
   address: string
   city: string
   state: string
+  country: string
+  postalCode: string
+  formattedAddress: string
 }
 
 export interface Venue {
@@ -126,6 +131,8 @@ export interface Venue {
   bookingPaymentPolicy: BookingPaymentPolicy
   advancePercentage?: number
   status: VenueStatus
+  isDeleted?: boolean
+  distance?: number
   createdAt: string
   updatedAt: string
 }
@@ -136,7 +143,60 @@ export interface VenueOwner {
   lastName: string
   email: string
   venueCount: number
+  isOwnerDeleted: boolean
   venues: Venue[]
+}
+
+export interface GeocodingResult {
+  latitude: number
+  longitude: number
+  address: string
+  city: string
+  state: string
+  country: string
+  postalCode: string
+  formattedAddress: string
+}
+
+export interface VenueSearchResult {
+  venues: Venue[]
+  total: number
+  page: number
+  totalPages: number
+}
+
+export type VenueBookingStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'cancelled'
+  | 'completed'
+
+export interface VenueBooking {
+  _id: string
+  organizationId: string
+  venueId: string
+  requestedBy:
+    | string
+    | { _id: string; firstName: string; lastName: string; email: string }
+  startDate: string
+  endDate: string
+  bookingAmount: number
+  status: VenueBookingStatus
+  paymentStatus: 'pending' | 'advancePaid' | 'fullyPaid'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BookingDateRange {
+  startDate: string
+  endDate: string
+}
+
+export interface CreateBookingInput {
+  venueId: string
+  startDate: Date | string
+  endDate: Date | string
 }
 
 export interface UserSummary {
@@ -159,7 +219,6 @@ export interface AdminStats {
 }
 
 export interface CreateVenueInput {
-  ownerId: string
   venueName: string
   description: string
   images: VenueImage[]
@@ -167,6 +226,17 @@ export interface CreateVenueInput {
   capacity: number
   pricePerDay: number
   bookingPaymentPolicy: BookingPaymentPolicy
+  advancePercentage?: number
+}
+
+export interface UpdateVenueInput {
+  venueName?: string
+  description?: string
+  images?: VenueImage[]
+  location?: Partial<VenueLocation>
+  capacity?: number
+  pricePerDay?: number
+  bookingPaymentPolicy?: BookingPaymentPolicy
   advancePercentage?: number
 }
 
