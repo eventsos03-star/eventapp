@@ -88,7 +88,7 @@ export default function CreateEventPage() {
       };
 
       const res = await eventService.create(payload);
-      router.push("/events");
+      router.push("my-organization");
       // router.push(`/events/${res.data._id}`);
     } catch (err: any) {
       setError(err?.response?.data?.message ?? "Failed to create event");

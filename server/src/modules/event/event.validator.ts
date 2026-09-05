@@ -43,6 +43,13 @@ const createEventBody = z
   .refine(
     (data) => data.registrationEndDate <= data.eventDate,
     { message: "registrationEndDate must be before or on eventDate", path: ["registrationEndDate"] }
+  ).refine(
+    (data) => data.eventDate >= new Date(new Date().toDateString()),
+    { message: "eventDate cannot be in the past", path: ["eventDate"] }
+  )
+  .refine(
+    (data) => data.registrationStartDate >= new Date(new Date().toDateString()),
+    { message: "registrationStartDate cannot be in the past", path: ["registrationStartDate"] }
   );
 
 export const createEventSchema = z.object({

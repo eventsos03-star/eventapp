@@ -65,17 +65,17 @@ export default function EventsListPage() {
           {hasOrganization && (
             <div className="flex items-center gap-3 self-start sm:self-auto">
               <Link
-                href="/events/my-events"
+                href="/my-organization"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition shadow-sm"
               >
-                My Events
+                My organization
               </Link>
-              <Link
+              {/* <Link
                 href={`/events/new?orgId=${user!.organizationId}`}
                 className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-400 transition shadow-sm"
               >
                 + Create Event
-              </Link>
+              </Link> */}
             </div>
           )}
         </div>
