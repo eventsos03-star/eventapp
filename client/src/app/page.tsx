@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useAuth } from '../context/AuthContext'
+import { Layout } from '@/components/Layout'
 
 const UPCOMING = [
   { code: 'SF-014', name: 'Founders Summit', date: 'AUG 22', seats: '412 going' },
@@ -55,43 +56,10 @@ export default function HomePage() {
   const { user } = useAuth()
 
   return (
+    <Layout>
     <div className="min-h-screen bg-ink text-paper-dim font-sans">
-      {/* nav */}
-      <nav className="flex items-center justify-between border-b border-ink-line px-5 py-6 sm:px-10 lg:px-16">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">
-            E
-          </span>
-          <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">
-            EventOS
-          </span>
-        </div>
-        <div className="flex gap-2.5">
-          {user ? (
-            <Link
-              href="/dashboard"
-              className="rounded-lg bg-amber px-4.5 py-2.5 text-sm font-semibold text-ink transition hover:bg-amber-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber"
-            >
-              Go to dashboard
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className="rounded-lg border border-ink-line px-4.5 py-2.5 text-sm font-semibold text-paper-dim transition hover:border-paper-dim/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/register"
-                className="rounded-lg bg-amber px-4.5 py-2.5 text-sm font-semibold text-ink transition hover:bg-amber-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber"
-              >
-                Get started
-              </Link>
-            </>
-          )}
-        </div>
-      </nav>
+      
+          
 
       <main className="mx-auto max-w-5xl px-5 pb-24 sm:px-10 lg:px-16">
         {/* hero */}
@@ -111,10 +79,10 @@ export default function HomePage() {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-5">
             <Link
-              href={user ? '/dashboard' : '/register'}
+              href={user ? '/events' : '/register'}
               className="rounded-lg bg-amber px-6.5 py-3.5 text-[15.5px] font-semibold text-ink transition hover:bg-amber-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber"
             >
-              {user ? 'Open dashboard' : 'Create your first event'}
+              {user ? 'Events' : 'Create your first event'}
             </Link>
             <Link
               href="/login"
@@ -219,5 +187,6 @@ export default function HomePage() {
         </section>
       </main>
     </div>
+    </Layout>
   )
 }
