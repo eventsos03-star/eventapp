@@ -1,13 +1,38 @@
 import { AppError } from "../../utils/AppError.js";
 import Event from "./event.model.js";
 import type { CreateEventInput, UpdateEventInput } from "./event.model.js";
+import * as bookingService from "../venue/booking/booking.service.js";
 
-export async function createEvent(data: CreateEventInput, userId: string) {
+export async function createEvent(
+  data: CreateEventInput,
+  userId: string
+) {
+  const {
+    venueId,
+    organizationId,
+    eventDate,
+    ...eventData
+  } = data;
+
+  // Create venue booking request
+  const booking = await bookingService.createBooking({
+    userId,
+    organizationId,
+    venueId,
+    startDate: eventDate,
+    endDate: eventDate,
+  });
+
+  // Create event as draft
   const event = await Event.create({
-    ...data,
+    ...eventData,
+    organizationId,
+    eventDate,
     createdBy: userId,
+    venueBookingId: booking._id,
     status: "draft",
   });
+
   return event;
 }
 
@@ -129,7 +154,7 @@ export async function getEventById(eventId: string) {
   });
 
   if (event && event.status !== "cancelled" && event.status !== "draft") {
-    const { startOfToday, startOfTomorrow } = getTodayBounds();
+    const { startOfToday, startOfTomorrow } = getTodayBoundsUTC();
     const eventDate = new Date(event.eventDate);
 
     if (eventDate < startOfToday && event.status !== "completed") {

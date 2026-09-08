@@ -53,7 +53,7 @@ eventApi.interceptors.response.use(
 // -- Typed helpers for your three event endpoints --
 export interface CreateEventPayload {
   organizationId: string;
-  venueBookingId?: string;
+  venueId?: string;
   eventName: string;
   description: string;
   eventType: "free" | "paid";
@@ -79,6 +79,10 @@ export interface UpdateEventPayload {
   certificateEnabled?: boolean;
   ticketPrice?: number;
   teamSize?: number;
+}
+export interface VenueAvailability {
+  startDate: string;
+  endDate: string;
 }
 export interface EventRecord extends CreateEventPayload {
   _id: string;
@@ -108,6 +112,11 @@ export const eventService = {
 
    byOrganization: () =>
     eventApi.get("/events/organization").then((res) => res.data),
+
+   getVenueAvailability: (venueId: string) =>
+  eventApi
+    .get(`/venue-bookings/venue/${venueId}/availability`)
+    .then((res) => res.data),
 
   
 };
