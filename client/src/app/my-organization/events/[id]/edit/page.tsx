@@ -1,52 +1,52 @@
-"use client";
+'use client'
 
-import { useEffect, useState, type FormEvent } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { eventService, type UpdateEventPayload } from "@/lib/eventApi";
+import { useEffect, useState, type FormEvent } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { eventService, type UpdateEventPayload } from '@/lib/eventApi'
 
 function toDateInputValue(value: string) {
-  if (!value) return "";
-  return new Date(value).toISOString().slice(0, 10);
+  if (!value) return ''
+  return new Date(value).toISOString().slice(0, 10)
 }
 
 export default function EditEventPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
 
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const [form, setForm] = useState<UpdateEventPayload>({
-    eventName: "",
-    description: "",
-    eventType: "free",
-    registrationType: "individual",
+    eventName: '',
+    description: '',
+    eventType: 'free',
+    registrationType: 'individual',
     maxParticipants: 0,
-    registrationStartDate: "",
-    registrationEndDate: "",
-    eventDate: "",
+    registrationStartDate: '',
+    registrationEndDate: '',
+    eventDate: '',
     certificateEnabled: false,
     ticketPrice: 0,
     teamSize: undefined,
-  });
+  })
 
   useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
+    if (!id) return
+    let cancelled = false
 
     eventService
       .getById(id)
       .then((res) => {
-        if (cancelled) return;
-        const event = res.data;
+        if (cancelled) return
+        const event = res.data
         setForm({
-          eventName: event.eventName ?? "",
-          description: event.description ?? "",
-          eventType: event.eventType ?? "free",
-          registrationType: event.registrationType ?? "individual",
+          eventName: event.eventName ?? '',
+          description: event.description ?? '',
+          eventType: event.eventType ?? 'free',
+          registrationType: event.registrationType ?? 'individual',
           maxParticipants: event.maxParticipants ?? 0,
           registrationStartDate: toDateInputValue(event.registrationStartDate),
           registrationEndDate: toDateInputValue(event.registrationEndDate),
@@ -54,62 +54,64 @@ export default function EditEventPage() {
           certificateEnabled: event.certificateEnabled ?? false,
           ticketPrice: event.ticketPrice ?? 0,
           teamSize: event.teamSize,
-        });
-        setLoading(false);
+        })
+        setLoading(false)
       })
       .catch((err) => {
-        if (cancelled) return;
-        setLoadError(err?.response?.data?.message ?? "Failed to load event");
-        setLoading(false);
-      });
+        if (cancelled) return
+        setLoadError(err?.response?.data?.message ?? 'Failed to load event')
+        setLoading(false)
+      })
 
     return () => {
-      cancelled = true;
-    };
-  }, [id]);
+      cancelled = true
+    }
+  }, [id])
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
-    const { name, value, type } = e.target;
+    const { name, value, type } = e.target
     setForm((prev) => ({
       ...prev,
       [name]:
-        type === "checkbox"
+        type === 'checkbox'
           ? (e.target as HTMLInputElement).checked
-          : type === "number"
-          ? value === ""
-            ? undefined
-            : Number(value)
-          : value,
-    }));
-  };
+          : type === 'number'
+            ? value === ''
+              ? undefined
+              : Number(value)
+            : value,
+    }))
+  }
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!id) return;
+    e.preventDefault()
+    if (!id) return
 
-    setSaving(true);
-    setSaveError(null);
+    setSaving(true)
+    setSaveError(null)
 
     // Ticket price and team size only make sense for paid / team events.
     // Sending a stale/zero value for the other type trips backend validation.
-    const payload = { ...form };
-    if (payload.eventType !== "paid") {
-      delete payload.ticketPrice;
+    const payload = { ...form }
+    if (payload.eventType !== 'paid') {
+      delete payload.ticketPrice
     }
-    if (payload.registrationType !== "team") {
-      delete payload.teamSize;
+    if (payload.registrationType !== 'team') {
+      delete payload.teamSize
     }
 
     try {
-      await eventService.update(id, payload);
-      router.push("/events/my-events");
+      await eventService.update(id, payload)
+      router.push('/events/my-events')
     } catch (err: any) {
-      setSaveError(err?.response?.data?.message ?? "Failed to update event");
-      setSaving(false);
+      setSaveError(err?.response?.data?.message ?? 'Failed to update event')
+      setSaving(false)
     }
-  };
+  }
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#090d16] text-white font-sans antialiased p-5 sm:p-10 lg:p-12">
@@ -128,7 +130,10 @@ export default function EditEventPage() {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Edit <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">Event</span>
+              Edit{' '}
+              <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">
+                Event
+              </span>
             </h1>
           </div>
 
@@ -143,7 +148,10 @@ export default function EditEventPage() {
         {loading && (
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-12 rounded-xl bg-[#111726]/40 animate-pulse" />
+              <div
+                key={i}
+                className="h-12 rounded-xl bg-[#111726]/40 animate-pulse"
+              />
             ))}
           </div>
         )}
@@ -166,10 +174,12 @@ export default function EditEventPage() {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Event Name</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Event Name
+              </label>
               <input
                 name="eventName"
-                value={form.eventName ?? ""}
+                value={form.eventName ?? ''}
                 onChange={handleChange}
                 required
                 className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
@@ -177,10 +187,12 @@ export default function EditEventPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Description</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Description
+              </label>
               <textarea
                 name="description"
-                value={form.description ?? ""}
+                value={form.description ?? ''}
                 onChange={handleChange}
                 rows={4}
                 required
@@ -190,7 +202,9 @@ export default function EditEventPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Event Type</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Event Type
+                </label>
                 <select
                   name="eventType"
                   value={form.eventType}
@@ -203,7 +217,9 @@ export default function EditEventPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Registration Type</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Registration Type
+                </label>
                 <select
                   name="registrationType"
                   value={form.registrationType}
@@ -216,9 +232,11 @@ export default function EditEventPage() {
               </div>
             </div>
 
-            {form.eventType === "paid" && (
+            {form.eventType === 'paid' && (
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Ticket Price</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Ticket Price
+                </label>
                 <input
                   type="number"
                   name="ticketPrice"
@@ -230,13 +248,15 @@ export default function EditEventPage() {
               </div>
             )}
 
-            {form.registrationType === "team" && (
+            {form.registrationType === 'team' && (
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Team Size</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Team Size
+                </label>
                 <input
                   type="number"
                   name="teamSize"
-                  value={form.teamSize ?? ""}
+                  value={form.teamSize ?? ''}
                   onChange={handleChange}
                   min={1}
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
@@ -245,7 +265,9 @@ export default function EditEventPage() {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Max Participants</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Max Participants
+              </label>
               <input
                 type="number"
                 name="maxParticipants"
@@ -259,33 +281,39 @@ export default function EditEventPage() {
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Registration Starts</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Registration Starts
+                </label>
                 <input
                   type="date"
                   name="registrationStartDate"
-                  value={form.registrationStartDate ?? ""}
+                  value={form.registrationStartDate ?? ''}
                   onChange={handleChange}
                   required
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Registration Ends</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Registration Ends
+                </label>
                 <input
                   type="date"
                   name="registrationEndDate"
-                  value={form.registrationEndDate ?? ""}
+                  value={form.registrationEndDate ?? ''}
                   onChange={handleChange}
                   required
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Event Date</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Event Date
+                </label>
                 <input
                   type="date"
                   name="eventDate"
-                  value={form.eventDate ?? ""}
+                  value={form.eventDate ?? ''}
                   onChange={handleChange}
                   required
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
@@ -310,7 +338,7 @@ export default function EditEventPage() {
                 disabled={saving}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-md transition hover:bg-amber-400 active:scale-[0.98] disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save Changes"}
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
               <Link
                 href="/events/my-events"
@@ -323,5 +351,5 @@ export default function EditEventPage() {
         )}
       </div>
     </div>
-  );
+  )
 }

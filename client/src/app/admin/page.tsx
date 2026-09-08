@@ -6,7 +6,14 @@ import { AdminRoute } from '../../components/AdminRoute'
 import { Spinner } from '../../components/Spinner'
 import { useAuth } from '../../context/AuthContext'
 import { adminApi } from '../../lib/adminApi'
-import type { AdminEvent, AdminStats, Organization, ResourceStatus, UserSummary, VenueOwner } from '../../types'
+import type {
+  AdminEvent,
+  AdminStats,
+  Organization,
+  ResourceStatus,
+  UserSummary,
+  VenueOwner,
+} from '../../types'
 
 type Message = { type: 'success' | 'error'; text: string } | null
 type Tab = 'pending' | 'approved' | 'rejected'
@@ -21,7 +28,6 @@ const STATUS_TABS: { value: Tab; label: string }[] = [
 const EVENT_TABS: { value: EventTab; label: string }[] = [
   { value: 'draft', label: 'Draft' },
   { value: 'published', label: 'Published' },
- 
 ]
 
 const STATUS_STYLES: Record<ResourceStatus, string> = {
@@ -34,15 +40,25 @@ const STATUS_STYLES: Record<ResourceStatus, string> = {
 function StatCard({ label, value }: { label: string; value: number | null }) {
   return (
     <div className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-      <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+      <span
+        className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
+        aria-hidden="true"
+      />
       <p className="text-xs font-semibold tracking-wide text-ink/45">{label}</p>
-      <p className="mt-2 font-display text-3xl font-semibold text-ink">{value ?? '—'}</p>
+      <p className="mt-2 font-display text-3xl font-semibold text-ink">
+        {value ?? '—'}
+      </p>
     </div>
   )
-  
 }
 
-function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+function TabBar({
+  active,
+  onChange,
+}: {
+  active: Tab
+  onChange: (t: Tab) => void
+}) {
   return (
     <div className="flex gap-1 rounded-lg border border-paper-dim bg-ink-soft p-1">
       {STATUS_TABS.map((tab) => (
@@ -63,7 +79,13 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
   )
 }
 
-function EventTabBar({ active, onChange }: { active: EventTab; onChange: (t: EventTab) => void }) {
+function EventTabBar({
+  active,
+  onChange,
+}: {
+  active: EventTab
+  onChange: (t: EventTab) => void
+}) {
   return (
     <div className="flex flex-wrap gap-1 rounded-lg border border-paper-dim bg-ink-soft p-1">
       {EVENT_TABS.map((tab) => (
@@ -103,7 +125,9 @@ function RejectModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 px-5">
       <div className="w-full max-w-md rounded-2xl border border-paper-dim bg-paper p-6">
         <h3 className="font-display text-lg font-semibold text-ink">Reject</h3>
-        <p className="mt-1 text-sm text-ink/50">Provide a reason for rejecting this request.</p>
+        <p className="mt-1 text-sm text-ink/50">
+          Provide a reason for rejecting this request.
+        </p>
         <textarea
           rows={3}
           value={reason}
@@ -156,7 +180,9 @@ function ConfirmRoleModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 px-5">
       <div className="w-full max-w-md rounded-2xl border border-paper-dim bg-paper p-6">
-        <h3 className="font-display text-lg font-semibold text-ink">{action}</h3>
+        <h3 className="font-display text-lg font-semibold text-ink">
+          {action}
+        </h3>
         <p className="mt-1 text-sm text-ink/50">
           {isAdmin
             ? `Are you sure you want to remove admin privileges from ${user.firstName} ${user.lastName}?`
@@ -208,11 +234,17 @@ function AdminContent() {
   const [userSearch, setUserSearch] = useState('')
   const [userSearchInput, setUserSearchInput] = useState('')
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [roleModal, setRoleModal] = useState<{ open: boolean; user: UserSummary | null }>({ open: false, user: null })
+  const [roleModal, setRoleModal] = useState<{
+    open: boolean
+    user: UserSummary | null
+  }>({ open: false, user: null })
   const [roleLoading, setRoleLoading] = useState(false)
 
   const [rejectOpen, setRejectOpen] = useState(false)
-  const [rejectTarget, setRejectTarget] = useState<{ kind: 'org' | 'venue'; id: string } | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<{
+    kind: 'org' | 'venue'
+    id: string
+  } | null>(null)
   const [rejecting, setRejecting] = useState(false)
 
   const fetchUsers = useCallback(async (search: string, page: number) => {
@@ -279,9 +311,14 @@ function AdminContent() {
       setMessage({ type: 'success', text: `User role updated to ${newRole}` })
       setRoleModal({ open: false, user: null })
       await fetchUsers(userSearch, userPage)
-      await adminApi.getStats().then(({ data }) => { if (data) setStats(data) })
+      await adminApi.getStats().then(({ data }) => {
+        if (data) setStats(data)
+      })
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Action failed' })
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Action failed',
+      })
     } finally {
       setRoleLoading(false)
     }
@@ -301,7 +338,10 @@ function AdminContent() {
       setMessage({ type: 'success', text: 'Approved successfully' })
       await fetchData()
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Action failed' })
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Action failed',
+      })
     } finally {
       setAction(null)
     }
@@ -327,7 +367,10 @@ function AdminContent() {
       setRejectTarget(null)
       await fetchData()
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Action failed' })
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Action failed',
+      })
     } finally {
       setRejecting(false)
     }
@@ -342,7 +385,10 @@ function AdminContent() {
       setMessage({ type: 'success', text: 'Event published' })
       await fetchData()
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Publish failed' })
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Publish failed',
+      })
     } finally {
       setEventAction(null)
     }
@@ -358,7 +404,10 @@ function AdminContent() {
       setMessage({ type: 'success', text: 'Event deleted' })
       await fetchData()
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Delete failed' })
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Delete failed',
+      })
     } finally {
       setEventAction(null)
     }
@@ -371,7 +420,9 @@ function AdminContent() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-ink font-sans text-paper-dim">
         <Spinner size={28} />
-        <span className="text-sm text-paper-dim/55">Loading admin dashboard…</span>
+        <span className="text-sm text-paper-dim/55">
+          Loading admin dashboard…
+        </span>
       </div>
     )
   }
@@ -380,44 +431,84 @@ function AdminContent() {
     <div className="min-h-screen bg-ink font-sans text-paper-dim">
       <nav className="flex items-center justify-between border-b border-ink-line px-5 py-6 sm:px-10 lg:px-16">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">E</span>
-          <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">EventOS Admin</span>
+          <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">
+            E
+          </span>
+          <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">
+            EventOS Admin
+          </span>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
+          <Link
+            href="/dashboard"
+            className="text-sm text-paper-dim/70 transition hover:text-paper-dim"
+          >
+            Dashboard
+          </Link>
           <span className="text-sm text-paper-dim/50">{user?.email}</span>
         </div>
       </nav>
 
       <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 sm:px-10 lg:px-16">
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-semibold text-paper-dim sm:text-4xl">Admin Dashboard</h1>
-          <p className="mt-2 text-paper-dim/55">Review and manage organizations, venue owners, and users.</p>
+          <h1 className="font-display text-3xl font-semibold text-paper-dim sm:text-4xl">
+            Admin Dashboard
+          </h1>
+          <p className="mt-2 text-paper-dim/55">
+            Review and manage organizations, venue owners, and users.
+          </p>
         </div>
 
         {message && (
-          <div className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${message.type === 'success' ? 'border-teal/30 bg-teal/10 text-teal' : 'border-red-300 bg-red-50 text-red-700'}`}>{message.text}</div>
+          <div
+            className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${message.type === 'success' ? 'border-teal/30 bg-teal/10 text-teal' : 'border-red-300 bg-red-50 text-red-700'}`}
+          >
+            {message.text}
+          </div>
         )}
 
         {error && (
           <div className="mb-6 flex items-center justify-between gap-4 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm text-red-700">
             <span>{error}</span>
-            <button type="button" onClick={() => void loadAll()} className="shrink-0 font-semibold underline underline-offset-2">Retry</button>
+            <button
+              type="button"
+              onClick={() => void loadAll()}
+              className="shrink-0 font-semibold underline underline-offset-2"
+            >
+              Retry
+            </button>
           </div>
         )}
 
         <section className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard label="Total organizations" value={stats?.totalOrganizations ?? null} />
-          <StatCard label="Pending organizations" value={stats?.pendingOrganizations ?? null} />
-          <StatCard label="Total venue owners" value={stats?.totalVenueOwners ?? null} />
-          <StatCard label="Pending venue owners" value={stats?.pendingVenueOwners ?? null} />
+          <StatCard
+            label="Total organizations"
+            value={stats?.totalOrganizations ?? null}
+          />
+          <StatCard
+            label="Pending organizations"
+            value={stats?.pendingOrganizations ?? null}
+          />
+          <StatCard
+            label="Total venue owners"
+            value={stats?.totalVenueOwners ?? null}
+          />
+          <StatCard
+            label="Pending venue owners"
+            value={stats?.pendingVenueOwners ?? null}
+          />
           <StatCard label="Total users" value={stats?.totalUsers ?? null} />
         </section>
 
         <section className="relative mb-8 rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-          <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+          <span
+            className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
+            aria-hidden="true"
+          />
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-xl font-semibold text-ink">Organizations</h2>
+            <h2 className="font-display text-xl font-semibold text-ink">
+              Organizations
+            </h2>
             <TabBar active={orgTab} onChange={setOrgTab} />
           </div>
           {organizations.length === 0 ? (
@@ -425,28 +516,59 @@ function AdminContent() {
           ) : (
             <ul className="flex flex-col gap-3">
               {organizations.map((org) => {
-                const ownerObj = typeof org.ownerId === 'object' && org.ownerId !== null ? org.ownerId : null
+                const ownerObj =
+                  typeof org.ownerId === 'object' && org.ownerId !== null
+                    ? org.ownerId
+                    : null
                 return (
-                  <li key={org.id} className="flex items-start justify-between gap-4 rounded-lg border border-paper-dim px-4 py-3">
+                  <li
+                    key={org.id}
+                    className="flex items-start justify-between gap-4 rounded-lg border border-paper-dim px-4 py-3"
+                  >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-ink">{org.organizationName}</span>
-                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[org.status]}`}>{org.status}</span>
+                        <span className="text-sm font-semibold text-ink">
+                          {org.organizationName}
+                        </span>
+                        <span
+                          className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[org.status]}`}
+                        >
+                          {org.status}
+                        </span>
                       </div>
                       <p className="mt-0.5 text-xs text-ink/45">
-                        Owner: {ownerObj ? `${ownerObj.firstName} ${ownerObj.lastName}` : '—'} · {ownerObj?.email ?? '—'}
+                        Owner:{' '}
+                        {ownerObj
+                          ? `${ownerObj.firstName} ${ownerObj.lastName}`
+                          : '—'}{' '}
+                        · {ownerObj?.email ?? '—'}
                       </p>
                       {org.rejectionReason && org.status === 'rejected' && (
-                        <p className="mt-1 text-xs text-red-600">Reason: {org.rejectionReason}</p>
+                        <p className="mt-1 text-xs text-red-600">
+                          Reason: {org.rejectionReason}
+                        </p>
                       )}
-                      <p className="mt-0.5 text-xs text-ink/35">Created {new Date(org.createdAt).toLocaleDateString()}</p>
+                      <p className="mt-0.5 text-xs text-ink/35">
+                        Created {new Date(org.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
                     {org.status === 'pending' && (
                       <div className="flex shrink-0 gap-2">
-                        <button type="button" disabled={action !== null} onClick={() => void handleApprove('org', org.id)} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
-                          {isBusy(`org-${org.id}`) && <Spinner size={12} />}Approve
+                        <button
+                          type="button"
+                          disabled={action !== null}
+                          onClick={() => void handleApprove('org', org.id)}
+                          className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isBusy(`org-${org.id}`) && <Spinner size={12} />}
+                          Approve
                         </button>
-                        <button type="button" disabled={action !== null} onClick={() => openReject('org', org.id)} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                        <button
+                          type="button"
+                          disabled={action !== null}
+                          onClick={() => openReject('org', org.id)}
+                          className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
                           Reject
                         </button>
                       </div>
@@ -459,9 +581,14 @@ function AdminContent() {
         </section>
 
         <section className="relative mb-8 rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-          <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+          <span
+            className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
+            aria-hidden="true"
+          />
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-xl font-semibold text-ink">Venue Owners</h2>
+            <h2 className="font-display text-xl font-semibold text-ink">
+              Venue Owners
+            </h2>
             <TabBar active={venueTab} onChange={setVenueTab} />
           </div>
           {venueOwners.length === 0 ? (
@@ -469,21 +596,50 @@ function AdminContent() {
           ) : (
             <ul className="flex flex-col gap-3">
               {venueOwners.map((owner) => (
-                <li key={owner.ownerId} className="flex items-start justify-between gap-4 rounded-lg border border-paper-dim px-4 py-3">
+                <li
+                  key={owner.ownerId}
+                  className="flex items-start justify-between gap-4 rounded-lg border border-paper-dim px-4 py-3"
+                >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-ink">{owner.firstName} {owner.lastName}</span>
-                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[venueTab]}`}>{venueTab}</span>
+                      <span className="text-sm font-semibold text-ink">
+                        {owner.firstName} {owner.lastName}
+                      </span>
+                      <span
+                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[venueTab]}`}
+                      >
+                        {venueTab}
+                      </span>
                     </div>
-                    <p className="mt-0.5 text-xs text-ink/45">{owner.email} · {owner.venueCount} venue{owner.venueCount === 1 ? '' : 's'}</p>
-                    <p className="mt-1 truncate text-xs text-ink/60">{owner.venues.map((v) => v.venueName).join(' · ')}</p>
+                    <p className="mt-0.5 text-xs text-ink/45">
+                      {owner.email} · {owner.venueCount} venue
+                      {owner.venueCount === 1 ? '' : 's'}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-ink/60">
+                      {owner.venues.map((v) => v.venueName).join(' · ')}
+                    </p>
                   </div>
                   {venueTab === 'pending' && (
                     <div className="flex shrink-0 gap-2">
-                      <button type="button" disabled={action !== null} onClick={() => void handleApprove('venue', owner.ownerId)} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
-                        {isBusy(`venue-${owner.ownerId}`) && <Spinner size={12} />}Approve
+                      <button
+                        type="button"
+                        disabled={action !== null}
+                        onClick={() =>
+                          void handleApprove('venue', owner.ownerId)
+                        }
+                        className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isBusy(`venue-${owner.ownerId}`) && (
+                          <Spinner size={12} />
+                        )}
+                        Approve
                       </button>
-                      <button type="button" disabled={action !== null} onClick={() => openReject('venue', owner.ownerId)} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                      <button
+                        type="button"
+                        disabled={action !== null}
+                        onClick={() => openReject('venue', owner.ownerId)}
+                        className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
                         Reject
                       </button>
                     </div>
@@ -495,9 +651,14 @@ function AdminContent() {
         </section>
 
         <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-          <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+          <span
+            className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
+            aria-hidden="true"
+          />
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-xl font-semibold text-ink">Users</h2>
+            <h2 className="font-display text-xl font-semibold text-ink">
+              Users
+            </h2>
             <input
               type="text"
               value={userSearchInput}
@@ -519,23 +680,36 @@ function AdminContent() {
                       <th className="pb-2 pr-4 font-semibold">Role</th>
                       <th className="pb-2 pr-4 font-semibold">Provider</th>
                       <th className="pb-2 font-semibold">Joined</th>
-                      <th className="pb-2 pl-4 text-right font-semibold">Action</th>
+                      <th className="pb-2 pl-4 text-right font-semibold">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((u) => {
                       const isSelf = u.id === user?.id
                       return (
-                        <tr key={u.id} className="border-b border-paper-dim/50 last:border-0">
-                          <td className="py-2.5 pr-4 font-semibold text-ink">{u.firstName} {u.lastName}</td>
+                        <tr
+                          key={u.id}
+                          className="border-b border-paper-dim/50 last:border-0"
+                        >
+                          <td className="py-2.5 pr-4 font-semibold text-ink">
+                            {u.firstName} {u.lastName}
+                          </td>
                           <td className="py-2.5 pr-4 text-ink/60">{u.email}</td>
                           <td className="py-2.5 pr-4">
-                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.role === 'ADMIN' ? 'bg-amber/20 text-amber-deep' : 'bg-ink-soft text-ink/60'}`}>
+                            <span
+                              className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.role === 'ADMIN' ? 'bg-amber/20 text-amber-deep' : 'bg-ink-soft text-ink/60'}`}
+                            >
                               {u.role}
                             </span>
                           </td>
-                          <td className="py-2.5 pr-4 text-ink/50">{u.provider}</td>
-                          <td className="py-2.5 text-ink/45">{new Date(u.createdAt).toLocaleDateString()}</td>
+                          <td className="py-2.5 pr-4 text-ink/50">
+                            {u.provider}
+                          </td>
+                          <td className="py-2.5 text-ink/45">
+                            {new Date(u.createdAt).toLocaleDateString()}
+                          </td>
                           <td className="py-2.5 pl-4 text-right">
                             {isSelf ? (
                               <span className="text-xs text-ink/30">You</span>
@@ -543,10 +717,14 @@ function AdminContent() {
                               <button
                                 type="button"
                                 disabled={action !== null}
-                                onClick={() => setRoleModal({ open: true, user: u })}
+                                onClick={() =>
+                                  setRoleModal({ open: true, user: u })
+                                }
                                 className="rounded-lg border border-paper-dim px-3 py-1 text-xs font-semibold text-ink transition hover:bg-paper-dim/10 disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                {u.role === 'ADMIN' ? 'Remove Admin' : 'Make Admin'}
+                                {u.role === 'ADMIN'
+                                  ? 'Remove Admin'
+                                  : 'Make Admin'}
                               </button>
                             )}
                           </td>
@@ -566,7 +744,9 @@ function AdminContent() {
                   >
                     ← Prev
                   </button>
-                  <span className="text-xs text-ink/45">Page {userPage} of {userTotalPages}</span>
+                  <span className="text-xs text-ink/45">
+                    Page {userPage} of {userTotalPages}
+                  </span>
                   <button
                     type="button"
                     disabled={userPage >= userTotalPages}
@@ -582,9 +762,14 @@ function AdminContent() {
         </section>
 
         <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-          <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+          <span
+            className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
+            aria-hidden="true"
+          />
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-xl font-semibold text-ink">Events</h2>
+            <h2 className="font-display text-xl font-semibold text-ink">
+              Events
+            </h2>
             <EventTabBar active={eventTab} onChange={setEventTab} />
           </div>
           {filteredEvents.length === 0 ? (
@@ -592,19 +777,29 @@ function AdminContent() {
           ) : (
             <ul className="flex flex-col gap-3">
               {filteredEvents.map((event) => (
-                <li key={event._id} className="flex items-start justify-between gap-4 rounded-lg border border-paper-dim px-4 py-3">
+                <li
+                  key={event._id}
+                  className="flex items-start justify-between gap-4 rounded-lg border border-paper-dim px-4 py-3"
+                >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-ink">{event.eventName}</span>
+                      <span className="text-sm font-semibold text-ink">
+                        {event.eventName}
+                      </span>
                       <span className="inline-block rounded-full bg-ink-soft px-2.5 py-0.5 text-xs font-semibold text-ink/70">
                         {event.status}
                       </span>
                     </div>
                     <p className="mt-0.5 text-xs text-ink/45">
-                      Org: {event.organizationId?.organizationName ?? 'Unknown / deleted org'} · {event.eventType} · {event.registrationType}
+                      Org:{' '}
+                      {event.organizationId?.organizationName ??
+                        'Unknown / deleted org'}{' '}
+                      · {event.eventType} · {event.registrationType}
                     </p>
                     <p className="mt-0.5 text-xs text-ink/35">
-                      Event date {new Date(event.eventDate).toLocaleDateString()} · Created {new Date(event.createdAt).toLocaleDateString()}
+                      Event date{' '}
+                      {new Date(event.eventDate).toLocaleDateString()} · Created{' '}
+                      {new Date(event.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
@@ -636,8 +831,22 @@ function AdminContent() {
         </section>
       </main>
 
-      <RejectModal open={rejectOpen} onReject={handleReject} onCancel={() => { setRejectOpen(false); setRejectTarget(null) }} loading={rejecting} />
-      <ConfirmRoleModal open={roleModal.open} user={roleModal.user} onConfirm={handleRoleChange} onCancel={() => setRoleModal({ open: false, user: null })} loading={roleLoading} />
+      <RejectModal
+        open={rejectOpen}
+        onReject={handleReject}
+        onCancel={() => {
+          setRejectOpen(false)
+          setRejectTarget(null)
+        }}
+        loading={rejecting}
+      />
+      <ConfirmRoleModal
+        open={roleModal.open}
+        user={roleModal.user}
+        onConfirm={handleRoleChange}
+        onCancel={() => setRoleModal({ open: false, user: null })}
+        loading={roleLoading}
+      />
     </div>
   )
 }

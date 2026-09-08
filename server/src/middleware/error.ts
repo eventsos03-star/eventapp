@@ -4,7 +4,12 @@ import type { NextFunction, Request, Response } from 'express';
  * Single global error handler. Everything thrown by routes, middlewares
  * and the database ends up here.
  */
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
+export function errorHandler(
+  err: unknown,
+  _req: Request,
+  res: Response,
+  _next: NextFunction,
+): void {
   let statusCode = 500;
   let message = 'Internal server error';
 
@@ -16,14 +21,23 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   // Mongoose validation error
   if (err instanceof Error && err.name === 'ValidationError') {
     statusCode = 400;
-    const errors = (err as Error & { errors?: Record<string, { message: string }> }).errors || {};
-    message = Object.values(errors).map((e) => e.message).join(', ');
+    const errors =
+      (err as Error & { errors?: Record<string, { message: string }> })
+        .errors || {};
+    message = Object.values(errors)
+      .map((e) => e.message)
+      .join(', ');
   }
 
   // Mongoose duplicate key
-  if (err instanceof Error && 'code' in err && (err as Error & { code: number }).code === 11000) {
+  if (
+    err instanceof Error &&
+    'code' in err &&
+    (err as Error & { code: number }).code === 11000
+  ) {
     statusCode = 409;
-    const key = (err as Error & { keyValue?: Record<string, string> }).keyValue || {};
+    const key =
+      (err as Error & { keyValue?: Record<string, string> }).keyValue || {};
     const field = Object.keys(key)[0] || 'field';
     message = `An account with this ${field} already exists`;
   }

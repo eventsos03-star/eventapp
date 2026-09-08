@@ -71,7 +71,9 @@ async function main() {
   const indexes = await Venue.indexes();
   console.log('Indexes now on venues:');
   for (const i of indexes) {
-    console.log(`  ${i.name}: ${JSON.stringify(i.key)}${i['2dsphereIndexVersion'] ? ` (2dsphere v${i['2dsphereIndexVersion']})` : ''}`);
+    console.log(
+      `  ${i.name}: ${JSON.stringify(i.key)}${i['2dsphereIndexVersion'] ? ` (2dsphere v${i['2dsphereIndexVersion']})` : ''}`,
+    );
   }
 
   await mongoose.disconnect();

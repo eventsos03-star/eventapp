@@ -1,10 +1,11 @@
-import { z } from "zod";
-import mongoose from "mongoose";
+import { z } from 'zod';
+import mongoose from 'mongoose';
 
-const objectId = z.string().refine(
-  (val) => mongoose.Types.ObjectId.isValid(val),
-  { message: "Invalid ObjectId" }
-);
+const objectId = z
+  .string()
+  .refine((val) => mongoose.Types.ObjectId.isValid(val), {
+    message: 'Invalid ObjectId',
+  });
 
 const createEventBody = z
   .object({
@@ -18,8 +19,8 @@ const createEventBody = z
         publicId: z.string(),
       })
       .optional(),
-    eventType: z.enum(["free", "paid"]),
-    registrationType: z.enum(["team", "individual"]),
+    eventType: z.enum(['free', 'paid']),
+    registrationType: z.enum(['team', 'individual']),
     maxParticipants: z.number().int().positive(),
     registrationStartDate: z.coerce.date(),
     registrationEndDate: z.coerce.date(),
@@ -29,27 +30,38 @@ const createEventBody = z
     teamSize: z.number().int().positive().optional(),
   })
   .refine(
-    (data) => data.eventType !== "paid" || typeof data.ticketPrice === "number",
-    { message: "ticketPrice is required for paid events", path: ["ticketPrice"] }
+    (data) => data.eventType !== 'paid' || typeof data.ticketPrice === 'number',
+    {
+      message: 'ticketPrice is required for paid events',
+      path: ['ticketPrice'],
+    },
   )
   .refine(
-    (data) => data.registrationType !== "team" || typeof data.teamSize === "number",
-    { message: "teamSize is required for team registration", path: ["teamSize"] }
+    (data) =>
+      data.registrationType !== 'team' || typeof data.teamSize === 'number',
+    {
+      message: 'teamSize is required for team registration',
+      path: ['teamSize'],
+    },
   )
-  .refine(
-    (data) => data.registrationStartDate < data.registrationEndDate,
-    { message: "registrationStartDate must be before registrationEndDate", path: ["registrationStartDate"] }
-  )
-  .refine(
-    (data) => data.registrationEndDate <= data.eventDate,
-    { message: "registrationEndDate must be before or on eventDate", path: ["registrationEndDate"] }
-  ).refine(
-    (data) => data.eventDate >= new Date(new Date().toDateString()),
-    { message: "eventDate cannot be in the past", path: ["eventDate"] }
-  )
+  .refine((data) => data.registrationStartDate < data.registrationEndDate, {
+    message: 'registrationStartDate must be before registrationEndDate',
+    path: ['registrationStartDate'],
+  })
+  .refine((data) => data.registrationEndDate <= data.eventDate, {
+    message: 'registrationEndDate must be before or on eventDate',
+    path: ['registrationEndDate'],
+  })
+  .refine((data) => data.eventDate >= new Date(new Date().toDateString()), {
+    message: 'eventDate cannot be in the past',
+    path: ['eventDate'],
+  })
   .refine(
     (data) => data.registrationStartDate >= new Date(new Date().toDateString()),
-    { message: "registrationStartDate cannot be in the past", path: ["registrationStartDate"] }
+    {
+      message: 'registrationStartDate cannot be in the past',
+      path: ['registrationStartDate'],
+    },
   );
 
 export const createEventSchema = z.object({
@@ -66,7 +78,6 @@ export const publishEventSchema = z.object({
   }),
 });
 
-
 const updateEventBody = z
   .object({
     eventName: z.string().trim().min(3).max(120).optional(),
@@ -77,8 +88,8 @@ const updateEventBody = z
         publicId: z.string(),
       })
       .optional(),
-    eventType: z.enum(["free", "paid"]).optional(),
-    registrationType: z.enum(["team", "individual"]).optional(),
+    eventType: z.enum(['free', 'paid']).optional(),
+    registrationType: z.enum(['team', 'individual']).optional(),
     maxParticipants: z.number().int().positive().optional(),
     registrationStartDate: z.coerce.date().optional(),
     registrationEndDate: z.coerce.date().optional(),
@@ -89,14 +100,24 @@ const updateEventBody = z
   })
   .strict() // rejects unknown keys outright — status/organizationId/isDeleted included
   .refine(
-    (data) => !data.registrationStartDate || !data.registrationEndDate ||
+    (data) =>
+      !data.registrationStartDate ||
+      !data.registrationEndDate ||
       data.registrationStartDate < data.registrationEndDate,
-    { message: "registrationStartDate must be before registrationEndDate", path: ["registrationStartDate"] }
+    {
+      message: 'registrationStartDate must be before registrationEndDate',
+      path: ['registrationStartDate'],
+    },
   )
   .refine(
-    (data) => !data.registrationEndDate || !data.eventDate ||
+    (data) =>
+      !data.registrationEndDate ||
+      !data.eventDate ||
       data.registrationEndDate <= data.eventDate,
-    { message: "registrationEndDate must be before or on eventDate", path: ["registrationEndDate"] }
+    {
+      message: 'registrationEndDate must be before or on eventDate',
+      path: ['registrationEndDate'],
+    },
   );
 
 export const updateEventSchema = z.object({

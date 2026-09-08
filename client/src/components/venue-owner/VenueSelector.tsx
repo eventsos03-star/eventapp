@@ -13,7 +13,9 @@ export function VenueSelector({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">VENUE</span>
+      <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+        VENUE
+      </span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

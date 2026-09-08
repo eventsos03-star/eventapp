@@ -13,11 +13,28 @@ const router = Router();
 
 router.use(authenticate);
 
-router.post('/', validate(createOrganizationSchema), orgController.createOrganization);
+router.post(
+  '/',
+  validate(createOrganizationSchema),
+  orgController.createOrganization,
+);
 router.get('/me', orgController.getMyOrganization);
-router.patch('/me', validate(updateOrganizationSchema), orgController.updateOrganization);
-router.get('/:id/members', validate(organizationIdParamSchema), orgController.getMembers);
-router.post('/:id/members', validate(organizationIdParamSchema), validate(addMemberSchema), orgController.addMember);
+router.patch(
+  '/me',
+  validate(updateOrganizationSchema),
+  orgController.updateOrganization,
+);
+router.get(
+  '/:id/members',
+  validate(organizationIdParamSchema),
+  orgController.getMembers,
+);
+router.post(
+  '/:id/members',
+  validate(organizationIdParamSchema),
+  validate(addMemberSchema),
+  orgController.addMember,
+);
 router.delete('/:id/members/:memberId', orgController.removeMember);
 
 export default router;

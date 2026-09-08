@@ -14,7 +14,12 @@ export interface ISession {
 
 const sessionSchema = new Schema<ISession>(
   {
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
     // SHA-256 hash of the refresh token, never stored in plain text.
     refreshToken: { type: String, required: true },
     browser: { type: String, default: '' },

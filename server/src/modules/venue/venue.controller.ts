@@ -13,8 +13,18 @@ export const createVenue = asyncHandler(async (req, res) => {
 });
 
 export const getVenues = asyncHandler(async (req, res) => {
-  const { lat, lng, radius, minCapacity, maxCapacity, minPrice, maxPrice, page, limit, city } =
-    req.query as Record<string, string | undefined>;
+  const {
+    lat,
+    lng,
+    radius,
+    minCapacity,
+    maxCapacity,
+    minPrice,
+    maxPrice,
+    page,
+    limit,
+    city,
+  } = req.query as Record<string, string | undefined>;
 
   if (lat && lng) {
     const result = await venueService.getNearbyVenues({
@@ -50,7 +60,7 @@ export const getAllVenuesForAdmin = asyncHandler(async (req, res) => {
     throw new AppError('Access denied. Admin privileges required.', 403);
   }
   const venues = await venueService.getAllVenuesForAdmin(
-    req.query.city as string | undefined
+    req.query.city as string | undefined,
   );
   success(res, 200, 'Venues fetched successfully', venues);
 });
@@ -71,17 +81,31 @@ export const approveVenue = asyncHandler(async (req, res) => {
 });
 
 export const updateVenue = asyncHandler(async (req, res) => {
-  const venue = await venueService.updateVenue(req.params.id, req.user!.id, req.body);
+  const venue = await venueService.updateVenue(
+    req.params.id,
+    req.user!.id,
+    req.body,
+  );
   if (!venue) {
-    throw new AppError('Venue not found or you are not authorized to update this venue', 404);
+    throw new AppError(
+      'Venue not found or you are not authorized to update this venue',
+      404,
+    );
   }
   success(res, 200, 'Venue updated successfully', venue);
 });
 
 export const deleteVenue = asyncHandler(async (req, res) => {
-  const venue = await venueService.deleteVenue(req.params.id, req.user!.id, req.user!.role);
+  const venue = await venueService.deleteVenue(
+    req.params.id,
+    req.user!.id,
+    req.user!.role,
+  );
   if (!venue) {
-    throw new AppError('Venue not found or you are not authorized to delete this venue', 404);
+    throw new AppError(
+      'Venue not found or you are not authorized to delete this venue',
+      404,
+    );
   }
   success(res, 200, 'Venue deleted successfully', null);
 });

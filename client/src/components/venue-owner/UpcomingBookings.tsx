@@ -35,14 +35,20 @@ export function UpcomingBookings({
   onReject?: (booking: VenueBooking) => void
   busy?: { [id: string]: 'approve' | 'reject' }
 }) {
-  const ordered = [...bookings].sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate))
+  const ordered = [...bookings].sort(
+    (a, b) => +new Date(a.startDate) - +new Date(b.startDate),
+  )
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-extrabold tracking-tight text-slate-900">Upcoming bookings</h2>
-          <p className="text-sm text-slate-500">{venueName || 'Select a venue'}</p>
+          <h2 className="text-lg font-extrabold tracking-tight text-slate-900">
+            Upcoming bookings
+          </h2>
+          <p className="text-sm text-slate-500">
+            {venueName || 'Select a venue'}
+          </p>
         </div>
       </div>
 
@@ -66,13 +72,18 @@ export function UpcomingBookings({
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-900">{dateLabel}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[booking.status]}`}>
+                    <span className="text-sm font-bold text-slate-900">
+                      {dateLabel}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[booking.status]}`}
+                    >
                       {STATUS_LABEL[booking.status] ?? booking.status}
                     </span>
                   </div>
                   <p className="mt-0.5 truncate text-xs text-slate-500">
-                    {requesterName(booking)} · ${booking.bookingAmount.toLocaleString()}
+                    {requesterName(booking)} · $
+                    {booking.bookingAmount.toLocaleString()}
                   </p>
                 </div>
 

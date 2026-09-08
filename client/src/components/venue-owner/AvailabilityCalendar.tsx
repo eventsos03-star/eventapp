@@ -8,11 +8,22 @@ import type { DayCell } from '../../lib/calendar'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-const STATUS_STYLES: Record<string, { dot: string; bg: string; muted: boolean }> = {
+const STATUS_STYLES: Record<
+  string,
+  { dot: string; bg: string; muted: boolean }
+> = {
   booked: { dot: 'bg-red-500', bg: 'bg-red-100 text-red-800', muted: false },
-  pending: { dot: 'bg-amber-500', bg: 'bg-amber-100 text-amber-900', muted: false },
+  pending: {
+    dot: 'bg-amber-500',
+    bg: 'bg-amber-100 text-amber-900',
+    muted: false,
+  },
   past: { dot: 'bg-slate-300', bg: 'bg-slate-100 text-slate-400', muted: true },
-  available: { dot: 'bg-emerald-500', bg: 'bg-emerald-100 text-emerald-900', muted: false },
+  available: {
+    dot: 'bg-emerald-500',
+    bg: 'bg-emerald-100 text-emerald-900',
+    muted: false,
+  },
 }
 
 export function AvailabilityCalendar({
@@ -27,14 +38,23 @@ export function AvailabilityCalendar({
   const today = new Date()
   const [cursor, setCursor] = useState(new Date())
 
-  const cells = buildCalendar(cursor.getFullYear(), cursor.getMonth(), bookings, today)
+  const cells = buildCalendar(
+    cursor.getFullYear(),
+    cursor.getMonth(),
+    bookings,
+    today,
+  )
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-extrabold tracking-tight text-slate-900">Availability</h2>
-          <p className="text-sm text-slate-500">{venueName || 'Select a venue'}</p>
+          <h2 className="text-lg font-extrabold tracking-tight text-slate-900">
+            Availability
+          </h2>
+          <p className="text-sm text-slate-500">
+            {venueName || 'Select a venue'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -68,13 +88,17 @@ export function AvailabilityCalendar({
 
       <div className="grid grid-cols-7 gap-1">
         {WEEKDAYS.map((day) => (
-          <div key={day} className="pb-2 text-center text-xs font-semibold uppercase text-slate-400">
+          <div
+            key={day}
+            className="pb-2 text-center text-xs font-semibold uppercase text-slate-400"
+          >
             {day}
           </div>
         ))}
         {cells.map((cell) => {
           const style = STATUS_STYLES[cell.status]
-          const isToday = format(cell.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
+          const isToday =
+            format(cell.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
           return (
             <button
               key={cell.key}
@@ -99,7 +123,10 @@ export function AvailabilityCalendar({
               >
                 {format(cell.date, 'd')}
               </span>
-              <span className={`mt-1 h-1.5 w-1.5 rounded-full ${style.dot}`} aria-hidden="true" />
+              <span
+                className={`mt-1 h-1.5 w-1.5 rounded-full ${style.dot}`}
+                aria-hidden="true"
+              />
             </button>
           )
         })}

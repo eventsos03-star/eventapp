@@ -20,7 +20,10 @@ export const approveOrganization = asyncHandler(async (req, res) => {
 });
 
 export const rejectOrganization = asyncHandler(async (req, res) => {
-  const organization = await adminService.rejectOrganization(req.params.id, req.body.reason);
+  const organization = await adminService.rejectOrganization(
+    req.params.id,
+    req.body.reason,
+  );
   success(res, 200, 'Organization rejected successfully', organization);
 });
 
@@ -47,12 +50,20 @@ export const rejectVenueOwner = asyncHandler(async (req, res) => {
 });
 
 export const listUsers = asyncHandler(async (req, res) => {
-  const { search, page, limit } = req.query as { search?: string; page?: number; limit?: number };
+  const { search, page, limit } = req.query as {
+    search?: string;
+    page?: number;
+    limit?: number;
+  };
   const result = await adminService.listUsers(search, page, limit);
   success(res, 200, 'Users fetched successfully', result);
 });
 
 export const updateUserRole = asyncHandler(async (req, res) => {
-  const result = await adminService.updateUserRole(req.params.id, req.body.role, req.user!.id);
+  const result = await adminService.updateUserRole(
+    req.params.id,
+    req.body.role,
+    req.user!.id,
+  );
   success(res, 200, 'User role updated successfully', result);
 });

@@ -1,40 +1,40 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { eventService } from "@/lib/eventApi";
-import { useAuth } from "@/context/AuthContext"; // adjust path to your actual auth context
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { eventService } from '@/lib/eventApi'
+import { useAuth } from '@/context/AuthContext' // adjust path to your actual auth context
 
 export default function EventsListPage() {
-  const [events, setEvents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const [events, setEvents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
 
-  const hasOrganization = Boolean(user?.organizationId);
+  const hasOrganization = Boolean(user?.organizationId)
 
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false
 
     eventService
       .list()
       .then((res) => {
         if (!cancelled) {
-          setEvents(res.data);
-          setLoading(false);
+          setEvents(res.data)
+          setLoading(false)
         }
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err?.response?.data?.message ?? "Failed to load events");
-          setLoading(false);
+          setError(err?.response?.data?.message ?? 'Failed to load events')
+          setLoading(false)
         }
-      });
+      })
 
     return () => {
-      cancelled = true;
-    };
-  }, []);
+      cancelled = true
+    }
+  }, [])
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#090d16] text-white font-sans antialiased p-5 sm:p-10 lg:p-12">
@@ -55,10 +55,14 @@ export default function EventsListPage() {
               </span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Upcoming <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">Live Events</span>
+              Upcoming{' '}
+              <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">
+                Live Events
+              </span>
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-slate-400">
-              Explore scheduled venues, secure entry passes, and track live command schedules.
+              Explore scheduled venues, secure entry passes, and track live
+              command schedules.
             </p>
           </div>
 
@@ -111,9 +115,12 @@ export default function EventsListPage() {
             <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400 mb-4">
               ⚡ Command Center Empty
             </span>
-            <h3 className="text-xl font-bold text-white">No published events found</h3>
+            <h3 className="text-xl font-bold text-white">
+              No published events found
+            </h3>
             <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
-              There are currently no active live experiences. Check back later or publish a new event.
+              There are currently no active live experiences. Check back later
+              or publish a new event.
             </p>
           </div>
         )}
@@ -122,7 +129,7 @@ export default function EventsListPage() {
         {!loading && !error && events.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {events.map((event) => {
-              const isPaid = event.eventType === "paid";
+              const isPaid = event.eventType === 'paid'
 
               return (
                 <div
@@ -134,21 +141,26 @@ export default function EventsListPage() {
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-slate-900/60 px-2.5 py-1 text-[11px] font-medium text-slate-300">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        {new Date(event.eventDate).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        {new Date(event.eventDate).toLocaleDateString(
+                          undefined,
+                          {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          },
+                        )}
                       </span>
 
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border ${
                           isPaid
-                            ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                            : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                            ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+                            : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
                         }`}
                       >
-                        {isPaid ? `$${event.ticketPrice || "0"} Ticket` : "Free Entry"}
+                        {isPaid
+                          ? `$${event.ticketPrice || '0'} Ticket`
+                          : 'Free Entry'}
                       </span>
                     </div>
 
@@ -168,22 +180,25 @@ export default function EventsListPage() {
                   {/* Card Bottom CTA Actions */}
                   <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between gap-3">
                     <div className="text-[11px] text-slate-400">
-                      Cap: <span className="font-semibold text-slate-200">{event.maxParticipants} max</span>
+                      Cap:{' '}
+                      <span className="font-semibold text-slate-200">
+                        {event.maxParticipants} max
+                      </span>
                     </div>
 
                     <Link
                       href={`/events/${event._id}`}
                       className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md transition hover:bg-amber-400 active:scale-[0.98]"
                     >
-                      {isPaid ? "Buy Tickets" : "Register Now"} &rarr;
+                      {isPaid ? 'Buy Tickets' : 'Register Now'} &rarr;
                     </Link>
                   </div>
                 </div>
-              );
+              )
             })}
           </div>
         )}
       </div>
     </div>
-  );
+  )
 }

@@ -24,6 +24,9 @@ try {
   });
   console.log(`Test email sent to ${to}: ${info.messageId}`);
 } catch (error) {
-  console.error('Failed to send test email:', error instanceof Error ? error.message : error);
+  console.error(
+    'Failed to send test email:',
+    error instanceof Error ? error.message : error,
+  );
   process.exit(1);
 }

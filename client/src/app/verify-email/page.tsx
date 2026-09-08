@@ -34,7 +34,8 @@ function EventOpsHeroPanel() {
           </span>
         </h2>
         <p className="mt-3 sm:mt-4 max-w-md text-xs sm:text-sm text-slate-400 leading-relaxed">
-          Manage venue bookings, real-time QR attendance, organizing team tasks, and instant post-event certifications from one central hub.
+          Manage venue bookings, real-time QR attendance, organizing team tasks,
+          and instant post-event certifications from one central hub.
         </p>
       </div>
 
@@ -42,8 +43,12 @@ function EventOpsHeroPanel() {
         <div className="rounded-2xl border border-white/10 bg-[#111726]/80 p-4 sm:p-6 shadow-2xl backdrop-blur-xl">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div className="text-[11px] sm:text-xs font-medium text-slate-400">Peak Venue Check-ins</div>
-              <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 sm:mt-1">2,840 Attendees</div>
+              <div className="text-[11px] sm:text-xs font-medium text-slate-400">
+                Peak Venue Check-ins
+              </div>
+              <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 sm:mt-1">
+                2,840 Attendees
+              </div>
             </div>
             <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] sm:text-xs font-semibold text-amber-400 border border-amber-500/20">
               ⚡ 98.4% Scan Speed
@@ -52,7 +57,10 @@ function EventOpsHeroPanel() {
 
           <div className="mt-6 sm:mt-8 flex items-end justify-between gap-2 sm:gap-3 h-28 sm:h-32 px-1">
             {activityData.map((item) => (
-              <div key={item.time} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+              <div
+                key={item.time}
+                className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group"
+              >
                 <div
                   className="w-full rounded-md bg-gradient-to-t from-amber-600 to-amber-400 transition-all duration-300 group-hover:brightness-125 origin-bottom"
                   style={{ height: `${item.height}%` }}
@@ -67,12 +75,20 @@ function EventOpsHeroPanel() {
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="rounded-2xl border border-white/10 bg-[#111726]/80 p-3.5 sm:p-4 backdrop-blur-xl">
-            <div className="text-[11px] sm:text-xs text-slate-400">Confirmed Venues</div>
-            <div className="mt-1 text-base sm:text-xl font-bold text-white">18 Halls Booked</div>
+            <div className="text-[11px] sm:text-xs text-slate-400">
+              Confirmed Venues
+            </div>
+            <div className="mt-1 text-base sm:text-xl font-bold text-white">
+              18 Halls Booked
+            </div>
           </div>
           <div className="rounded-2xl border border-white/10 bg-[#111726]/80 p-3.5 sm:p-4 backdrop-blur-xl">
-            <div className="text-[11px] sm:text-xs text-slate-400">Certificates Issued</div>
-            <div className="mt-1 text-base sm:text-xl font-bold text-amber-400">1,450 Auto-Sent</div>
+            <div className="text-[11px] sm:text-xs text-slate-400">
+              Certificates Issued
+            </div>
+            <div className="mt-1 text-base sm:text-xl font-bold text-amber-400">
+              1,450 Auto-Sent
+            </div>
           </div>
         </div>
       </div>
@@ -89,16 +105,36 @@ function StatusIcon({ status }: { status: 'loading' | 'success' | 'error' }) {
   if (status === 'success') {
     return (
       <div className="grid h-12 w-12 place-items-center rounded-full bg-emerald-100">
-        <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        <svg
+          className="h-6 w-6 text-emerald-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 13l4 4L19 7"
+          />
         </svg>
       </div>
     )
   }
   return (
     <div className="grid h-12 w-12 place-items-center rounded-full bg-red-100">
-      <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      <svg
+        className="h-6 w-6 text-red-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M6 18L18 6M6 6l12 12"
+        />
       </svg>
     </div>
   )
@@ -113,7 +149,9 @@ function VerifyEmailView() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
 
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
+    'loading',
+  )
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -145,7 +183,11 @@ function VerifyEmailView() {
   }, [token])
 
   const title =
-    status === 'loading' ? 'Verifying your email…' : status === 'success' ? 'Email verified' : 'Verification failed'
+    status === 'loading'
+      ? 'Verifying your email…'
+      : status === 'success'
+        ? 'Email verified'
+        : 'Verification failed'
 
   return (
     <div className="flex min-h-screen w-full flex-col lg:flex-row bg-slate-50 text-slate-900 font-sans antialiased">

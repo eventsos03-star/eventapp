@@ -55,7 +55,9 @@ export function VenueOwnerRoute({ children }: { children: ReactNode }) {
     return (
       <div className="grid min-h-screen place-items-center bg-ink px-5 font-sans text-paper-dim">
         <div className="max-w-md text-center">
-          <h1 className="font-display text-2xl font-semibold text-paper-dim">No venues yet</h1>
+          <h1 className="font-display text-2xl font-semibold text-paper-dim">
+            No venues yet
+          </h1>
           <p className="mt-2 text-sm text-paper-dim/55">
             You need to own at least one venue to use the venue owner dashboard.
           </p>

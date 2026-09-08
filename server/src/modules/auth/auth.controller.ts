@@ -59,7 +59,12 @@ function getRefreshToken(req: { cookies?: Record<string, string> }): string {
 
 export const register = asyncHandler(async (req, res) => {
   const user = await authService.registerUser(req.body);
-  success(res, 201, 'Account created. Check your email to verify your account.', user);
+  success(
+    res,
+    201,
+    'Account created. Check your email to verify your account.',
+    user,
+  );
 });
 
 export const verifyEmail = asyncHandler(async (req, res) => {
@@ -70,7 +75,11 @@ export const verifyEmail = asyncHandler(async (req, res) => {
 
 export const login = asyncHandler(async (req, res) => {
   const client = getClientInfo(req);
-  const { accessToken, refreshToken, user } = await authService.login(req.body.email, req.body.password, client);
+  const { accessToken, refreshToken, user } = await authService.login(
+    req.body.email,
+    req.body.password,
+    client,
+  );
   setRefreshCookie(res, refreshToken);
   setAccessCookie(res, accessToken);
   success(res, 200, 'Login successful', { accessToken, user });
@@ -91,7 +100,10 @@ export const logoutAll = asyncHandler(async (req, res) => {
 
 export const refresh = asyncHandler(async (req, res) => {
   const client = getClientInfo(req);
-  const { accessToken, refreshToken, user } = await authService.refresh(getRefreshToken(req), client);
+  const { accessToken, refreshToken, user } = await authService.refresh(
+    getRefreshToken(req),
+    client,
+  );
   setRefreshCookie(res, refreshToken);
   setAccessCookie(res, accessToken);
   success(res, 200, 'Token refreshed', { accessToken, user });
@@ -99,16 +111,29 @@ export const refresh = asyncHandler(async (req, res) => {
 
 export const forgotPassword = asyncHandler(async (req, res) => {
   await authService.forgotPassword(req.body.email);
-  success(res, 200, 'If an account exists with that email, a password reset link has been sent.');
+  success(
+    res,
+    200,
+    'If an account exists with that email, a password reset link has been sent.',
+  );
 });
 
 export const resetPassword = asyncHandler(async (req, res) => {
   await authService.resetPassword(req.body.token, req.body.password);
-  success(res, 200, 'Password reset successfully. Please login with your new password.');
+  success(
+    res,
+    200,
+    'Password reset successfully. Please login with your new password.',
+  );
 });
 
 export const changePassword = asyncHandler(async (req, res) => {
-  await authService.changePassword(req.user!.id, req.body.currentPassword, req.body.newPassword, req.sessionId);
+  await authService.changePassword(
+    req.user!.id,
+    req.body.currentPassword,
+    req.body.newPassword,
+    req.sessionId,
+  );
   success(res, 200, 'Password changed successfully.');
 });
 
@@ -124,20 +149,33 @@ export const updateMe = asyncHandler(async (req, res) => {
 
 export const google = asyncHandler(async (req, res) => {
   const client = getClientInfo(req);
-  const { accessToken, refreshToken, user, isNewUser } = await authService.googleAuth(req.body.credential, client);
+  const { accessToken, refreshToken, user, isNewUser } =
+    await authService.googleAuth(req.body.credential, client);
   setRefreshCookie(res, refreshToken);
   setAccessCookie(res, accessToken);
-  success(res, isNewUser ? 201 : 200, 'Google login successful', { accessToken, user, isNewUser });
+  success(res, isNewUser ? 201 : 200, 'Google login successful', {
+    accessToken,
+    user,
+    isNewUser,
+  });
 });
 
 export const setPassword = asyncHandler(async (req, res) => {
-  await authService.setPassword(req.user!.id, req.body.newPassword, req.sessionId);
+  await authService.setPassword(
+    req.user!.id,
+    req.body.newPassword,
+    req.sessionId,
+  );
   success(res, 200, 'Password set successfully.');
 });
 
 export const resendVerification = asyncHandler(async (req, res) => {
   await authService.resendVerificationEmail(req.body.email);
-  success(res, 200, 'If your account is waiting for verification, a new link has been sent.');
+  success(
+    res,
+    200,
+    'If your account is waiting for verification, a new link has been sent.',
+  );
 });
 
 export const listSessions = asyncHandler(async (req, res) => {

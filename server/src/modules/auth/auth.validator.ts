@@ -5,7 +5,11 @@ const passwordSchema = z
   .min(8, 'Password must be at least 8 characters')
   .max(72, 'Password must be at most 72 characters');
 
-const emailSchema = z.string().trim().toLowerCase().email('Invalid email address');
+const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .email('Invalid email address');
 
 export const registerSchema = z.object({
   body: z.object({
@@ -46,12 +50,25 @@ export const changePasswordSchema = z.object({
 export const updateProfileSchema = z.object({
   body: z
     .object({
-      firstName: z.string().trim().min(1, 'First name is required').max(50).optional(),
-      lastName: z.string().trim().min(1, 'Last name is required').max(50).optional(),
+      firstName: z
+        .string()
+        .trim()
+        .min(1, 'First name is required')
+        .max(50)
+        .optional(),
+      lastName: z
+        .string()
+        .trim()
+        .min(1, 'Last name is required')
+        .max(50)
+        .optional(),
     })
-    .refine((data) => data.firstName !== undefined || data.lastName !== undefined, {
-      message: 'Provide at least one field to update',
-    }),
+    .refine(
+      (data) => data.firstName !== undefined || data.lastName !== undefined,
+      {
+        message: 'Provide at least one field to update',
+      },
+    ),
 });
 
 export const googleSchema = z.object({
