@@ -2,6 +2,7 @@ import Venue from "../venue.model.js";
 import VenueBooking from "../venueBooking.model.js";
 import Organization from "../../organization/organization.model.js";
 import OrganizationMember from "../../organization/organizationMember.model.js";
+import Event from "../../event/event.model.js";
 import { AppError } from "../../../utils/AppError.js";
 
 const dayMs = 24 * 60 * 60 * 1000;
@@ -463,7 +464,7 @@ export const approveBooking = async (params: {
     );
   }
 
-  return VenueBooking.findByIdAndUpdate(
+  const updatedBooking = await VenueBooking.findByIdAndUpdate(
     bookingId,
     {
       status: "approved",
@@ -472,6 +473,16 @@ export const approveBooking = async (params: {
       new: true,
     }
   );
+
+  // Flip the linked event from draft -> published.
+  // Guarded on status: "draft" so this is a safe no-op if the event
+  // was already moved out of draft some other way.
+  await Event.updateOne(
+    { venueBookingId: bookingId, status: "draft" },
+    { $set: { status: "published" } }
+  );
+
+  return updatedBooking;
 };
 
 /* -------------------------------- */
@@ -530,7 +541,7 @@ export const rejectBooking = async (params: {
     );
   }
 
-  return VenueBooking.findByIdAndUpdate(
+  const updatedBooking = await VenueBooking.findByIdAndUpdate(
     bookingId,
     {
       status: "rejected",
@@ -539,4 +550,14 @@ export const rejectBooking = async (params: {
       new: true,
     }
   );
+
+  // Flip the linked event from draft -> cancelled.
+  // Guarded on status: "draft" so this is a safe no-op if the event
+  // was already moved out of draft some other way.
+  await Event.updateOne(
+    { venueBookingId: bookingId, status: "draft" },
+    { $set: { status: "cancelled" } }
+  );
+
+  return updatedBooking;
 };
