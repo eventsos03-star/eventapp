@@ -105,9 +105,8 @@ function VenuePageInner() {
     }
   }, [])
 
-  
   // AUTH
- 
+
   useEffect(() => {
     let cancelled = false
     api
@@ -139,7 +138,7 @@ function VenuePageInner() {
   )
 
   // LOAD VENUES
-  
+
   const loadVenues = useCallback(
     async (opts?: { append?: boolean }) => {
       if (authStatus !== 'authed') return
