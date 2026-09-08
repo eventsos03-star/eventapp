@@ -40,10 +40,14 @@ function OwnerContent() {
       .then(({ data }) => {
         if (!active) return
         setVenues(data ?? [])
-        if ((data ?? []).length > 0) setSelectedVenueId((prev) => prev || data![0]._id)
+        if ((data ?? []).length > 0)
+          setSelectedVenueId((prev) => prev || data![0]._id)
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : 'Could not load your venues')
+        if (active)
+          setError(
+            err instanceof Error ? err.message : 'Could not load your venues',
+          )
       })
       .finally(() => {
         if (active) setLoadingVenues(false)
@@ -64,7 +68,10 @@ function OwnerContent() {
         if (active) setBookings(data ?? [])
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : 'Could not load bookings')
+        if (active)
+          setError(
+            err instanceof Error ? err.message : 'Could not load bookings',
+          )
       })
       .finally(() => {
         if (active) setLoadingBookings(false)
@@ -122,7 +129,10 @@ function OwnerContent() {
       totalVenues: venues.length,
       upcoming: bookings.filter((b) => {
         const today = startOfDay(new Date())
-        return (b.status === 'approved' || b.status === 'pending') && isAfter(parseISO(b.endDate), today)
+        return (
+          (b.status === 'approved' || b.status === 'pending') &&
+          isAfter(parseISO(b.endDate), today)
+        )
       }).length,
       pending: bookings.filter((b) => b.status === 'pending').length,
       confirmed: bookings.filter((b) => b.status === 'approved').length,
@@ -148,7 +158,14 @@ function OwnerContent() {
           onClick={() => setMenuOpen(true)}
           className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
@@ -183,13 +200,19 @@ function OwnerContent() {
           <div className="mx-auto max-w-5xl">
             <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Venue Owner</h1>
+                <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+                  Venue Owner
+                </h1>
                 <p className="mt-1 text-sm text-slate-500">
                   Manage your venues, availability and booking requests.
                 </p>
               </div>
               <div className="w-full sm:w-64">
-                <VenueSelector venues={venues} value={selectedVenueId} onChange={venueChanged} />
+                <VenueSelector
+                  venues={venues}
+                  value={selectedVenueId}
+                  onChange={venueChanged}
+                />
               </div>
             </header>
 
@@ -203,18 +226,26 @@ function OwnerContent() {
               <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <StatCard label="Total Venues" value={stats.totalVenues} />
                 <StatCard label="Upcoming" value={stats.upcoming} />
-                <StatCard label="Pending requests" value={stats.pending} accent="amber" />
+                <StatCard
+                  label="Pending requests"
+                  value={stats.pending}
+                  accent="amber"
+                />
                 <StatCard label="Confirmed" value={stats.confirmed} />
               </section>
             )}
 
             {tab === 'venues' && (
               <section className="rounded-xl border border-slate-200 bg-white p-5">
-                <h2 className="mb-4 text-lg font-extrabold tracking-tight text-slate-900">My Venues</h2>
+                <h2 className="mb-4 text-lg font-extrabold tracking-tight text-slate-900">
+                  My Venues
+                </h2>
                 {loadingVenues ? (
                   <p className="text-sm text-slate-500">Loading venues…</p>
                 ) : venues.length === 0 ? (
-                  <p className="text-sm text-slate-500">You don't own any venues yet.</p>
+                  <p className="text-sm text-slate-500">
+                    You don&apos;t own any venues yet.
+                  </p>
                 ) : (
                   <ul className="flex flex-col gap-3">
                     {venues.map((venue) => (
@@ -223,9 +254,12 @@ function OwnerContent() {
                         className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 py-3"
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-slate-900">{venue.venueName}</p>
+                          <p className="truncate text-sm font-bold text-slate-900">
+                            {venue.venueName}
+                          </p>
                           <p className="mt-0.5 text-xs text-slate-500">
-                            {venue.location.city} · {venue.capacity} capacity · ${venue.pricePerDay}/day
+                            {venue.location.city} · {venue.capacity} capacity ·
+                            ${venue.pricePerDay}/day
                           </p>
                         </div>
                         <span
@@ -254,7 +288,9 @@ function OwnerContent() {
                   }}
                 />
                 {loadingBookings && !selectedVenueId && (
-                  <p className="mt-3 text-xs text-slate-500">Select a venue to see availability.</p>
+                  <p className="mt-3 text-xs text-slate-500">
+                    Select a venue to see availability.
+                  </p>
                 )}
               </div>
             )}
@@ -272,9 +308,12 @@ function OwnerContent() {
 
             {tab === 'settings' && (
               <section className="rounded-xl border border-slate-200 bg-white p-5">
-                <h2 className="mb-2 text-lg font-extrabold tracking-tight text-slate-900">Settings</h2>
+                <h2 className="mb-2 text-lg font-extrabold tracking-tight text-slate-900">
+                  Settings
+                </h2>
                 <p className="text-sm text-slate-500">
-                  Venue owner settings (pricing, maintenance blackouts, notifications) are coming soon.
+                  Venue owner settings (pricing, maintenance blackouts,
+                  notifications) are coming soon.
                 </p>
               </section>
             )}
@@ -287,8 +326,14 @@ function OwnerContent() {
           booking={detail}
           venueName={selectedVenue?.venueName ?? 'Venue'}
           onClose={() => setDetail(null)}
-          onApprove={detail.status === 'pending' ? () => handleApprove(detail) : undefined}
-          onReject={detail.status === 'pending' ? () => handleReject(detail) : undefined}
+          onApprove={
+            detail.status === 'pending'
+              ? () => handleApprove(detail)
+              : undefined
+          }
+          onReject={
+            detail.status === 'pending' ? () => handleReject(detail) : undefined
+          }
           busy={detail && busy[detail._id]}
         />
       )}

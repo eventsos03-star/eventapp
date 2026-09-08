@@ -1,99 +1,108 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
-import Link from "next/link";
-import { useRouter, notFound } from "next/navigation";
-import { eventService } from "@/lib/eventApi";
-import { api } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext"; // adjust path
+import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import Link from 'next/link'
+import { useRouter, notFound } from 'next/navigation'
+import { eventService } from '@/lib/eventApi'
+import { api } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext' // adjust path
 
 // Adjust this to match your real Venue type/interface
 interface Venue {
-  _id: string;
-  venueName: string;
-  city?: string;
-  status?: string;
+  _id: string
+  venueName: string
+  city?: string
+  status?: string
 }
 
 export default function CreateEventPage() {
-  const router = useRouter();
-  const { user, initializing } = useAuth();
+  const router = useRouter()
+  const { user, initializing } = useAuth()
 
-  const organizationId = (user as any)?.organizationId;
-  const canCreateEvent = Boolean(organizationId);
+  const organizationId = (user as any)?.organizationId
+  const canCreateEvent = Boolean(organizationId)
 
   const [form, setForm] = useState({
-    venueBookingId: "",
-    eventName: "",
-    description: "",
-    eventType: "free" as "free" | "paid",
-    registrationType: "individual" as "team" | "individual",
+    venueBookingId: '',
+    eventName: '',
+    description: '',
+    eventType: 'free' as 'free' | 'paid',
+    registrationType: 'individual' as 'team' | 'individual',
     maxParticipants: 50,
-    registrationStartDate: "",
-    registrationEndDate: "",
-    eventDate: "",
+    registrationStartDate: '',
+    registrationEndDate: '',
+    eventDate: '',
     certificateEnabled: false,
-    ticketPrice: "",
-    teamSize: "",
-  });
+    ticketPrice: '',
+    teamSize: '',
+  })
 
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const [venues, setVenues] = useState<Venue[]>([]);
-  const [venuesLoading, setVenuesLoading] = useState(false);
+  const [venues, setVenues] = useState<Venue[]>([])
+  const [venuesLoading, setVenuesLoading] = useState(false)
 
-  function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+  function update<K extends keyof typeof form>(
+    key: K,
+    value: (typeof form)[K],
+  ) {
+    setForm((prev) => ({ ...prev, [key]: value }))
   }
 
   useEffect(() => {
     if (!initializing && (!user || !canCreateEvent)) {
-      notFound();
+      notFound()
     }
-  }, [initializing, user, canCreateEvent]);
+  }, [initializing, user, canCreateEvent])
 
   useEffect(() => {
-    setVenuesLoading(true);
+    setVenuesLoading(true)
     api
       .listVenues()
       .then((res: any) => setVenues(res.data ?? []))
       .catch(() => setVenues([]))
-      .finally(() => setVenuesLoading(false));
-  }, []);
+      .finally(() => setVenuesLoading(false))
+  }, [])
 
   async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault()
+    setError(null)
 
     if (!organizationId) {
-      setError("You're not associated with an organization yet, so you can't create an event.");
-      return;
+      setError(
+        "You're not associated with an organization yet, so you can't create an event.",
+      )
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
 
     try {
       const payload = {
         ...form,
         organizationId,
         maxParticipants: Number(form.maxParticipants),
-        ticketPrice: form.eventType === "paid" ? Number(form.ticketPrice) : undefined,
-        teamSize: form.registrationType === "team" ? Number(form.teamSize) : undefined,
+        ticketPrice:
+          form.eventType === 'paid' ? Number(form.ticketPrice) : undefined,
+        teamSize:
+          form.registrationType === 'team' ? Number(form.teamSize) : undefined,
         venueBookingId: form.venueBookingId || undefined,
-        registrationStartDate: new Date(form.registrationStartDate).toISOString(),
+        registrationStartDate: new Date(
+          form.registrationStartDate,
+        ).toISOString(),
         registrationEndDate: new Date(form.registrationEndDate).toISOString(),
         eventDate: new Date(form.eventDate).toISOString(),
-      };
+      }
 
-      const res = await eventService.create(payload);
-      router.push("my-organization");
+      await eventService.create(payload)
+      router.push('my-organization')
       // router.push(`/events/${res.data._id}`);
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? "Failed to create event");
+      setError(err?.response?.data?.message ?? 'Failed to create event')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
@@ -102,7 +111,7 @@ export default function CreateEventPage() {
       <div className="min-h-screen w-full bg-[#090d16] flex items-center justify-center text-slate-400 text-sm">
         Loading...
       </div>
-    );
+    )
   }
 
   return (
@@ -132,10 +141,14 @@ export default function CreateEventPage() {
         {/* Card Container */}
         <div className="rounded-2xl border border-white/10 bg-[#111726]/80 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-            Create New <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">Draft Event</span>
+            Create New{' '}
+            <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">
+              Draft Event
+            </span>
           </h1>
           <p className="mt-1.5 text-xs sm:text-sm text-slate-400">
-            Configure registration schedules, venue links, and ticketing options.
+            Configure registration schedules, venue links, and ticketing
+            options.
           </p>
 
           {error && (
@@ -152,22 +165,28 @@ export default function CreateEventPage() {
               </label>
               <select
                 value={form.venueBookingId}
-                onChange={(e) => update("venueBookingId", e.target.value)}
+                onChange={(e) => update('venueBookingId', e.target.value)}
                 disabled={venuesLoading}
                 className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
               >
                 <option value="" className="bg-slate-900 text-white">
-                  {venuesLoading ? "Loading venues..." : "No venue selected"}
+                  {venuesLoading ? 'Loading venues...' : 'No venue selected'}
                 </option>
-{venues.map((v) => (
-  <option key={v._id} value={v._id} className="bg-slate-900 text-white">
-    {v.venueName}
-    {v.city ? ` — ${v.city}` : ""}
-  </option>
-))}
+                {venues.map((v) => (
+                  <option
+                    key={v._id}
+                    value={v._id}
+                    className="bg-slate-900 text-white"
+                  >
+                    {v.venueName}
+                    {v.city ? ` — ${v.city}` : ''}
+                  </option>
+                ))}
               </select>
               {!venuesLoading && venues.length === 0 && (
-                <p className="mt-1 text-[11px] text-slate-500">No venues available.</p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  No venues available.
+                </p>
               )}
             </div>
 
@@ -179,7 +198,7 @@ export default function CreateEventPage() {
               <input
                 type="text"
                 value={form.eventName}
-                onChange={(e) => update("eventName", e.target.value)}
+                onChange={(e) => update('eventName', e.target.value)}
                 placeholder="e.g. Annual Tech Symposium 2026"
                 required
                 className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
@@ -194,7 +213,7 @@ export default function CreateEventPage() {
               <textarea
                 rows={3}
                 value={form.description}
-                onChange={(e) => update("description", e.target.value)}
+                onChange={(e) => update('description', e.target.value)}
                 placeholder="Brief summary of the live event, topics, and venue schedules..."
                 required
                 className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
@@ -204,33 +223,55 @@ export default function CreateEventPage() {
             {/* Type & Format Selectors */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Pricing Model</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Pricing Model
+                </label>
                 <select
                   value={form.eventType}
-                  onChange={(e) => update("eventType", e.target.value as "free" | "paid")}
+                  onChange={(e) =>
+                    update('eventType', e.target.value as 'free' | 'paid')
+                  }
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                 >
-                  <option value="free" className="bg-slate-900 text-white">Free Event</option>
-                  <option value="paid" className="bg-slate-900 text-white">Paid Pass</option>
+                  <option value="free" className="bg-slate-900 text-white">
+                    Free Event
+                  </option>
+                  <option value="paid" className="bg-slate-900 text-white">
+                    Paid Pass
+                  </option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Registration Format</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Registration Format
+                </label>
                 <select
                   value={form.registrationType}
-                  onChange={(e) => update("registrationType", e.target.value as "team" | "individual")}
+                  onChange={(e) =>
+                    update(
+                      'registrationType',
+                      e.target.value as 'team' | 'individual',
+                    )
+                  }
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                 >
-                  <option value="individual" className="bg-slate-900 text-white">Individual Entry</option>
-                  <option value="team" className="bg-slate-900 text-white">Team Entry</option>
+                  <option
+                    value="individual"
+                    className="bg-slate-900 text-white"
+                  >
+                    Individual Entry
+                  </option>
+                  <option value="team" className="bg-slate-900 text-white">
+                    Team Entry
+                  </option>
                 </select>
               </div>
             </div>
 
             {/* Dynamic Pricing / Team Inputs */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {form.eventType === "paid" && (
+              {form.eventType === 'paid' && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Ticket Price ($) <span className="text-amber-400">*</span>
@@ -240,14 +281,14 @@ export default function CreateEventPage() {
                     min="0"
                     placeholder="0.00"
                     value={form.ticketPrice}
-                    onChange={(e) => update("ticketPrice", e.target.value)}
+                    onChange={(e) => update('ticketPrice', e.target.value)}
                     required
                     className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                   />
                 </div>
               )}
 
-              {form.registrationType === "team" && (
+              {form.registrationType === 'team' && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Team Size <span className="text-amber-400">*</span>
@@ -257,14 +298,21 @@ export default function CreateEventPage() {
                     min="2"
                     placeholder="e.g. 4"
                     value={form.teamSize}
-                    onChange={(e) => update("teamSize", e.target.value)}
+                    onChange={(e) => update('teamSize', e.target.value)}
                     required
                     className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                   />
                 </div>
               )}
 
-              <div className={form.eventType === "free" && form.registrationType === "individual" ? "sm:col-span-2" : ""}>
+              <div
+                className={
+                  form.eventType === 'free' &&
+                  form.registrationType === 'individual'
+                    ? 'sm:col-span-2'
+                    : ''
+                }
+              >
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Max Capacity <span className="text-amber-400">*</span>
                 </label>
@@ -272,7 +320,9 @@ export default function CreateEventPage() {
                   type="number"
                   min="1"
                   value={form.maxParticipants}
-                  onChange={(e) => update("maxParticipants", Number(e.target.value))}
+                  onChange={(e) =>
+                    update('maxParticipants', Number(e.target.value))
+                  }
                   required
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                 />
@@ -288,7 +338,9 @@ export default function CreateEventPage() {
                 <input
                   type="datetime-local"
                   value={form.registrationStartDate}
-                  onChange={(e) => update("registrationStartDate", e.target.value)}
+                  onChange={(e) =>
+                    update('registrationStartDate', e.target.value)
+                  }
                   required
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-xs text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 scheme-dark"
                 />
@@ -301,7 +353,9 @@ export default function CreateEventPage() {
                 <input
                   type="datetime-local"
                   value={form.registrationEndDate}
-                  onChange={(e) => update("registrationEndDate", e.target.value)}
+                  onChange={(e) =>
+                    update('registrationEndDate', e.target.value)
+                  }
                   required
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-xs text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 scheme-dark"
                 />
@@ -314,7 +368,7 @@ export default function CreateEventPage() {
                 <input
                   type="datetime-local"
                   value={form.eventDate}
-                  onChange={(e) => update("eventDate", e.target.value)}
+                  onChange={(e) => update('eventDate', e.target.value)}
                   required
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-xs text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 scheme-dark"
                 />
@@ -327,7 +381,9 @@ export default function CreateEventPage() {
                 <input
                   type="checkbox"
                   checked={form.certificateEnabled}
-                  onChange={(e) => update("certificateEnabled", e.target.checked)}
+                  onChange={(e) =>
+                    update('certificateEnabled', e.target.checked)
+                  }
                   className="h-4 w-4 rounded border-white/20 bg-slate-900 text-amber-500 focus:ring-amber-500/20 focus:ring-offset-0"
                 />
                 <div className="flex flex-col">
@@ -357,5 +413,5 @@ export default function CreateEventPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

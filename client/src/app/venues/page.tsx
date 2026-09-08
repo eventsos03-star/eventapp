@@ -1,13 +1,22 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { api, ApiError } from '../../lib/api'
 import type { Venue, VenueSearchResult } from '../../types'
 import VenueHeader from '../../components/venues/VenueHeader'
 import VenueCard from '../../components/venues/VenueCard'
-import VenueFilters, { type VenueFiltersState } from '../../components/venues/VenueFilters'
+import VenueFilters, {
+  type VenueFiltersState,
+} from '../../components/venues/VenueFilters'
 import LocationSearch from '../../components/venues/LocationSearch'
 import VenueClusterMap from '../../components/maps/VenueClusterMap'
 
@@ -16,7 +25,9 @@ type AuthState = 'checking' | 'authed' | 'guest'
 const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629]
 const DEFAULT_RADIUS = 25000
 
-function normalizeVenues(data: Venue[] | VenueSearchResult | undefined | null): Venue[] {
+function normalizeVenues(
+  data: Venue[] | VenueSearchResult | undefined | null,
+): Venue[] {
   if (!data) return []
   if (Array.isArray(data)) return data
   return data.venues ?? []
@@ -26,12 +37,22 @@ function hasValidCoordinates(venue: Venue): boolean {
   const loc = venue.location
   if (!loc?.coordinates) return false
   const [lng, lat] = loc.coordinates
-  return typeof lat === 'number' && typeof lng === 'number' && (lat !== 0 || lng !== 0)
+  return (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    (lat !== 0 || lng !== 0)
+  )
 }
 
 export default function VenuePage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50"><p className="text-sm text-slate-500">Loading…</p></div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-slate-50">
+          <p className="text-sm text-slate-500">Loading…</p>
+        </div>
+      }
+    >
       <VenuePageInner />
     </Suspense>
   )
@@ -48,8 +69,15 @@ function VenuePageInner() {
   const [loadMoreLoading, setLoadMoreLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [location, setLocation] = useState<{ lat: number; lng: number; label: string } | null>(null)
-  const [filters, setFilters] = useState<VenueFiltersState>({ minCapacity: null, maxPrice: null })
+  const [location, setLocation] = useState<{
+    lat: number
+    lng: number
+    label: string
+  } | null>(null)
+  const [filters, setFilters] = useState<VenueFiltersState>({
+    minCapacity: null,
+    maxPrice: null,
+  })
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null)
   const [showMyVenues, setShowMyVenues] = useState(false)
 
@@ -63,15 +91,23 @@ function VenuePageInner() {
     const lat = searchParams.get('lat')
     const lng = searchParams.get('lng')
     const label = searchParams.get('label')
-    if (lat && lng && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng))) {
-      setLocation({ lat: Number(lat), lng: Number(lng), label: label || 'Selected location' })
+    if (
+      lat &&
+      lng &&
+      !Number.isNaN(Number(lat)) &&
+      !Number.isNaN(Number(lng))
+    ) {
+      setLocation({
+        lat: Number(lat),
+        lng: Number(lng),
+        label: label || 'Selected location',
+      })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // --------------------------------------------------
+  
   // AUTH
-  // --------------------------------------------------
+ 
   useEffect(() => {
     let cancelled = false
     api
@@ -95,13 +131,15 @@ function VenuePageInner() {
   }, [authStatus, router])
 
   const isAdmin = useMemo(
-    () => String(user?.role ?? '').trim().toLowerCase() === 'admin',
-    [user]
+    () =>
+      String(user?.role ?? '')
+        .trim()
+        .toLowerCase() === 'admin',
+    [user],
   )
 
-  // --------------------------------------------------
   // LOAD VENUES
-  // --------------------------------------------------
+  
   const loadVenues = useCallback(
     async (opts?: { append?: boolean }) => {
       if (authStatus !== 'authed') return
@@ -132,7 +170,11 @@ function VenuePageInner() {
             setTotalPages(1)
           } else {
             const result = data as VenueSearchResult
-            setVenues(append ? (prev) => [...prev, ...(result.venues ?? [])] : (result.venues ?? []))
+            setVenues(
+              append
+                ? (prev) => [...prev, ...(result.venues ?? [])]
+                : (result.venues ?? []),
+            )
             setTotalPages(result.totalPages ?? 1)
             pageRef.current = Array.isArray(data) ? 1 : targetPage
           }
@@ -147,14 +189,16 @@ function VenuePageInner() {
           setTotalPages(1)
         }
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Could not load venues.')
+        setError(
+          err instanceof ApiError ? err.message : 'Could not load venues.',
+        )
         if (!append) setVenues([])
       } finally {
         setLoading(false)
         setLoadMoreLoading(false)
       }
     },
-    [authStatus, showMyVenues, location, filters]
+    [authStatus, showMyVenues, location, filters],
   )
 
   useEffect(() => {
@@ -215,7 +259,8 @@ function VenuePageInner() {
             Find the perfect venue for your next event
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-500 sm:text-base">
-            Search approved venues by location, capacity, and budget — then explore them on the map.
+            Search approved venues by location, capacity, and budget — then
+            explore them on the map.
           </p>
 
           {/* location search */}
@@ -254,8 +299,18 @@ function VenuePageInner() {
                 href="/venue-owner"
                 className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-2 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-400"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
                 </svg>
                 Owner Dashboard
               </Link>
@@ -311,7 +366,9 @@ function VenuePageInner() {
               <EmptyState
                 isMyVenues={showMyVenues}
                 hasLocation={!!location}
-                hasFilters={filters.minCapacity !== null || filters.maxPrice !== null}
+                hasFilters={
+                  filters.minCapacity !== null || filters.maxPrice !== null
+                }
                 isAdmin={isAdmin}
               />
             ) : (
@@ -332,16 +389,18 @@ function VenuePageInner() {
                   </div>
                 )}
 
-                {!showMyVenues && !!location && pageRef.current < totalPages && (
-                  <button
-                    type="button"
-                    onClick={handleLoadMore}
-                    disabled={loadMoreLoading}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
-                  >
-                    {loadMoreLoading ? 'Loading more…' : 'Load more venues'}
-                  </button>
-                )}
+                {!showMyVenues &&
+                  !!location &&
+                  pageRef.current < totalPages && (
+                    <button
+                      type="button"
+                      onClick={handleLoadMore}
+                      disabled={loadMoreLoading}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+                    >
+                      {loadMoreLoading ? 'Loading more…' : 'Load more venues'}
+                    </button>
+                  )}
               </div>
             )}
           </div>
@@ -352,7 +411,9 @@ function VenuePageInner() {
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
                 <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
                   <p className="text-sm font-bold text-slate-900">Map</p>
-                  <span className="text-xs text-slate-500">{resultsCount} on map</span>
+                  <span className="text-xs text-slate-500">
+                    {resultsCount} on map
+                  </span>
                 </div>
                 <VenueClusterMap
                   venues={venues}
@@ -426,9 +487,24 @@ function EmptyState({
 }) {
   return (
     <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
-      <svg className="mx-auto h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+      <svg
+        className="mx-auto h-10 w-10 text-slate-300"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+        />
       </svg>
       <p className="mt-3 text-base font-bold text-slate-900">
         {isMyVenues ? 'You have not added any venues yet' : 'No venues found'}
@@ -443,12 +519,12 @@ function EmptyState({
               : 'There are no approved venues available yet.'}
       </p>
       {!isAdmin && !isMyVenues && (
-        <a
+        <Link
           href="/venues/new"
           className="mt-4 inline-flex rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-400"
         >
           + Add Venue
-        </a>
+        </Link>
       )}
     </div>
   )
