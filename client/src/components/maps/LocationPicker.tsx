@@ -40,15 +40,23 @@ function toVenueLocation(result: GeocodingResult): VenueLocation {
   }
 }
 
-export default function LocationPicker({ value, onChange, error }: LocationPickerProps) {
+export default function LocationPicker({
+  value,
+  onChange,
+  error,
+}: LocationPickerProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<GeocodingResult[]>([])
   const [searching, setSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
-  const [selectedLocation, setSelectedLocation] = useState<GeocodingResult | null>(() =>
-    value ? toGeocodingResult(value) : null
+  const [selectedLocation, setSelectedLocation] =
+    useState<GeocodingResult | null>(() =>
+      value ? toGeocodingResult(value) : null,
+    )
+  const [confirmed, setConfirmed] = useState(
+    !!value?.coordinates &&
+      !(value.coordinates[0] === 0 && value.coordinates[1] === 0),
   )
-  const [confirmed, setConfirmed] = useState(!!value?.coordinates && !(value.coordinates[0] === 0 && value.coordinates[1] === 0))
   const [previewOpen, setPreviewOpen] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -58,10 +66,17 @@ export default function LocationPicker({ value, onChange, error }: LocationPicke
     : DEFAULT_CENTER
 
   useEffect(() => {
-    if (value?.coordinates && !(value.coordinates[0] === 0 && value.coordinates[1] === 0)) {
+    if (
+      value?.coordinates &&
+      !(value.coordinates[0] === 0 && value.coordinates[1] === 0)
+    ) {
       const r = toGeocodingResult(value)
       if (r) {
-        setSelectedLocation((prev) => (prev && prev.latitude === r.latitude && prev.longitude === r.longitude ? prev : r))
+        setSelectedLocation((prev) =>
+          prev && prev.latitude === r.latitude && prev.longitude === r.longitude
+            ? prev
+            : r,
+        )
         setConfirmed(true)
         setQuery(value.formattedAddress || value.city || '')
       }
@@ -70,7 +85,10 @@ export default function LocationPicker({ value, onChange, error }: LocationPicke
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setShowResults(false)
       }
     }
@@ -105,7 +123,7 @@ export default function LocationPicker({ value, onChange, error }: LocationPicke
         searchLocations(val)
       }, 500)
     },
-    [searchLocations]
+    [searchLocations],
   )
 
   const selectResult = useCallback(
@@ -116,7 +134,7 @@ export default function LocationPicker({ value, onChange, error }: LocationPicke
       setConfirmed(true)
       onChange(toVenueLocation(result))
     },
-    [onChange]
+    [onChange],
   )
 
   const handleMarkerDragEnd = useCallback(
@@ -165,7 +183,7 @@ export default function LocationPicker({ value, onChange, error }: LocationPicke
         onChange(toVenueLocation(result))
       }
     },
-    [onChange]
+    [onChange],
   )
 
   const clearSelection = useCallback(() => {
@@ -224,8 +242,18 @@ export default function LocationPicker({ value, onChange, error }: LocationPicke
             onClick={clearSelection}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         )}
@@ -245,18 +273,25 @@ export default function LocationPicker({ value, onChange, error }: LocationPicke
                 {result.address || result.city || 'Unknown location'}
               </p>
               <p className="mt-0.5 text-xs text-slate-500 truncate">
-                {[result.city, result.state, result.country].filter(Boolean).join(', ')}
+                {[result.city, result.state, result.country]
+                  .filter(Boolean)
+                  .join(', ')}
               </p>
             </button>
           ))}
         </div>
       )}
 
-      {showResults && results.length === 0 && !searching && query.length >= 3 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-lg">
-          <p className="text-sm text-slate-500">No results found. Try a different search.</p>
-        </div>
-      )}
+      {showResults &&
+        results.length === 0 &&
+        !searching &&
+        query.length >= 3 && (
+          <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-lg">
+            <p className="text-sm text-slate-500">
+              No results found. Try a different search.
+            </p>
+          </div>
+        )}
 
       {/* Map preview */}
       {hasLocation ? (
@@ -284,13 +319,23 @@ export default function LocationPicker({ value, onChange, error }: LocationPicke
           {/* Address display */}
           {selectedLocation?.formattedAddress && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs font-semibold text-slate-500">Selected Location</p>
-              <p className="mt-1 text-sm text-slate-900">{selectedLocation.formattedAddress}</p>
+              <p className="text-xs font-semibold text-slate-500">
+                Selected Location
+              </p>
+              <p className="mt-1 text-sm text-slate-900">
+                {selectedLocation.formattedAddress}
+              </p>
               <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
                 {selectedLocation.city && <span>{selectedLocation.city}</span>}
-                {selectedLocation.state && <span>{selectedLocation.state}</span>}
-                {selectedLocation.country && <span>{selectedLocation.country}</span>}
-                {selectedLocation.postalCode && <span>{selectedLocation.postalCode}</span>}
+                {selectedLocation.state && (
+                  <span>{selectedLocation.state}</span>
+                )}
+                {selectedLocation.country && (
+                  <span>{selectedLocation.country}</span>
+                )}
+                {selectedLocation.postalCode && (
+                  <span>{selectedLocation.postalCode}</span>
+                )}
               </div>
             </div>
           )}
@@ -310,8 +355,18 @@ export default function LocationPicker({ value, onChange, error }: LocationPicke
             </div>
           ) : (
             <div className="flex items-center gap-2 text-sm text-emerald-600">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               Location confirmed
             </div>
@@ -319,9 +374,24 @@ export default function LocationPicker({ value, onChange, error }: LocationPicke
         </div>
       ) : (
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-          <svg className="mx-auto h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          <svg
+            className="mx-auto h-8 w-8 text-slate-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
           </svg>
           <p className="mt-2 text-sm text-slate-400">
             Search above to select a location
@@ -364,24 +434,35 @@ function LocationMap({
   } | null>(null)
 
   useEffect(() => {
-    Promise.all([import('react-leaflet'), import('leaflet')]).then(([rl, L]) => {
-      // fix default icon
-      // @ts-ignore
-      delete L.default.Icon.Default.prototype._getIconUrl
-      // @ts-ignore
-      L.default.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      })
-      setMapParts({ MapContainer: rl.MapContainer, TileLayer: rl.TileLayer, Marker: rl.Marker })
-      setMounted(true)
-    })
+    Promise.all([import('react-leaflet'), import('leaflet')]).then(
+      ([rl, L]) => {
+        // fix default icon
+        // @ts-expect-error — leaflet icon fix for bundlers
+        delete L.default.Icon.Default.prototype._getIconUrl
+        L.default.Icon.Default.mergeOptions({
+          iconRetinaUrl:
+            'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl:
+            'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl:
+            'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        })
+        setMapParts({
+          MapContainer: rl.MapContainer,
+          TileLayer: rl.TileLayer,
+          Marker: rl.Marker,
+        })
+        setMounted(true)
+      },
+    )
   }, [])
 
   if (!mounted || !MapParts) {
     return (
-      <div className="flex items-center justify-center rounded-2xl bg-slate-100" style={{ height }}>
+      <div
+        className="flex items-center justify-center rounded-2xl bg-slate-100"
+        style={{ height }}
+      >
         <p className="text-sm text-slate-400">Loading map...</p>
       </div>
     )
@@ -428,7 +509,9 @@ function FullscreenMap({
   const [L, setL] = useState<any>(null)
   const [render, setRender] = useState(false)
   const [visible, setVisible] = useState(false)
-  const containerIdRef = useRef(`fs-map-${Math.random().toString(36).slice(2, 8)}`)
+  const containerIdRef = useRef(
+    `fs-map-${Math.random().toString(36).slice(2, 8)}`,
+  )
   const mapRef = useRef<any>(null)
   const markerRef = useRef<any>(null)
   const centerRef = useRef(center)
@@ -440,18 +523,22 @@ function FullscreenMap({
   // load leaflet once
   useEffect(() => {
     if (L) return
-    Promise.all([import('react-leaflet'), import('leaflet')]).then(([_rl, leaflet]) => {
-      const l = leaflet.default
-      // @ts-ignore — fix default marker icon
-      delete l.Icon.Default.prototype._getIconUrl
-      // @ts-ignore
-      l.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      })
-      setL(l)
-    })
+    Promise.all([import('react-leaflet'), import('leaflet')]).then(
+      ([_rl, leaflet]) => {
+        const l = leaflet.default
+        // @ts-expect-error — fix default marker icon
+        delete l.Icon.Default.prototype._getIconUrl
+        l.Icon.Default.mergeOptions({
+          iconRetinaUrl:
+            'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl:
+            'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl:
+            'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        })
+        setL(l)
+      },
+    )
   }, [L])
 
   // render/unrender + fade toggle
@@ -462,7 +549,9 @@ function FullscreenMap({
       return () => clearTimeout(t)
     }
     setRender(true)
-    const raf = requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
+    const raf = requestAnimationFrame(() =>
+      requestAnimationFrame(() => setVisible(true)),
+    )
     return () => cancelAnimationFrame(raf)
   }, [open])
 
@@ -489,8 +578,10 @@ function FullscreenMap({
 
     const icon = L.icon({
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconRetinaUrl:
+        'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      shadowUrl:
+        'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       iconSize: [25, 41],
       iconAnchor: [12, 41],
       popupAnchor: [1, -34],
@@ -561,7 +652,9 @@ function FullscreenMap({
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5">
           <div>
             <p className="text-sm font-bold text-slate-900">Preview location</p>
-            <p className="text-xs text-slate-500">Drag the pin to fine-tune. Location is selected automatically.</p>
+            <p className="text-xs text-slate-500">
+              Drag the pin to fine-tune. Location is selected automatically.
+            </p>
           </div>
           <button
             type="button"
@@ -605,16 +698,36 @@ function FullscreenMap({
 
 function ExpandIcon() {
   return (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V6a2 2 0 012-2h2M20 8V6a2 2 0 00-2-2h-2M4 16v2a2 2 0 002 2h2M20 16v2a2 2 0 01-2 2h-2" />
+    <svg
+      className="h-3.5 w-3.5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 8V6a2 2 0 012-2h2M20 8V6a2 2 0 00-2-2h-2M4 16v2a2 2 0 002 2h2M20 16v2a2 2 0 01-2 2h-2"
+      />
     </svg>
   )
 }
 
 function CloseIcon() {
   return (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    <svg
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M6 18L18 6M6 6l12 12"
+      />
     </svg>
   )
 }

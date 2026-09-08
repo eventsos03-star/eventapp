@@ -18,16 +18,25 @@ function hasValidCoordinates(venue: Venue): boolean {
   const loc = venue.location
   if (!loc?.coordinates) return false
   const [lng, lat] = loc.coordinates
-  return typeof lat === 'number' && typeof lng === 'number' && (lat !== 0 || lng !== 0)
+  return (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    (lat !== 0 || lng !== 0)
+  )
 }
 
-function policyLabel(policy?: Venue['bookingPaymentPolicy'], advancePct?: number): string {
+function policyLabel(
+  policy?: Venue['bookingPaymentPolicy'],
+  advancePct?: number,
+): string {
   if (!policy) return 'Booking policy not specified'
   switch (policy) {
     case 'fullpayment':
       return 'Full payment required at booking'
     case 'advanceAllowed':
-      return advancePct ? `Advance payment allowed (${advancePct}% at booking)` : 'Advance payment allowed'
+      return advancePct
+        ? `Advance payment allowed (${advancePct}% at booking)`
+        : 'Advance payment allowed'
     case 'payAfterEvent':
       return 'Payment after event'
     default:
@@ -78,7 +87,9 @@ export default function VenueDetailsPage() {
         setUser((userResponse as { data: SafeUser }).data)
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : 'Could not load venue.')
+          setError(
+            err instanceof ApiError ? err.message : 'Could not load venue.',
+          )
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -107,7 +118,9 @@ export default function VenueDetailsPage() {
         limit: 4,
         page: 1,
       })
-      const raw = Array.isArray(data) ? (data as Venue[]) : ((data as VenueSearchResult).venues ?? [])
+      const raw = Array.isArray(data)
+        ? (data as Venue[])
+        : ((data as VenueSearchResult).venues ?? [])
       const nearbyList: NearbyItem[] = raw
         .filter((item) => item._id !== v._id)
         .map((item) => ({ venue: item, distance: item.distance }))
@@ -131,7 +144,9 @@ export default function VenueDetailsPage() {
   // --------------------------------------------------
   const handleDelete = async () => {
     if (!venue) return
-    const confirmed = window.confirm('Are you sure you want to delete this venue?')
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this venue?',
+    )
     if (!confirmed) return
     try {
       setDeleting(true)
@@ -139,7 +154,9 @@ export default function VenueDetailsPage() {
       await api.deleteVenue(venue._id)
       router.push('/venues')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not delete venue.')
+      setError(
+        err instanceof ApiError ? err.message : 'Could not delete venue.',
+      )
     } finally {
       setDeleting(false)
     }
@@ -160,11 +177,18 @@ export default function VenueDetailsPage() {
   }
 
   if (error && !venue) {
-    return <ErrorPage header={<VenueHeader backHref="/venues" />} message={error} />
+    return (
+      <ErrorPage header={<VenueHeader backHref="/venues" />} message={error} />
+    )
   }
 
   if (!venue) {
-    return <ErrorPage header={<VenueHeader backHref="/venues" />} message="Venue not found." />
+    return (
+      <ErrorPage
+        header={<VenueHeader backHref="/venues" />}
+        message="Venue not found."
+      />
+    )
   }
 
   // --------------------------------------------------
@@ -176,8 +200,12 @@ export default function VenueDetailsPage() {
       : String(venue.ownerId)
 
   const currentUserId = user?.id ? String(user.id) : ''
-  const isOwner = !!currentUserId && !!venueOwnerId && currentUserId === venueOwnerId
-  const isAdmin = String(user?.role ?? '').trim().toLowerCase() === 'admin'
+  const isOwner =
+    !!currentUserId && !!venueOwnerId && currentUserId === venueOwnerId
+  const isAdmin =
+    String(user?.role ?? '')
+      .trim()
+      .toLowerCase() === 'admin'
   const canEditVenue = !isAdmin && isOwner
   const canDeleteVenue = isAdmin || isOwner
 
@@ -192,7 +220,9 @@ export default function VenueDetailsPage() {
 
       {error && (
         <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6">
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {error}
+          </div>
         </div>
       )}
 
@@ -201,9 +231,22 @@ export default function VenueDetailsPage() {
       -------------------------------------------------- */}
       <section className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-          <Link href="/venues" className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-amber-600">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <Link
+            href="/venues"
+            className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-amber-600"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back to Venues
           </Link>
@@ -227,11 +270,17 @@ export default function VenueDetailsPage() {
                       type="button"
                       onClick={() => setActiveImage(i)}
                       className={`relative overflow-hidden rounded-xl border-2 transition ${
-                        activeImage === i ? 'border-amber-500' : 'border-transparent hover:border-amber-300'
+                        activeImage === i
+                          ? 'border-amber-500'
+                          : 'border-transparent hover:border-amber-300'
                       }`}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt="" className="h-full w-full object-cover" />
+                      <img
+                        src={img}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>
@@ -246,23 +295,46 @@ export default function VenueDetailsPage() {
           {/* TITLE */}
           <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">Venue</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">
+                Venue
+              </p>
               <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
                 {venue.venueName}
               </h1>
               <p className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-500">
-                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <svg
+                  className="h-4 w-4 text-slate-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
                 </svg>
-                {[venue.location.formattedAddress || venue.location.address, venue.location.city, venue.location.state]
+                {[
+                  venue.location.formattedAddress || venue.location.address,
+                  venue.location.city,
+                  venue.location.state,
+                ]
                   .filter(Boolean)
                   .join(', ')}
               </p>
             </div>
 
             <div className="text-right">
-              <p className="text-[11px] uppercase tracking-wide text-slate-400">Price / day</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                Price / day
+              </p>
               <p className="text-3xl font-extrabold text-amber-600">
                 ₹{venue.pricePerDay ? venue.pricePerDay.toLocaleString() : '—'}
               </p>
@@ -280,7 +352,9 @@ export default function VenueDetailsPage() {
           <div className="space-y-6 lg:col-span-2">
             {/* ABOUT */}
             <section className="rounded-2xl border border-slate-200 bg-white p-6">
-              <h2 className="text-lg font-bold text-slate-900">About this venue</h2>
+              <h2 className="text-lg font-bold text-slate-900">
+                About this venue
+              </h2>
               <p className="mt-3 whitespace-pre-line text-[15px] leading-7 text-slate-600">
                 {venue.description || 'No description provided.'}
               </p>
@@ -289,18 +363,33 @@ export default function VenueDetailsPage() {
             {/* HIGHLIGHTS */}
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Capacity</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">{(venue.capacity ?? 0).toLocaleString()}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  Capacity
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">
+                  {(venue.capacity ?? 0).toLocaleString()}
+                </p>
                 <p className="mt-0.5 text-xs text-slate-500">Guests</p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Price / day</p>
-                <p className="mt-1 text-2xl font-bold text-amber-600">₹{(venue.pricePerDay ?? 0).toLocaleString()}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  Price / day
+                </p>
+                <p className="mt-1 text-2xl font-bold text-amber-600">
+                  ₹{(venue.pricePerDay ?? 0).toLocaleString()}
+                </p>
                 <p className="mt-0.5 text-xs text-slate-500">Per day</p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Booking</p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">{policyLabel(venue.bookingPaymentPolicy, venue.advancePercentage)}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  Booking
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">
+                  {policyLabel(
+                    venue.bookingPaymentPolicy,
+                    venue.advancePercentage,
+                  )}
+                </p>
               </div>
             </section>
           </div>
@@ -311,7 +400,13 @@ export default function VenueDetailsPage() {
               <h2 className="text-base font-bold text-slate-900">Location</h2>
               <p className="mt-1.5 text-sm text-slate-500">
                 {venue.location.formattedAddress ||
-                  [venue.location.address, venue.location.city, venue.location.state, venue.location.country, venue.location.postalCode]
+                  [
+                    venue.location.address,
+                    venue.location.city,
+                    venue.location.state,
+                    venue.location.country,
+                    venue.location.postalCode,
+                  ]
                     .filter(Boolean)
                     .join(', ')}
               </p>
@@ -327,8 +422,18 @@ export default function VenueDetailsPage() {
                   rel="noopener noreferrer"
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                    />
                   </svg>
                   Get Directions
                 </a>
@@ -338,14 +443,26 @@ export default function VenueDetailsPage() {
             {/* OWNER / ADMIN ACTIONS */}
             {(canEditVenue || canDeleteVenue) && (
               <section className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                <h2 className="text-base font-bold text-slate-900">Manage venue</h2>
+                <h2 className="text-base font-bold text-slate-900">
+                  Manage venue
+                </h2>
                 {canEditVenue && (
                   <Link
                     href={`/venues/${venue._id}/edit`}
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-400"
                   >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
                     </svg>
                     Edit Venue
                   </Link>
@@ -357,8 +474,18 @@ export default function VenueDetailsPage() {
                     disabled={deleting}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
                     </svg>
                     {deleting ? 'Deleting…' : 'Delete Venue'}
                   </button>
@@ -375,7 +502,10 @@ export default function VenueDetailsPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-900">Nearby venues</h2>
             {coords && (
-              <Link href={`/venues?lat=${coords.lat}&lng=${coords.lng}&label=${encodeURIComponent(venue.location.city || venue.location.state || 'Around here')}`} className="text-sm font-semibold text-amber-600 hover:underline">
+              <Link
+                href={`/venues?lat=${coords.lat}&lng=${coords.lng}&label=${encodeURIComponent(venue.location.city || venue.location.state || 'Around here')}`}
+                className="text-sm font-semibold text-amber-600 hover:underline"
+              >
                 View all nearby
               </Link>
             )}
@@ -399,7 +529,9 @@ export default function VenueDetailsPage() {
             </div>
           ) : (
             <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
-              <p className="text-sm text-slate-500">No nearby venues found in this area.</p>
+              <p className="text-sm text-slate-500">
+                No nearby venues found in this area.
+              </p>
             </div>
           )}
         </section>
@@ -408,12 +540,20 @@ export default function VenueDetailsPage() {
   )
 }
 
-function ErrorPage({ header, message }: { header: React.ReactNode; message: string }) {
+function ErrorPage({
+  header,
+  message,
+}: {
+  header: React.ReactNode
+  message: string
+}) {
   return (
     <div className="min-h-screen bg-slate-50">
       {header}
       <main className="mx-auto max-w-6xl px-5 py-10 sm:px-10">
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{message}</div>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {message}
+        </div>
       </main>
     </div>
   )

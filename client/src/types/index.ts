@@ -13,7 +13,10 @@ export interface SafeUser {
   emailVerified: boolean
   status: UserStatus
   role: UserRole
-  organizationId: string | null        // NEW
+  organizationId: string | null // NEW
+  organizationName?: string
+  organizationRole?: string
+  name?: string
   createdAt: string
   updatedAt: string
 }
@@ -61,9 +64,17 @@ export type ResourceStatus = 'pending' | 'approved' | 'rejected' | 'blocked'
 
 export type VenueStatus = ResourceStatus
 
-export type BookingPaymentPolicy = 'fullpayment' | 'advanceAllowed' | 'payAfterEvent'
+export type BookingPaymentPolicy =
+  'fullpayment' | 'advanceAllowed' | 'payAfterEvent'
 
-export type OrganizationType = 'college' | 'company' | 'startup' | 'ngo' | 'community' | 'event_org' | 'other'
+export type OrganizationType =
+  | 'college'
+  | 'company'
+  | 'startup'
+  | 'ngo'
+  | 'community'
+  | 'event_org'
+  | 'other'
 
 export interface OrganizationAddress {
   street: string
@@ -94,7 +105,9 @@ export interface Organization {
 export interface OrganizationMember {
   id: string
   organizationId: string
-  userId: string | { firstName: string; lastName: string; email: string; avatar?: string }
+  userId:
+    | string
+    | { firstName: string; lastName: string; email: string; avatar?: string }
   inviteEmail?: string
   role: 'owner' | 'organizer' | 'member'
   inviteStatus: 'pending' | 'accepted' | 'rejected'
@@ -166,19 +179,14 @@ export interface VenueSearchResult {
 }
 
 export type VenueBookingStatus =
-  | 'pending'
-  | 'approved'
-  | 'rejected'
-  | 'cancelled'
-  | 'completed'
+  'pending' | 'approved' | 'rejected' | 'cancelled' | 'completed'
 
 export interface VenueBooking {
   _id: string
   organizationId: string
   venueId: string
   requestedBy:
-    | string
-    | { _id: string; firstName: string; lastName: string; email: string }
+    string | { _id: string; firstName: string; lastName: string; email: string }
   startDate: string
   endDate: string
   bookingAmount: number
@@ -240,7 +248,6 @@ export interface UpdateVenueInput {
   advancePercentage?: number
 }
 
-
 export interface AdminEvent {
   _id: string
   eventName: string
@@ -257,7 +264,8 @@ export interface AdminEvent {
   certificateEnabled: boolean
   organizationId: { _id: string; organizationName: string } | null
   venueBookingId?: string
-  createdBy: { _id: string; firstName: string; lastName: string; email: string } | string
+  createdBy:
+    { _id: string; firstName: string; lastName: string; email: string } | string
   createdAt: string
   updatedAt: string
 }

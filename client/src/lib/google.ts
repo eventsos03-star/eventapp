@@ -10,7 +10,12 @@ declare global {
           }) => void
           renderButton: (
             parent: HTMLElement,
-            options: { theme?: 'outline' | 'filled_blue' | 'filled_black'; size?: 'large' | 'medium' | 'small'; width?: number; text?: string },
+            options: {
+              theme?: 'outline' | 'filled_blue' | 'filled_black'
+              size?: 'large' | 'medium' | 'small'
+              width?: number
+              text?: string
+            },
           ) => void
           cancel: () => void
         }
@@ -19,4 +24,5 @@ declare global {
   }
 }
 
-export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID as string | undefined
+export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID as
+  string | undefined

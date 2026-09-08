@@ -14,5 +14,5 @@ router.use('/organizations', organizationRoutes);
 router.use('/venues', venueRoutes);
 router.use('/bookings', bookingRoutes);
 
-router.use("/events" , eventRouter)
+router.use('/events', eventRouter);
 export default router;

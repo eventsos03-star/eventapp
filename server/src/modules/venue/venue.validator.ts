@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
-const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid resource id');
+const objectIdSchema = z
+  .string()
+  .regex(/^[0-9a-fA-F]{24}$/, 'Invalid resource id');
 
 const locationSchema = z.object({
   type: z.literal('Point').default('Point'),
@@ -28,7 +30,11 @@ export const createVenueSchema = z.object({
     location: locationSchema,
     capacity: z.number().int().min(1, 'Capacity must be at least 1'),
     pricePerDay: z.number().min(0, 'Price must be non-negative'),
-    bookingPaymentPolicy: z.enum(['fullpayment', 'advanceAllowed', 'payAfterEvent']),
+    bookingPaymentPolicy: z.enum([
+      'fullpayment',
+      'advanceAllowed',
+      'payAfterEvent',
+    ]),
     advancePercentage: z.number().min(1).max(100).optional(),
   }),
 });
@@ -42,7 +48,9 @@ export const updateVenueSchema = z.object({
     location: locationSchema.partial().optional(),
     capacity: z.number().int().min(1).optional(),
     pricePerDay: z.number().min(0).optional(),
-    bookingPaymentPolicy: z.enum(['fullpayment', 'advanceAllowed', 'payAfterEvent']).optional(),
+    bookingPaymentPolicy: z
+      .enum(['fullpayment', 'advanceAllowed', 'payAfterEvent'])
+      .optional(),
     advancePercentage: z.number().min(1).max(100).optional(),
   }),
 });

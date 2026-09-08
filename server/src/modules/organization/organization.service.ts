@@ -1,4 +1,4 @@
-import Organization, { type IOrganization } from './organization.model.js';
+import Organization from './organization.model.js';
 import OrganizationMember from './organizationMember.model.js';
 import User from '../auth/user.model.js';
 import { AppError } from '../../utils/AppError.js';
@@ -21,12 +21,21 @@ export async function createOrganization(
     description?: string;
     email: string;
     phoneNumber?: string;
-    address?: { street?: string; city?: string; state?: string; postalCode?: string; country?: string };
+    address?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      country?: string;
+    };
   },
 ): Promise<OrgResponse> {
   const existing = await Organization.findOne({ ownerId, isDeleted: false });
   if (existing) {
-    throw new AppError('You already have an organization. One user can own one organization.', 400);
+    throw new AppError(
+      'You already have an organization. One user can own one organization.',
+      400,
+    );
   }
 
   const org = await Organization.create({
@@ -57,7 +66,9 @@ export async function createOrganization(
   return serialize(org.toObject() as object);
 }
 
-export async function getOrganizationByOwner(ownerId: string): Promise<OrgResponse | null> {
+export async function getOrganizationByOwner(
+  ownerId: string,
+): Promise<OrgResponse | null> {
   const org = await Organization.findOne({ ownerId, isDeleted: false }).lean();
   if (!org) return null;
   return serialize(org as object);
@@ -89,10 +100,17 @@ export async function addMember(
   email: string,
   role: 'organizer' | 'member',
 ): Promise<OrgResponse> {
-  const org = await Organization.findOne({ _id: organizationId, ownerId, isDeleted: false });
+  const org = await Organization.findOne({
+    _id: organizationId,
+    ownerId,
+    isDeleted: false,
+  });
   if (!org) throw new AppError('Organization not found', 404);
 
-  const user = await User.findOne({ email, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
+  const user = await User.findOne({
+    email,
+    $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+  });
   if (!user) throw new AppError('No user found with this email', 404);
 
   const existing = await OrganizationMember.findOne({
@@ -100,7 +118,8 @@ export async function addMember(
     userId: user._id,
     isDeleted: false,
   });
-  if (existing) throw new AppError('User is already a member of this organization', 400);
+  if (existing)
+    throw new AppError('User is already a member of this organization', 400);
 
   const member = await OrganizationMember.create({
     organizationId,
@@ -114,8 +133,13 @@ export async function addMember(
   return serialize(member.toObject());
 }
 
-export async function getMembers(organizationId: string): Promise<OrgResponse[]> {
-  const members = await OrganizationMember.find({ organizationId, isDeleted: false })
+export async function getMembers(
+  organizationId: string,
+): Promise<OrgResponse[]> {
+  const members = await OrganizationMember.find({
+    organizationId,
+    isDeleted: false,
+  })
     .populate('userId', 'firstName lastName email avatar')
     .sort({ createdAt: 1 })
     .lean();
@@ -128,12 +152,21 @@ export async function removeMember(
   organizationId: string,
   memberId: string,
 ): Promise<void> {
-  const org = await Organization.findOne({ _id: organizationId, ownerId, isDeleted: false });
+  const org = await Organization.findOne({
+    _id: organizationId,
+    ownerId,
+    isDeleted: false,
+  });
   if (!org) throw new AppError('Organization not found', 404);
 
-  const member = await OrganizationMember.findOne({ _id: memberId, organizationId, isDeleted: false });
+  const member = await OrganizationMember.findOne({
+    _id: memberId,
+    organizationId,
+    isDeleted: false,
+  });
   if (!member) throw new AppError('Member not found', 404);
-  if (member.role === 'owner') throw new AppError('Cannot remove the organization owner', 400);
+  if (member.role === 'owner')
+    throw new AppError('Cannot remove the organization owner', 400);
 
   member.isDeleted = true;
   await member.save();

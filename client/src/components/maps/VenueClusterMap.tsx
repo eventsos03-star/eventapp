@@ -18,7 +18,11 @@ function hasValidCoordinates(venue: Venue): boolean {
   const loc = venue.location
   if (!loc?.coordinates) return false
   const [lng, lat] = loc.coordinates
-  return typeof lat === 'number' && typeof lng === 'number' && (lat !== 0 || lng !== 0)
+  return (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    (lat !== 0 || lng !== 0)
+  )
 }
 
 export default function VenueClusterMap({
@@ -53,13 +57,15 @@ export default function VenueClusterMap({
         w.L = leaflet
         await import('leaflet.markercluster')
 
-        // @ts-ignore — leaflet icon fix
+        // @ts-expect-error — leaflet icon fix for bundlers
         delete leaflet.Icon.Default.prototype._getIconUrl
-        // @ts-ignore
         leaflet.Icon.Default.mergeOptions({
-          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+          iconRetinaUrl:
+            'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl:
+            'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl:
+            'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
         })
         if (active) {
           setL(leaflet)
@@ -75,11 +81,10 @@ export default function VenueClusterMap({
     }
   }, [])
 
-  const createPopupContent = useCallback(
-    (venue: Venue) => {
-      const div = document.createElement('div')
-      div.className = 'p-1 min-w-[180px]'
-      div.innerHTML = `
+  const createPopupContent = useCallback((venue: Venue) => {
+    const div = document.createElement('div')
+    div.className = 'p-1 min-w-[180px]'
+    div.innerHTML = `
         <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:4px">${venue.venueName}</div>
         <div style="font-size:11px;color:#64748b;margin-bottom:4px">${venue.location?.city || ''}</div>
         <div style="display:flex;gap:8px;font-size:11px;color:#64748b;margin-bottom:6px">
@@ -88,10 +93,8 @@ export default function VenueClusterMap({
         </div>
         <a href="/venues/${venue._id}" style="display:inline-block;padding:4px 10px;font-size:11px;font-weight:600;color:#92400e;background:#fef3c7;border-radius:6px;text-decoration:none">View Venue</a>
       `
-      return div
-    },
-    []
-  )
+    return div
+  }, [])
 
   // Create the map once leaflet is ready + the DOM node exists.
   useEffect(() => {
@@ -150,7 +153,12 @@ export default function VenueClusterMap({
     map.addLayer(clusterGroup)
 
     if (validVenues.length > 0) {
-      const bounds = L.latLngBounds(validVenues.map((v) => [v.location.coordinates[1], v.location.coordinates[0]]))
+      const bounds = L.latLngBounds(
+        validVenues.map((v) => [
+          v.location.coordinates[1],
+          v.location.coordinates[0],
+        ]),
+      )
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
     }
   }, [venues, L, createPopupContent])
@@ -160,21 +168,29 @@ export default function VenueClusterMap({
     markersRef.current.forEach(({ id, marker }) => {
       if (id === selectedVenueId) {
         marker.openPopup()
-        mapRef.current.setView(marker.getLatLng(), Math.max(mapRef.current.getZoom(), 13))
+        mapRef.current.setView(
+          marker.getLatLng(),
+          Math.max(mapRef.current.getZoom(), 13),
+        )
       }
     })
   }, [selectedVenueId, L])
 
   if (!mounted) {
     return (
-      <div className={`flex items-center justify-center rounded-2xl bg-slate-100 ${className}`} style={{ minHeight: 400 }}>
+      <div
+        className={`flex items-center justify-center rounded-2xl bg-slate-100 ${className}`}
+        style={{ minHeight: 400 }}
+      >
         <p className="text-sm text-slate-400">Loading map...</p>
       </div>
     )
   }
 
   return (
-    <div className={`overflow-hidden rounded-2xl border border-slate-200 ${className}`}>
+    <div
+      className={`overflow-hidden rounded-2xl border border-slate-200 ${className}`}
+    >
       <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"

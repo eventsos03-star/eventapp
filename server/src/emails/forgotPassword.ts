@@ -5,7 +5,10 @@ export function buildResetPasswordLink(token: string): string {
   return `${env.CLIENT_URL}/reset-password?token=${token}`;
 }
 
-export function forgotPasswordTemplate(firstName: string, link: string): string {
+export function forgotPasswordTemplate(
+  firstName: string,
+  link: string,
+): string {
   const content = `
     <p>Hi ${firstName},</p>
     <p>We received a request to reset your EventOS password.</p>

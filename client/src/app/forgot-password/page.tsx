@@ -34,7 +34,8 @@ function EventOpsHeroPanel() {
           </span>
         </h2>
         <p className="mt-3 sm:mt-4 max-w-md text-xs sm:text-sm text-slate-400 leading-relaxed">
-          Manage venue bookings, real-time QR attendance, organizing team tasks, and instant post-event certifications from one central hub.
+          Manage venue bookings, real-time QR attendance, organizing team tasks,
+          and instant post-event certifications from one central hub.
         </p>
       </div>
 
@@ -42,8 +43,12 @@ function EventOpsHeroPanel() {
         <div className="rounded-2xl border border-white/10 bg-[#111726]/80 p-4 sm:p-6 shadow-2xl backdrop-blur-xl">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div className="text-[11px] sm:text-xs font-medium text-slate-400">Peak Venue Check-ins</div>
-              <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 sm:mt-1">2,840 Attendees</div>
+              <div className="text-[11px] sm:text-xs font-medium text-slate-400">
+                Peak Venue Check-ins
+              </div>
+              <div className="text-xl sm:text-2xl font-extrabold text-white mt-0.5 sm:mt-1">
+                2,840 Attendees
+              </div>
             </div>
             <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] sm:text-xs font-semibold text-amber-400 border border-amber-500/20">
               ⚡ 98.4% Scan Speed
@@ -52,7 +57,10 @@ function EventOpsHeroPanel() {
 
           <div className="mt-6 sm:mt-8 flex items-end justify-between gap-2 sm:gap-3 h-28 sm:h-32 px-1">
             {activityData.map((item) => (
-              <div key={item.time} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+              <div
+                key={item.time}
+                className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group"
+              >
                 <div
                   className="w-full rounded-md bg-gradient-to-t from-amber-600 to-amber-400 transition-all duration-300 group-hover:brightness-125 origin-bottom"
                   style={{ height: `${item.height}%` }}
@@ -67,12 +75,20 @@ function EventOpsHeroPanel() {
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="rounded-2xl border border-white/10 bg-[#111726]/80 p-3.5 sm:p-4 backdrop-blur-xl">
-            <div className="text-[11px] sm:text-xs text-slate-400">Confirmed Venues</div>
-            <div className="mt-1 text-base sm:text-xl font-bold text-white">18 Halls Booked</div>
+            <div className="text-[11px] sm:text-xs text-slate-400">
+              Confirmed Venues
+            </div>
+            <div className="mt-1 text-base sm:text-xl font-bold text-white">
+              18 Halls Booked
+            </div>
           </div>
           <div className="rounded-2xl border border-white/10 bg-[#111726]/80 p-3.5 sm:p-4 backdrop-blur-xl">
-            <div className="text-[11px] sm:text-xs text-slate-400">Certificates Issued</div>
-            <div className="mt-1 text-base sm:text-xl font-bold text-amber-400">1,450 Auto-Sent</div>
+            <div className="text-[11px] sm:text-xs text-slate-400">
+              Certificates Issued
+            </div>
+            <div className="mt-1 text-base sm:text-xl font-bold text-amber-400">
+              1,450 Auto-Sent
+            </div>
           </div>
         </div>
       </div>
@@ -122,7 +138,8 @@ function ForgotPasswordForm() {
                 Check your inbox
               </h1>
               <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-slate-500">
-                If an account exists for that email, a password reset link is on its way. It expires in 30 minutes.
+                If an account exists for that email, a password reset link is on
+                its way. It expires in 30 minutes.
               </p>
 
               <div className="mt-6 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700 border border-emerald-200">
@@ -151,7 +168,11 @@ function ForgotPasswordForm() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} noValidate className="mt-6 sm:mt-8 space-y-4">
+              <form
+                onSubmit={handleSubmit}
+                noValidate
+                className="mt-6 sm:mt-8 space-y-4"
+              >
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Email Address
@@ -183,7 +204,10 @@ function ForgotPasswordForm() {
 
               <p className="mt-6 text-center text-xs sm:text-sm text-slate-500">
                 Remembered it?{' '}
-                <Link href="/login" className="font-semibold text-amber-600 hover:underline">
+                <Link
+                  href="/login"
+                  className="font-semibold text-amber-600 hover:underline"
+                >
                   Sign in
                 </Link>
               </p>

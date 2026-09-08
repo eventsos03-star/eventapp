@@ -29,7 +29,11 @@ router.get('/', validate(listVenuesQuerySchema), getVenues);
 router.get('/admin', authenticate, getAllVenuesForAdmin);
 router.get('/my', authenticate, getMyVenues);
 router.get('/geocode/search', validate(geocodeQuerySchema), searchLocations);
-router.get('/geocode/reverse', validate(reverseGeocodeQuerySchema), reverseSearchLocation);
+router.get(
+  '/geocode/reverse',
+  validate(reverseGeocodeQuerySchema),
+  reverseSearchLocation,
+);
 router.get('/:id', validate(venueIdParamSchema), getVenueById);
 router.post('/', authenticate, validate(createVenueSchema), createVenue);
 router.patch('/:id/approve', authenticate, approveVenue);

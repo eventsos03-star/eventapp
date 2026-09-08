@@ -12,7 +12,9 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="topbar">
         <div className="topbar-inner">
           <Link href="/dashboard" className="brand">
-            <span className="brand-mark" aria-hidden="true">E</span>
+            <span className="brand-mark" aria-hidden="true">
+              E
+            </span>
             <span className="brand-name">EventOS</span>
           </Link>
           {user && (
@@ -22,7 +24,11 @@ export function Layout({ children }: { children: ReactNode }) {
                 {user.lastName.charAt(0)}
               </span>
               <span className="topbar-email">{user.email}</span>
-              <button type="button" className="btn btn-ghost" onClick={() => void logout()}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => void logout()}
+              >
                 Sign out
               </button>
             </div>
