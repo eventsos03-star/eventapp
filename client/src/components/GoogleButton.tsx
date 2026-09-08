@@ -20,8 +20,7 @@ export function GoogleButton({ onCredential, onError }: GoogleButtonProps) {
     let attempts = 0
 
     const render = () => {
-      if (cancelled || !containerRef.current || !window.google?.accounts?.id)
-        return false
+      if (cancelled || !containerRef.current || !window.google?.accounts?.id) return false
 
       window.google.accounts.id.initialize({
         client_id: clientId,
@@ -30,9 +29,7 @@ export function GoogleButton({ onCredential, onError }: GoogleButtonProps) {
           try {
             await onCredential(response.credential)
           } catch (error) {
-            onError?.(
-              error instanceof Error ? error.message : 'Google login failed',
-            )
+            onError?.(error instanceof Error ? error.message : 'Google login failed')
           }
         },
       })
@@ -63,18 +60,11 @@ export function GoogleButton({ onCredential, onError }: GoogleButtonProps) {
   if (!GOOGLE_CLIENT_ID) {
     return (
       <p className="google-disabled">
-        Google login is not configured. Set{' '}
-        <code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> in <code>client/.env</code> to
-        enable it.
+        Google login is not configured. Set <code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> in{' '}
+        <code>client/.env</code> to enable it.
       </p>
     )
   }
 
-  return (
-    <div
-      ref={containerRef}
-      className="google-button"
-      data-rendered={rendered || undefined}
-    />
-  )
+  return <div ref={containerRef} className="google-button" data-rendered={rendered || undefined} />
 }

@@ -3,11 +3,7 @@ import { success } from '../../../utils/response.js';
 import * as bookingService from './booking.service.js';
 
 export const createBooking = asyncHandler(async (req, res) => {
-  const { venueId, startDate, endDate } = req.body as {
-    venueId: string;
-    startDate: Date;
-    endDate: Date;
-  };
+  const { venueId, startDate, endDate } = req.body as { venueId: string; startDate: Date; endDate: Date };
   const booking = await bookingService.createBooking({
     userId: req.user!.id,
     organizationId: req.user!.organizationId,

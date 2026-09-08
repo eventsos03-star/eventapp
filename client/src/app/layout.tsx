@@ -1,13 +1,13 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
-import './globals.css'
-import 'leaflet/dist/leaflet.css'
-import { Providers } from './providers'
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import "./globals.css";
+import "leaflet/dist/leaflet.css";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: 'EventOS',
-  description: 'EventOS — authentication and account dashboard',
-}
+  title: "EventOS",
+  description: "EventOS — authentication and account dashboard",
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -19,5 +19,5 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Providers>{children}</Providers>
       </body>
     </html>
-  )
+  );
 }

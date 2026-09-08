@@ -21,7 +21,7 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 function MembersContent() {
-  useAuth()
+  const { user } = useAuth()
   const [org, setOrg] = useState<Organization | null>(null)
   const [members, setMembers] = useState<OrganizationMember[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,10 +67,7 @@ function MembersContent() {
       setAddRole('member')
       await fetchData()
     } catch (err) {
-      setMessage({
-        type: 'error',
-        text: err instanceof Error ? err.message : 'Failed to add member',
-      })
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to add member' })
     } finally {
       setAdding(false)
     }
@@ -85,10 +82,7 @@ function MembersContent() {
       setMessage({ type: 'success', text: 'Member removed' })
       await fetchData()
     } catch (err) {
-      setMessage({
-        type: 'error',
-        text: err instanceof Error ? err.message : 'Failed to remove member',
-      })
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to remove member' })
     } finally {
       setRemoving(null)
     }
@@ -107,24 +101,13 @@ function MembersContent() {
       <div className="min-h-screen bg-ink font-sans text-paper-dim">
         <nav className="flex items-center justify-between border-b border-ink-line px-5 py-6 sm:px-10 lg:px-16">
           <div className="flex items-center gap-2.5">
-            <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">
-              E
-            </span>
-            <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">
-              EventOS
-            </span>
+            <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">E</span>
+            <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">EventOS</span>
           </div>
-          <Link
-            href="/organization"
-            className="text-sm text-paper-dim/70 transition hover:text-paper-dim"
-          >
-            Back to Organization
-          </Link>
+          <Link href="/organization" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Back to Organization</Link>
         </nav>
         <main className="mx-auto max-w-2xl px-5 pb-24 pt-16 sm:px-10 text-center">
-          <p className="text-sm text-ink/50">
-            Member management is available after your organization is approved.
-          </p>
+          <p className="text-sm text-ink/50">Member management is available after your organization is approved.</p>
         </main>
       </div>
     )
@@ -134,96 +117,47 @@ function MembersContent() {
     <div className="min-h-screen bg-ink font-sans text-paper-dim">
       <nav className="flex items-center justify-between border-b border-ink-line px-5 py-6 sm:px-10 lg:px-16">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">
-            E
-          </span>
-          <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">
-            EventOS
-          </span>
+          <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">E</span>
+          <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">EventOS</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link
-            href="/organization"
-            className="text-sm text-paper-dim/70 transition hover:text-paper-dim"
-          >
-            Organization
-          </Link>
-          <Link
-            href="/dashboard"
-            className="text-sm text-paper-dim/70 transition hover:text-paper-dim"
-          >
-            Dashboard
-          </Link>
+          <Link href="/organization" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Organization</Link>
+          <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
         </div>
       </nav>
 
       <main className="mx-auto max-w-3xl px-5 pb-24 pt-12 sm:px-10">
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-semibold text-paper-dim sm:text-4xl">
-            Manage Members
-          </h1>
+          <h1 className="font-display text-3xl font-semibold text-paper-dim sm:text-4xl">Manage Members</h1>
           <p className="mt-2 text-paper-dim/55">{org.organizationName}</p>
         </div>
 
         {message && (
-          <div
-            className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${message.type === 'success' ? 'border-teal/30 bg-teal/10 text-teal' : 'border-red-300 bg-red-50 text-red-700'}`}
-          >
+          <div className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${message.type === 'success' ? 'border-teal/30 bg-teal/10 text-teal' : 'border-red-300 bg-red-50 text-red-700'}`}>
             {message.text}
           </div>
         )}
 
         {error && (
-          <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm text-red-700">
-            {error}
-          </div>
+          <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</div>
         )}
 
         <div className="relative mb-8 rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-          <span
-            className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
-            aria-hidden="true"
-          />
-          <h2 className="mb-4 font-display text-xl font-semibold text-ink">
-            Add Member
-          </h2>
-          <form
-            onSubmit={handleAdd}
-            className="flex flex-col gap-4 sm:flex-row sm:items-end"
-          >
+          <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+          <h2 className="mb-4 font-display text-xl font-semibold text-ink">Add Member</h2>
+          <form onSubmit={handleAdd} className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <label className="flex flex-1 flex-col gap-1.5">
-              <span className="text-xs font-semibold tracking-wide text-ink/60">
-                EMAIL
-              </span>
-              <input
-                required
-                type="email"
-                value={addEmail}
-                onChange={(e) => setAddEmail(e.target.value)}
-                placeholder="member@email.com"
-                className={inputClass()}
-              />
+              <span className="text-xs font-semibold tracking-wide text-ink/60">EMAIL</span>
+              <input required type="email" value={addEmail} onChange={(e) => setAddEmail(e.target.value)} placeholder="member@email.com" className={inputClass()} />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold tracking-wide text-ink/60">
-                ROLE
-              </span>
-              <select
-                value={addRole}
-                onChange={(e) =>
-                  setAddRole(e.target.value as 'organizer' | 'member')
-                }
-                className={inputClass()}
-              >
+              <span className="text-xs font-semibold tracking-wide text-ink/60">ROLE</span>
+              <select value={addRole} onChange={(e) => setAddRole(e.target.value as 'organizer' | 'member')} className={inputClass()}>
                 <option value="member">Member</option>
                 <option value="organizer">Organizer</option>
               </select>
             </label>
-            <button
-              type="submit"
-              disabled={adding}
-              className="flex items-center justify-center gap-2 rounded-lg bg-amber px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-amber-deep disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <button type="submit" disabled={adding} className="flex items-center justify-center gap-2 rounded-lg bg-amber px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-amber-deep disabled:cursor-not-allowed disabled:opacity-60">
               {adding && <Spinner size={14} />}
               Add
             </button>
@@ -231,41 +165,24 @@ function MembersContent() {
         </div>
 
         <div className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-          <span
-            className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
-            aria-hidden="true"
-          />
-          <h2 className="mb-4 font-display text-xl font-semibold text-ink">
-            Members ({members.length})
-          </h2>
+          <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+          <h2 className="mb-4 font-display text-xl font-semibold text-ink">Members ({members.length})</h2>
           {members.length === 0 ? (
             <p className="text-sm text-ink/45">No members yet.</p>
           ) : (
             <ul className="flex flex-col gap-3">
               {members.map((m) => {
-                const userObj =
-                  typeof m.userId === 'object' && m.userId !== null
-                    ? m.userId
-                    : null
+                const userObj = typeof m.userId === 'object' && m.userId !== null ? m.userId : null
                 return (
-                  <li
-                    key={m.id}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-paper-dim px-4 py-3"
-                  >
+                  <li key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-paper-dim px-4 py-3">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-ink">
-                        {userObj
-                          ? `${userObj.firstName} ${userObj.lastName}`
-                          : (m.inviteEmail ?? '—')}
+                        {userObj ? `${userObj.firstName} ${userObj.lastName}` : m.inviteEmail ?? '—'}
                       </p>
-                      <p className="text-xs text-ink/45">
-                        {userObj?.email ?? m.inviteEmail}
-                      </p>
+                      <p className="text-xs text-ink/45">{userObj?.email ?? m.inviteEmail}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-ink-soft px-2.5 py-0.5 text-xs font-semibold text-ink/60">
-                        {ROLE_LABELS[m.role] ?? m.role}
-                      </span>
+                      <span className="rounded-full bg-ink-soft px-2.5 py-0.5 text-xs font-semibold text-ink/60">{ROLE_LABELS[m.role] ?? m.role}</span>
                       {m.role !== 'owner' && (
                         <button
                           type="button"

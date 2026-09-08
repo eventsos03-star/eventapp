@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useAuth } from '@/context/AuthContext'
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -15,30 +15,32 @@ import {
   Settings,
   Plus,
   ArrowLeft,
-} from 'lucide-react'
+} from "lucide-react";
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/my-organization', icon: LayoutDashboard },
-  { label: 'Events', href: '/my-organization/events', icon: CalendarDays },
-  { label: 'Operations', href: '/my-organization/operations', icon: Settings2 },
-  { label: 'Participants', href: '/my-organization/participants', icon: Users },
-  { label: 'Members', href: '/my-organization/members', icon: UserPlus },
-  { label: 'Venues', href: '/my-organization/venues', icon: MapPin },
-  { label: 'Certificates', href: '/my-organization/certificates', icon: Award },
-  { label: 'Reports', href: '/my-organization/reports', icon: BarChart3 },
-  { label: 'Settings', href: '/my-organization/settings', icon: Settings },
-]
+  { label: "Dashboard", href: "/my-organization", icon: LayoutDashboard },
+  { label: "Events", href: "/my-organization/events", icon: CalendarDays },
+  { label: "Operations", href: "/my-organization/operations", icon: Settings2 },
+  { label: "Participants", href: "/my-organization/participants", icon: Users },
+  { label: "Members", href: "/my-organization/members", icon: UserPlus },
+  { label: "Venues", href: "/my-organization/venues", icon: MapPin },
+  { label: "Certificates", href: "/my-organization/certificates", icon: Award },
+  { label: "Reports", href: "/my-organization/reports", icon: BarChart3 },
+  { label: "Settings", href: "/my-organization/settings", icon: Settings },
+];
 
 export default function OrganizationLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const pathname = usePathname()
-  const { user } = useAuth()
+  const pathname = usePathname();
+  const { user } = useAuth();
 
   const isActive = (href: string) =>
-    href === '/my-organization' ? pathname === href : pathname?.startsWith(href)
+    href === "/my-organization"
+      ? pathname === href
+      : pathname?.startsWith(href);
 
   return (
     <div className="flex min-h-screen w-full bg-[#090d16] text-white font-sans antialiased">
@@ -51,10 +53,10 @@ export default function OrganizationLayout({
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-white">
-              {user?.organizationName ?? 'My Organization'}
+              {user?.organizationName ?? "My Organization"}
             </p>
             <p className="text-[11px] text-slate-400">
-              {user?.organizationRole ?? 'Owner'}
+              {user?.organizationRole ?? "Owner"}
             </p>
           </div>
         </div>
@@ -62,21 +64,21 @@ export default function OrganizationLayout({
         {/* Nav */}
         <nav className="flex-1 space-y-1">
           {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
-            const active = isActive(href)
+            const active = isActive(href);
             return (
               <Link
                 key={href}
                 href={href}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   active
-                    ? 'bg-amber-500 text-slate-950 font-semibold'
-                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                    ? "bg-amber-500 text-slate-950 font-semibold"
+                    : "text-slate-300 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 {label}
               </Link>
-            )
+            );
           })}
         </nav>
 
@@ -104,5 +106,5 @@ export default function OrganizationLayout({
         {children}
       </main>
     </div>
-  )
+  );
 }

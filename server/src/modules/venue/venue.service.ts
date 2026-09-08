@@ -1,9 +1,7 @@
 import Venue from './venue.model.js';
 import type { PipelineStage } from 'mongoose';
 
-const NOT_DELETED = {
-  $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-};
+const NOT_DELETED = { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
 
 export const createVenue = async (data: Record<string, unknown>) => {
   return await Venue.create(data);
@@ -72,18 +70,14 @@ export const getNearbyVenues = async (params: {
 
   if (minCapacity !== undefined || maxCapacity !== undefined) {
     filter.capacity = {};
-    if (minCapacity !== undefined)
-      (filter.capacity as Record<string, number>).$gte = minCapacity;
-    if (maxCapacity !== undefined)
-      (filter.capacity as Record<string, number>).$lte = maxCapacity;
+    if (minCapacity !== undefined) (filter.capacity as Record<string, number>).$gte = minCapacity;
+    if (maxCapacity !== undefined) (filter.capacity as Record<string, number>).$lte = maxCapacity;
   }
 
   if (minPrice !== undefined || maxPrice !== undefined) {
     filter.pricePerDay = {};
-    if (minPrice !== undefined)
-      (filter.pricePerDay as Record<string, number>).$gte = minPrice;
-    if (maxPrice !== undefined)
-      (filter.pricePerDay as Record<string, number>).$lte = maxPrice;
+    if (minPrice !== undefined) (filter.pricePerDay as Record<string, number>).$gte = minPrice;
+    if (maxPrice !== undefined) (filter.pricePerDay as Record<string, number>).$lte = maxPrice;
   }
 
   const skip = (page - 1) * limit;
@@ -126,50 +120,22 @@ export const getVenueById = async (id: string) => {
 };
 
 export const approveVenue = async (id: string) => {
-  return await Venue.findByIdAndUpdate(
-    id,
-    { status: 'approved' },
-    { new: true },
-  );
+  return await Venue.findByIdAndUpdate(id, { status: 'approved' }, { new: true });
 };
 
-export const updateVenue = async (
-  id: string,
-  ownerId: string,
-  data: Record<string, unknown>,
-) => {
-  return await Venue.findOneAndUpdate(
-    { _id: id, ownerId },
-    { $set: data },
-    { new: true, runValidators: true },
-  );
+export const updateVenue = async (id: string, ownerId: string, data: Record<string, unknown>) => {
+  return await Venue.findOneAndUpdate({ _id: id, ownerId }, { $set: data }, { new: true, runValidators: true });
 };
 
-export const deleteVenue = async (
-  id: string,
-  userId: string,
-  userRole: string,
-) => {
+export const deleteVenue = async (id: string, userId: string, userRole: string) => {
   if (userRole === 'ADMIN') {
-    return await Venue.findByIdAndUpdate(
-      id,
-      { isDeleted: true },
-      { new: true },
-    );
+    return await Venue.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
   }
-  return await Venue.findOneAndUpdate(
-    { _id: id, ownerId: userId },
-    { isDeleted: true },
-    { new: true },
-  );
+  return await Venue.findOneAndUpdate({ _id: id, ownerId: userId }, { isDeleted: true }, { new: true });
 };
 
 export const rejectVenue = async (id: string) => {
-  return await Venue.findByIdAndUpdate(
-    id,
-    { status: 'rejected' },
-    { new: true },
-  );
+  return await Venue.findByIdAndUpdate(id, { status: 'rejected' }, { new: true });
 };
 
 export const getMyVenues = async (ownerId: string) => {

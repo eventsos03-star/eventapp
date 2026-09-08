@@ -9,8 +9,7 @@ const jsonMessage = (message: string) => ({
 // Key rate limits by IP + email so guessing is throttled per account as well
 // as per IP (req.body is parsed by express.json before routes run).
 function keyByIpAndEmail(req: Request): string {
-  const email =
-    typeof req.body?.email === 'string' ? req.body.email.toLowerCase() : '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.toLowerCase() : '';
   return `${req.ip}:${email}`;
 }
 
@@ -40,7 +39,5 @@ export const forgotPasswordLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: keyByIpAndEmail,
-  message: jsonMessage(
-    'Too many password reset requests, please try again later.',
-  ),
+  message: jsonMessage('Too many password reset requests, please try again later.'),
 });

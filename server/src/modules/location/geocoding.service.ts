@@ -16,9 +16,6 @@ export async function geocode(address: string): Promise<GeocodingResult[]> {
   return provider.geocode(address);
 }
 
-export async function reverseGeocode(
-  latitude: number,
-  longitude: number,
-): Promise<GeocodingResult | null> {
+export async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodingResult | null> {
   return provider.reverseGeocode(latitude, longitude);
 }

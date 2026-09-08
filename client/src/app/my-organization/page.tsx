@@ -1,69 +1,69 @@
-'use client'
+"use client";
 
-import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
-import { eventService, EventRecord } from '@/lib/eventApi'
-import { useAuth } from '@/context/AuthContext'
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { eventService, EventRecord } from "@/lib/eventApi";
+import { useAuth } from "@/context/AuthContext";
 
 export default function MyOrganizationPage() {
-  const { user } = useAuth()
-  const [events, setEvents] = useState<EventRecord[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [actionId, setActionId] = useState<string | null>(null)
+  const { user } = useAuth();
+  const [events, setEvents] = useState<EventRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null);
 
   const fetchEvents = () => {
-    setLoading(true)
+    setLoading(true);
     eventService
       .byOrganization()
       .then((res) => setEvents(res.data))
       .catch((err) =>
-        setError(err?.response?.data?.message ?? 'Failed to load events'),
+        setError(err?.response?.data?.message ?? "Failed to load events")
       )
-      .finally(() => setLoading(false))
-  }
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    fetchEvents()
-  }, [])
+    fetchEvents();
+  }, []);
 
   const stats = useMemo(() => {
-    const total = events.length
-    const upcoming = events.filter((e) => e.status === 'published').length
-    const ongoing = events.filter((e) => e.status === 'ongoing').length
-    const completed = events.filter((e) => e.status === 'completed').length
-    return { total, upcoming, ongoing, completed }
-  }, [events])
+    const total = events.length;
+    const upcoming = events.filter((e) => e.status === "published").length;
+    const ongoing = events.filter((e) => e.status === "ongoing").length;
+    const completed = events.filter((e) => e.status === "completed").length;
+    return { total, upcoming, ongoing, completed };
+  }, [events]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this event? This can't be undone.")) return
-    setActionId(id)
+    if (!confirm("Delete this event? This can't be undone.")) return;
+    setActionId(id);
     try {
-      await eventService.remove(id)
-      fetchEvents()
+      await eventService.remove(id);
+      fetchEvents();
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to delete event')
+      setError(err?.response?.data?.message ?? "Failed to delete event");
     } finally {
-      setActionId(null)
+      setActionId(null);
     }
-  }
+  };
 
-  const statusBadge = (status: EventRecord['status']) => {
+  const statusBadge = (status: EventRecord["status"]) => {
     const styles: Record<string, string> = {
-      draft: 'border-slate-500/30 bg-slate-500/10 text-slate-300',
-      published: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-      ongoing: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-      completed: 'border-sky-500/30 bg-sky-500/10 text-sky-400',
-      cancelled: 'border-red-500/30 bg-red-500/10 text-red-400',
-    }
+      draft: "border-slate-500/30 bg-slate-500/10 text-slate-300",
+      published: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+      ongoing: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+      completed: "border-sky-500/30 bg-sky-500/10 text-sky-400",
+      cancelled: "border-red-500/30 bg-red-500/10 text-red-400",
+    };
     return (
       <span
         className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize ${styles[status]}`}
       >
         {status}
       </span>
-    )
-  }
+    );
+  };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#090d16] text-white font-sans antialiased p-5 sm:p-10 lg:p-12">
@@ -83,8 +83,7 @@ export default function MyOrganizationPage() {
               </span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Welcome back,{' '}
-              <span className="text-amber-400">{user?.name ?? 'there'}</span>
+              Welcome back, <span className="text-amber-400">{user?.name ?? "there"}</span>
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-slate-400">
               {user?.organizationName
@@ -104,10 +103,10 @@ export default function MyOrganizationPage() {
         {/* Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total Events', value: stats.total },
-            { label: 'Published', value: stats.upcoming },
-            { label: 'Ongoing', value: stats.ongoing },
-            { label: 'Completed', value: stats.completed },
+            { label: "Total Events", value: stats.total },
+            { label: "Published", value: stats.upcoming },
+            { label: "Ongoing", value: stats.ongoing },
+            { label: "Completed", value: stats.completed },
           ].map((s) => (
             <div
               key={s.label}
@@ -116,9 +115,7 @@ export default function MyOrganizationPage() {
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                 {s.label}
               </p>
-              <p className="mt-2 text-2xl font-extrabold text-white">
-                {s.value}
-              </p>
+              <p className="mt-2 text-2xl font-extrabold text-white">{s.value}</p>
             </div>
           ))}
         </div>
@@ -163,9 +160,7 @@ export default function MyOrganizationPage() {
                     <th className="px-6 py-3 font-semibold">Date</th>
                     <th className="px-6 py-3 font-semibold">Status</th>
                     <th className="px-6 py-3 font-semibold">Capacity</th>
-                    <th className="px-6 py-3 font-semibold text-right">
-                      Actions
-                    </th>
+                    <th className="px-6 py-3 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -178,13 +173,10 @@ export default function MyOrganizationPage() {
                         {event.eventName}
                       </td>
                       <td className="px-6 py-4 text-slate-300">
-                        {new Date(event.eventDate).toLocaleDateString(
-                          undefined,
-                          {
-                            month: 'short',
-                            day: 'numeric',
-                          },
-                        )}
+                        {new Date(event.eventDate).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </td>
                       <td className="px-6 py-4">{statusBadge(event.status)}</td>
                       <td className="px-6 py-4 text-slate-300">
@@ -216,5 +208,5 @@ export default function MyOrganizationPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

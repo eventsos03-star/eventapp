@@ -4,30 +4,10 @@ import Link from 'next/link'
 import { useAuth } from '../context/AuthContext'
 
 const UPCOMING = [
-  {
-    code: 'SF-014',
-    name: 'Founders Summit',
-    date: 'AUG 22',
-    seats: '412 going',
-  },
-  {
-    code: 'NY-208',
-    name: 'Indie Music Fest',
-    date: 'AUG 29',
-    seats: '1,204 going',
-  },
-  {
-    code: 'LDN-057',
-    name: 'Product Meetup',
-    date: 'SEP 03',
-    seats: '86 going',
-  },
-  {
-    code: 'AU-133',
-    name: 'Design Off-Site',
-    date: 'SEP 11',
-    seats: '150 going',
-  },
+  { code: 'SF-014', name: 'Founders Summit', date: 'AUG 22', seats: '412 going' },
+  { code: 'NY-208', name: 'Indie Music Fest', date: 'AUG 29', seats: '1,204 going' },
+  { code: 'LDN-057', name: 'Product Meetup', date: 'SEP 03', seats: '86 going' },
+  { code: 'AU-133', name: 'Design Off-Site', date: 'SEP 11', seats: '150 going' },
 ]
 
 const STEPS = [
@@ -125,9 +105,9 @@ export default function HomePage() {
             We&apos;ll run the door.
           </h1>
           <p className="mt-5 max-w-md text-[17px] leading-relaxed text-paper-dim/60">
-            Build the page, sell the tickets, track every RSVP, and check guests
-            in at the entrance — all from one dashboard built for people who run
-            events, not IT departments.
+            Build the page, sell the tickets, track every RSVP, and check guests in at the
+            entrance — all from one dashboard built for people who run events, not IT
+            departments.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-5">
             <Link
@@ -178,9 +158,7 @@ export default function HomePage() {
                 <span className="font-sans text-[15px] font-medium text-paper-dim">
                   {e.name}
                 </span>
-                <span className="col-start-2 text-paper-dim/50 sm:col-start-3">
-                  {e.date}
-                </span>
+                <span className="col-start-2 text-paper-dim/50 sm:col-start-3">{e.date}</span>
                 <span className="col-start-2 text-left text-paper-dim/50 sm:col-start-4 sm:text-right">
                   {e.seats}
                 </span>
@@ -200,9 +178,7 @@ export default function HomePage() {
               <h3 className="mt-2.5 mb-2 font-display text-xl font-semibold text-paper-dim">
                 {s.title}
               </h3>
-              <p className="text-[14.5px] leading-relaxed text-paper-dim/55">
-                {s.body}
-              </p>
+              <p className="text-[14.5px] leading-relaxed text-paper-dim/55">{s.body}</p>
             </div>
           ))}
         </section>
@@ -224,9 +200,7 @@ export default function HomePage() {
               <h3 className="mt-2.5 mb-2 font-display text-xl font-semibold text-ink">
                 {f.title}
               </h3>
-              <p className="text-[14.5px] leading-relaxed text-ink/55">
-                {f.body}
-              </p>
+              <p className="text-[14.5px] leading-relaxed text-ink/55">{f.body}</p>
             </div>
           ))}
         </section>

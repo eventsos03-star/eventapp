@@ -1,15 +1,8 @@
 import { z } from 'zod';
 
-const resourceStatuses = [
-  'pending',
-  'approved',
-  'rejected',
-  'blocked',
-] as const;
+const resourceStatuses = ['pending', 'approved', 'rejected', 'blocked'] as const;
 
-const objectIdSchema = z
-  .string()
-  .regex(/^[0-9a-fA-F]{24}$/, 'Invalid resource id');
+const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid resource id');
 
 export const listOrganizationsSchema = z.object({
   query: z.object({

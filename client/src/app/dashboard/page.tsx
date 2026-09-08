@@ -67,6 +67,10 @@ function DashboardContent() {
   const [sessionsError, setSessionsError] = useState<string | null>(null)
   const [revokingSession, setRevokingSession] = useState<string | null>(null)
 
+  if (!user) return null
+
+  const fullName = `${user.firstName} ${user.lastName}`
+
   useEffect(() => {
     let active = true
     api
@@ -75,31 +79,20 @@ function DashboardContent() {
         if (active) setSessions(data ?? [])
       })
       .catch((err: unknown) => {
-        if (active)
-          setSessionsError(
-            err instanceof Error ? err.message : 'Could not load sessions',
-          )
+        if (active) setSessionsError(err instanceof Error ? err.message : 'Could not load sessions')
       })
     return () => {
       active = false
     }
   }, [])
 
-  if (!user) return null
-
-  const fullName = `${user.firstName} ${user.lastName}`
-
   async function handleRevokeSession(sessionId: string) {
     setRevokingSession(sessionId)
     try {
       await api.revokeSession(sessionId)
-      setSessions((prev) =>
-        prev ? prev.filter((s) => s.id !== sessionId) : prev,
-      )
+      setSessions((prev) => (prev ? prev.filter((s) => s.id !== sessionId) : prev))
     } catch (err) {
-      setSessionsError(
-        err instanceof Error ? err.message : 'Could not revoke session',
-      )
+      setSessionsError(err instanceof Error ? err.message : 'Could not revoke session')
     } finally {
       setRevokingSession(null)
     }
@@ -113,10 +106,7 @@ function DashboardContent() {
       await updateProfile({ firstName, lastName })
       setProfileMessage({ type: 'success', text: 'Profile updated' })
     } catch (err) {
-      setProfileMessage({
-        type: 'error',
-        text: err instanceof Error ? err.message : 'Update failed',
-      })
+      setProfileMessage({ type: 'error', text: err instanceof Error ? err.message : 'Update failed' })
     } finally {
       setSavingProfile(false)
     }
@@ -132,18 +122,12 @@ function DashboardContent() {
     setChangingPassword(true)
     try {
       await api.changePassword({ currentPassword, newPassword })
-      setPasswordMessage({
-        type: 'success',
-        text: 'Password changed. Other devices were signed out.',
-      })
+      setPasswordMessage({ type: 'success', text: 'Password changed. Other devices were signed out.' })
       setCurrentPassword('')
       setNewPassword('')
       setConfirmNewPassword('')
     } catch (err) {
-      setPasswordMessage({
-        type: 'error',
-        text: err instanceof Error ? err.message : 'Change failed',
-      })
+      setPasswordMessage({ type: 'error', text: err instanceof Error ? err.message : 'Change failed' })
     } finally {
       setChangingPassword(false)
     }
@@ -168,17 +152,11 @@ function DashboardContent() {
     setChangingPassword(true)
     try {
       await api.setPassword(newPassword)
-      setPasswordMessage({
-        type: 'success',
-        text: 'Password set. Other devices were signed out.',
-      })
+      setPasswordMessage({ type: 'success', text: 'Password set. Other devices were signed out.' })
       setNewPassword('')
       setConfirmNewPassword('')
     } catch (err) {
-      setPasswordMessage({
-        type: 'error',
-        text: err instanceof Error ? err.message : 'Set password failed',
-      })
+      setPasswordMessage({ type: 'error', text: err instanceof Error ? err.message : 'Set password failed' })
     } finally {
       setChangingPassword(false)
     }
@@ -195,32 +173,20 @@ function DashboardContent() {
             EventOS
           </span>
         </div>
-
+        
         <div className="flex items-center gap-4">
-          <Link
-            href="/venues"
-            className="text-sm text-paper-dim/70 transition hover:text-paper-dim"
-          >
+          <Link href="/venues" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
             Venues
           </Link>
-          <Link
-            href="/events"
-            className="text-sm text-paper-dim/70 transition hover:text-paper-dim"
-          >
+          <Link href="/events" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
             Events
           </Link>
 
-          <Link
-            href="/organization"
-            className="text-sm text-paper-dim/70 transition hover:text-paper-dim"
-          >
+          <Link href="/organization" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
             Organization
           </Link>
           {user.role === 'ADMIN' && (
-            <Link
-              href="/admin"
-              className="text-sm text-paper-dim/70 transition hover:text-paper-dim"
-            >
+            <Link href="/admin" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">
               Admin
             </Link>
           )}
@@ -233,57 +199,37 @@ function DashboardContent() {
           <h1 className="font-display text-3xl font-semibold text-paper-dim sm:text-4xl">
             Hello, {user.firstName} 👋
           </h1>
-          <p className="mt-2 text-paper-dim/55">
-            Manage your profile and account security.
-          </p>
+          <p className="mt-2 text-paper-dim/55">Manage your profile and account security.</p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* profile summary */}
           <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6 lg:col-span-2">
-            <span
-              className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
-              aria-hidden="true"
-            />
-            <h2 className="mb-4 font-display text-xl font-semibold text-ink">
-              Profile
-            </h2>
+            <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+            <h2 className="mb-4 font-display text-xl font-semibold text-ink">Profile</h2>
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <dt className="text-xs font-semibold tracking-wide text-ink/45">
-                  NAME
-                </dt>
+                <dt className="text-xs font-semibold tracking-wide text-ink/45">NAME</dt>
                 <dd className="mt-1 text-sm text-ink">{fullName}</dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold tracking-wide text-ink/45">
-                  EMAIL
-                </dt>
+                <dt className="text-xs font-semibold tracking-wide text-ink/45">EMAIL</dt>
                 <dd className="mt-1 text-sm text-ink">{user.email}</dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold tracking-wide text-ink/45">
-                  PROVIDER
-                </dt>
+                <dt className="text-xs font-semibold tracking-wide text-ink/45">PROVIDER</dt>
                 <dd className="mt-1 text-sm text-ink">
                   {user.provider === 'google' ? 'Google' : 'Email & password'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold tracking-wide text-ink/45">
-                  EMAIL VERIFIED
-                </dt>
+                <dt className="text-xs font-semibold tracking-wide text-ink/45">EMAIL VERIFIED</dt>
                 <dd className="mt-1.5">
-                  <Badge
-                    ok={user.emailVerified}
-                    label={user.emailVerified ? 'Verified' : 'Pending'}
-                  />
+                  <Badge ok={user.emailVerified} label={user.emailVerified ? 'Verified' : 'Pending'} />
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold tracking-wide text-ink/45">
-                  ROLE
-                </dt>
+                <dt className="text-xs font-semibold tracking-wide text-ink/45">ROLE</dt>
                 <dd className="mt-1 text-sm text-ink">{user.role}</dd>
               </div>
             </dl>
@@ -300,23 +246,13 @@ function DashboardContent() {
 
           {/* edit profile */}
           <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-            <span
-              className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
-              aria-hidden="true"
-            />
-            <h2 className="mb-4 font-display text-xl font-semibold text-ink">
-              Edit profile
-            </h2>
+            <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+            <h2 className="mb-4 font-display text-xl font-semibold text-ink">Edit profile</h2>
             <Alert message={profileMessage} />
-            <form
-              onSubmit={handleProfileSubmit}
-              className="flex flex-col gap-4"
-            >
+            <form onSubmit={handleProfileSubmit} className="flex flex-col gap-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold tracking-wide text-ink/60">
-                    FIRST NAME
-                  </span>
+                  <span className="text-xs font-semibold tracking-wide text-ink/60">FIRST NAME</span>
                   <input
                     required
                     value={firstName}
@@ -325,9 +261,7 @@ function DashboardContent() {
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold tracking-wide text-ink/60">
-                    LAST NAME
-                  </span>
+                  <span className="text-xs font-semibold tracking-wide text-ink/60">LAST NAME</span>
                   <input
                     required
                     value={lastName}
@@ -349,27 +283,17 @@ function DashboardContent() {
 
           {/* change / set password */}
           <section className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-            <span
-              className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
-              aria-hidden="true"
-            />
+            <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
             {user.provider === 'google' ? (
               <>
-                <h2 className="mb-1 font-display text-xl font-semibold text-ink">
-                  Set password
-                </h2>
+                <h2 className="mb-1 font-display text-xl font-semibold text-ink">Set password</h2>
                 <p className="mb-4 text-xs text-ink/45">
                   Add an email &amp; password option to your Google account.
                 </p>
                 <Alert message={passwordMessage} />
-                <form
-                  onSubmit={handleSetPasswordSubmit}
-                  className="flex flex-col gap-4"
-                >
+                <form onSubmit={handleSetPasswordSubmit} className="flex flex-col gap-4">
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold tracking-wide text-ink/60">
-                      NEW PASSWORD
-                    </span>
+                    <span className="text-xs font-semibold tracking-wide text-ink/60">NEW PASSWORD</span>
                     <input
                       type="password"
                       autoComplete="new-password"
@@ -381,9 +305,7 @@ function DashboardContent() {
                     />
                   </label>
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold tracking-wide text-ink/60">
-                      CONFIRM NEW PASSWORD
-                    </span>
+                    <span className="text-xs font-semibold tracking-wide text-ink/60">CONFIRM NEW PASSWORD</span>
                     <input
                       type="password"
                       autoComplete="new-password"
@@ -406,18 +328,11 @@ function DashboardContent() {
               </>
             ) : (
               <>
-                <h2 className="mb-4 font-display text-xl font-semibold text-ink">
-                  Change password
-                </h2>
+                <h2 className="mb-4 font-display text-xl font-semibold text-ink">Change password</h2>
                 <Alert message={passwordMessage} />
-                <form
-                  onSubmit={handlePasswordSubmit}
-                  className="flex flex-col gap-4"
-                >
+                <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold tracking-wide text-ink/60">
-                      CURRENT PASSWORD
-                    </span>
+                    <span className="text-xs font-semibold tracking-wide text-ink/60">CURRENT PASSWORD</span>
                     <input
                       type="password"
                       autoComplete="current-password"
@@ -428,9 +343,7 @@ function DashboardContent() {
                     />
                   </label>
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold tracking-wide text-ink/60">
-                      NEW PASSWORD
-                    </span>
+                    <span className="text-xs font-semibold tracking-wide text-ink/60">NEW PASSWORD</span>
                     <input
                       type="password"
                       autoComplete="new-password"
@@ -442,9 +355,7 @@ function DashboardContent() {
                     />
                   </label>
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold tracking-wide text-ink/60">
-                      CONFIRM NEW PASSWORD
-                    </span>
+                    <span className="text-xs font-semibold tracking-wide text-ink/60">CONFIRM NEW PASSWORD</span>
                     <input
                       type="password"
                       autoComplete="new-password"
@@ -471,13 +382,8 @@ function DashboardContent() {
 
         {/* active sessions */}
         <section className="mt-6 relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-          <span
-            className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink"
-            aria-hidden="true"
-          />
-          <h2 className="mb-4 font-display text-xl font-semibold text-ink">
-            Active sessions
-          </h2>
+          <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
+          <h2 className="mb-4 font-display text-xl font-semibold text-ink">Active sessions</h2>
           {sessionsError && (
             <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm text-red-700">
               {sessionsError}

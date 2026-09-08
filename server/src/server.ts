@@ -7,9 +7,7 @@ async function start(): Promise<void> {
   await connectDB();
 
   const server = app.listen(env.PORT, () => {
-    console.log(
-      `EventOS API running on http://localhost:${env.PORT} (${env.NODE_ENV})`,
-    );
+    console.log(`EventOS API running on http://localhost:${env.PORT} (${env.NODE_ENV})`);
   });
 
   const shutdown = async () => {

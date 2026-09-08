@@ -54,8 +54,7 @@ const venueLocationSchema = new Schema<IVenueLocation>(
             v[1] <= 90
           );
         },
-        message:
-          'Coordinates must be [longitude, latitude] within valid ranges',
+        message: 'Coordinates must be [longitude, latitude] within valid ranges',
       },
     },
     address: { type: String, default: '' },

@@ -44,16 +44,8 @@ export class NominatimProvider implements GeocodingProvider {
     return data.map((item) => this.parseResult(item));
   }
 
-  async reverseGeocode(
-    latitude: number,
-    longitude: number,
-  ): Promise<GeocodingResult | null> {
-    if (
-      latitude < -90 ||
-      latitude > 90 ||
-      longitude < -180 ||
-      longitude > 180
-    ) {
+  async reverseGeocode(latitude: number, longitude: number): Promise<GeocodingResult | null> {
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
       return null;
     }
 

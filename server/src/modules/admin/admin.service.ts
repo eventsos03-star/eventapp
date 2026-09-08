@@ -50,21 +50,14 @@ function serializeVenue<T extends object>(doc: T): VenueResponse {
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
-  const [
-    totalOrganizations,
-    pendingOrganizations,
-    totalVenueOwners,
-    pendingVenueOwners,
-    totalUsers,
-  ] = await Promise.all([
-    Organization.countDocuments({}),
-    Organization.countDocuments({ status: DEFAULT_STATUS }),
-    Venue.distinct('ownerId', {}),
-    Venue.distinct('ownerId', { status: DEFAULT_STATUS }),
-    User.countDocuments({
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-    }),
-  ]);
+  const [totalOrganizations, pendingOrganizations, totalVenueOwners, pendingVenueOwners, totalUsers] =
+    await Promise.all([
+      Organization.countDocuments({}),
+      Organization.countDocuments({ status: DEFAULT_STATUS }),
+      Venue.distinct('ownerId', {}),
+      Venue.distinct('ownerId', { status: DEFAULT_STATUS }),
+      User.countDocuments({ $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] }),
+    ]);
 
   return {
     totalOrganizations,
@@ -75,18 +68,25 @@ export async function getAdminStats(): Promise<AdminStats> {
   };
 }
 
-export async function listOrganizations(
-  status: ResourceStatus = DEFAULT_STATUS,
-): Promise<OrganizationResponse[]> {
-  const organizations = await Organization.find({ status })
-    .sort({ createdAt: 1 })
-    .lean();
+export async function listOrganizations(status: ResourceStatus = DEFAULT_STATUS): Promise<OrganizationResponse[]> {
+  const organizations = await Organization.find({ status }).sort({ createdAt: 1 }).lean();
   return organizations.map(serializeOrganization);
 }
 
-export async function approveOrganization(
-  id: string,
-): Promise<OrganizationResponse> {
+async function updateOrganizationStatus(id: string, target: ResourceStatus): Promise<OrganizationResponse> {
+  const organization = await Organization.findById(id);
+  if (!organization) throw new AppError('Organization not found', 404);
+  if (organization.status !== DEFAULT_STATUS) {
+    throw new AppError(`Organization is already ${organization.status}`, 400);
+  }
+
+  organization.status = target;
+  await organization.save();
+
+  return serializeOrganization(organization.toObject());
+}
+
+export async function approveOrganization(id: string): Promise<OrganizationResponse> {
   const organization = await Organization.findById(id);
   if (!organization) throw new AppError('Organization not found', 404);
   if (organization.status !== DEFAULT_STATUS) {
@@ -101,10 +101,7 @@ export async function approveOrganization(
   return serializeOrganization(organization.toObject());
 }
 
-export async function rejectOrganization(
-  id: string,
-  reason: string,
-): Promise<OrganizationResponse> {
+export async function rejectOrganization(id: string, reason: string): Promise<OrganizationResponse> {
   const organization = await Organization.findById(id);
   if (!organization) throw new AppError('Organization not found', 404);
   if (organization.status !== DEFAULT_STATUS) {
@@ -120,9 +117,7 @@ export async function rejectOrganization(
   return serializeOrganization(organization.toObject());
 }
 
-export async function getOrganizationDetail(
-  id: string,
-): Promise<OrganizationResponse> {
+export async function getOrganizationDetail(id: string): Promise<OrganizationResponse> {
   const organization = await Organization.findById(id)
     .populate('ownerId', 'firstName lastName email')
     .populate('approvedBy', 'firstName lastName email')
@@ -137,9 +132,7 @@ export async function getOrganizationDetail(
  * an owner operates on their pending venues. This keeps the existing User +
  * Venue schema untouched (no extra VenueOwner model or status field).
  */
-export async function listVenueOwners(
-  status: ResourceStatus = DEFAULT_STATUS,
-): Promise<VenueOwnerSummary[]> {
+export async function listVenueOwners(status: ResourceStatus = DEFAULT_STATUS): Promise<VenueOwnerSummary[]> {
   const venues = await Venue.find({ status }).sort({ createdAt: 1 }).lean();
 
   const venuesByOwner = new Map<string, VenueResponse[]>();
@@ -151,10 +144,7 @@ export async function listVenueOwners(
   }
 
   const ownerIds = [...venuesByOwner.keys()];
-  const users = await User.find({
-    _id: { $in: ownerIds },
-    $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-  })
+  const users = await User.find({ _id: { $in: ownerIds }, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] })
     .select('firstName lastName email')
     .lean();
   const userById = new Map(users.map((user) => [String(user._id), user]));
@@ -177,32 +167,18 @@ export async function listVenueOwners(
   return owners;
 }
 
-async function updateVenueOwnerStatus(
-  ownerId: string,
-  target: ResourceStatus,
-): Promise<VenueOwnerSummary> {
-  const user = await User.findOne({
-    _id: ownerId,
-    $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-  });
+async function updateVenueOwnerStatus(ownerId: string, target: ResourceStatus): Promise<VenueOwnerSummary> {
+  const user = await User.findOne({ _id: ownerId, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
   if (!user) throw new AppError('Venue owner not found', 404);
 
-  const pendingVenues = await Venue.countDocuments({
-    ownerId: user._id,
-    status: DEFAULT_STATUS,
-  });
+  const pendingVenues = await Venue.countDocuments({ ownerId: user._id, status: DEFAULT_STATUS });
   if (pendingVenues === 0) {
     throw new AppError('Venue owner has no pending venues', 400);
   }
 
-  await Venue.updateMany(
-    { ownerId: user._id, status: DEFAULT_STATUS },
-    { status: target },
-  );
+  await Venue.updateMany({ ownerId: user._id, status: DEFAULT_STATUS }, { status: target });
 
-  const venues = await Venue.find({ ownerId: user._id, status: target })
-    .sort({ createdAt: 1 })
-    .lean();
+  const venues = await Venue.find({ ownerId: user._id, status: target }).sort({ createdAt: 1 }).lean();
 
   return {
     ownerId: user.id,
@@ -214,28 +190,15 @@ async function updateVenueOwnerStatus(
   };
 }
 
-export async function approveVenueOwner(
-  ownerId: string,
-): Promise<VenueOwnerSummary> {
+export async function approveVenueOwner(ownerId: string): Promise<VenueOwnerSummary> {
   return updateVenueOwnerStatus(ownerId, 'approved');
 }
 
-export async function rejectVenueOwner(
-  ownerId: string,
-): Promise<VenueOwnerSummary> {
+export async function rejectVenueOwner(ownerId: string): Promise<VenueOwnerSummary> {
   return updateVenueOwnerStatus(ownerId, 'rejected');
 }
 
-function serializeUser(doc: {
-  _id: unknown;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  status: string;
-  provider: string;
-  createdAt: unknown;
-}): UserSummary {
+function serializeUser(doc: { _id: unknown; firstName: string; lastName: string; email: string; role: string; status: string; provider: string; createdAt: unknown }): UserSummary {
   return {
     id: String(doc._id),
     firstName: doc.firstName,
@@ -252,12 +215,7 @@ export async function listUsers(
   search?: string,
   page = 1,
   limit = 20,
-): Promise<{
-  users: UserSummary[];
-  total: number;
-  page: number;
-  totalPages: number;
-}> {
+): Promise<{ users: UserSummary[]; total: number; page: number; totalPages: number }> {
   const filter: Record<string, unknown> = {
     $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
   };
@@ -266,7 +224,11 @@ export async function listUsers(
     const regex = new RegExp(search, 'i');
     filter.$and = [
       {
-        $or: [{ firstName: regex }, { lastName: regex }, { email: regex }],
+        $or: [
+          { firstName: regex },
+          { lastName: regex },
+          { email: regex },
+        ],
       },
     ];
   }
@@ -289,19 +251,12 @@ export async function listUsers(
   };
 }
 
-export async function updateUserRole(
-  userId: string,
-  role: UserRole,
-  requesterId: string,
-): Promise<UserSummary> {
+export async function updateUserRole(userId: string, role: UserRole, requesterId: string): Promise<UserSummary> {
   if (userId === requesterId) {
     throw new AppError('You cannot change your own role', 400);
   }
 
-  const user = await User.findOne({
-    _id: userId,
-    $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-  });
+  const user = await User.findOne({ _id: userId, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
   if (!user) throw new AppError('User not found', 404);
 
   if (user.role === role) {

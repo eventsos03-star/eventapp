@@ -32,9 +32,7 @@ export function AdminRoute({ children }: { children: ReactNode }) {
     return (
       <div className="grid min-h-screen place-items-center bg-ink px-5 font-sans text-paper-dim">
         <div className="max-w-md text-center">
-          <h1 className="font-display text-2xl font-semibold text-paper-dim">
-            Access denied
-          </h1>
+          <h1 className="font-display text-2xl font-semibold text-paper-dim">Access denied</h1>
           <p className="mt-2 text-sm text-paper-dim/55">
             You need an admin account to view this page.
           </p>
