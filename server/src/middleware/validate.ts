@@ -16,9 +16,7 @@ export function validate(schema: AnyZodObject): RequestHandler {
 
     if (!result.success) {
       const error = result.error as ZodError;
-      const message = error.issues
-        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-        .join(', ');
+      const message = error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join(', ');
       return next(new AppError(message, 400));
     }
 

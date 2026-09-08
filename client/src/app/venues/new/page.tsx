@@ -25,17 +25,13 @@ function errorTextClass() {
 export default function NewVenuePage() {
   const router = useRouter()
 
-  const [authStatus, setAuthStatus] = useState<'checking' | 'authed' | 'guest'>(
-    'checking',
-  )
+  const [authStatus, setAuthStatus] = useState<'checking' | 'authed' | 'guest'>('checking')
 
   const [venueName, setVenueName] = useState('')
   const [description, setDescription] = useState('')
   const [capacity, setCapacity] = useState('')
   const [pricePerDay, setPricePerDay] = useState('')
-  const [bookingPaymentPolicy, setBookingPaymentPolicy] = useState<
-    PaymentPolicy | ''
-  >('')
+  const [bookingPaymentPolicy, setBookingPaymentPolicy] = useState<PaymentPolicy | ''>('')
   const [advancePercentage, setAdvancePercentage] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [location, setLocation] = useState<VenueLocation | null>(null)
@@ -46,17 +42,12 @@ export default function NewVenuePage() {
 
   useEffect(() => {
     let cancelled = false
-    api
-      .me()
-      .then(() => {
-        if (!cancelled) setAuthStatus('authed')
-      })
-      .catch(() => {
-        if (!cancelled) setAuthStatus('guest')
-      })
-    return () => {
-      cancelled = true
-    }
+    api.me().then(() => {
+      if (!cancelled) setAuthStatus('authed')
+    }).catch(() => {
+      if (!cancelled) setAuthStatus('guest')
+    })
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
@@ -69,11 +60,7 @@ export default function NewVenuePage() {
     if (!venueName.trim()) errs.venueName = 'Venue name is required.'
     if (!description.trim()) errs.description = 'Description is required.'
 
-    if (
-      !location ||
-      !location.coordinates ||
-      (location.coordinates[0] === 0 && location.coordinates[1] === 0)
-    ) {
+    if (!location || !location.coordinates || (location.coordinates[0] === 0 && location.coordinates[1] === 0)) {
       errs.location = 'Please select a venue location on the map.'
     }
 
@@ -81,11 +68,7 @@ export default function NewVenuePage() {
       errs.capacity = 'Enter a valid capacity.'
     }
 
-    if (
-      !pricePerDay ||
-      Number.isNaN(Number(pricePerDay)) ||
-      Number(pricePerDay) < 0
-    ) {
+    if (!pricePerDay || Number.isNaN(Number(pricePerDay)) || Number(pricePerDay) < 0) {
       errs.pricePerDay = 'Enter a valid price.'
     }
 
@@ -95,14 +78,8 @@ export default function NewVenuePage() {
 
     if (bookingPaymentPolicy === 'advanceAllowed') {
       const pct = Number(advancePercentage)
-      if (
-        !advancePercentage.trim() ||
-        Number.isNaN(pct) ||
-        pct <= 0 ||
-        pct > 100
-      ) {
-        errs.advancePercentage =
-          'Enter an advance percentage between 1 and 100.'
+      if (!advancePercentage.trim() || Number.isNaN(pct) || pct <= 0 || pct > 100) {
+        errs.advancePercentage = 'Enter an advance percentage between 1 and 100.'
       }
     }
 
@@ -146,9 +123,7 @@ export default function NewVenuePage() {
       })
       router.push('/venues')
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Could not create venue.',
-      )
+      setError(err instanceof ApiError ? err.message : 'Could not create venue.')
     } finally {
       setSubmitting(false)
     }
@@ -169,51 +144,33 @@ export default function NewVenuePage() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-10">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-slate-950 text-amber-400 font-black text-base shadow-md">
-              E
-            </div>
+            <div className="grid h-9 w-9 place-items-center rounded-xl bg-slate-950 text-amber-400 font-black text-base shadow-md">E</div>
             <span className="text-lg font-bold tracking-tight text-slate-950">
               Event<span className="text-amber-500">OS</span>
             </span>
           </Link>
-          <Link
-            href="/venues"
-            className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-          >
+          <Link href="/venues" className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
             &larr; All Venues
           </Link>
         </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-5 py-8 sm:px-10 sm:py-10">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-          Add Venue
-        </h1>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Add Venue</h1>
         <p className="mt-1 text-xs sm:text-sm text-slate-500">
           Submit a venue for listing. New venues start as pending.
         </p>
 
         {error && (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {error}
-          </div>
+          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          className="mt-6 space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
-        >
+        <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+
           <div>
             <label className={labelClass()}>Venue name</label>
-            <input
-              value={venueName}
-              onChange={(e) => setVenueName(e.target.value)}
-              className={inputClass()}
-            />
-            {fieldErrors.venueName && (
-              <p className={errorTextClass()}>{fieldErrors.venueName}</p>
-            )}
+            <input value={venueName} onChange={(e) => setVenueName(e.target.value)} className={inputClass()} />
+            {fieldErrors.venueName && <p className={errorTextClass()}>{fieldErrors.venueName}</p>}
           </div>
 
           <div>
@@ -225,44 +182,22 @@ export default function NewVenuePage() {
               placeholder="What makes this venue a good fit for events?"
               className={inputClass()}
             />
-            {fieldErrors.description && (
-              <p className={errorTextClass()}>{fieldErrors.description}</p>
-            )}
+            {fieldErrors.description && <p className={errorTextClass()}>{fieldErrors.description}</p>}
           </div>
 
-          <LocationPicker
-            value={location}
-            onChange={handleLocationChange}
-            error={fieldErrors.location}
-          />
+          <LocationPicker value={location} onChange={handleLocationChange} error={fieldErrors.location} />
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
               <label className={labelClass()}>Capacity</label>
-              <input
-                type="number"
-                min={1}
-                value={capacity}
-                onChange={(e) => setCapacity(e.target.value)}
-                className={inputClass()}
-              />
-              {fieldErrors.capacity && (
-                <p className={errorTextClass()}>{fieldErrors.capacity}</p>
-              )}
+              <input type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} className={inputClass()} />
+              {fieldErrors.capacity && <p className={errorTextClass()}>{fieldErrors.capacity}</p>}
             </div>
 
             <div>
               <label className={labelClass()}>Price per day (INR)</label>
-              <input
-                type="number"
-                min={0}
-                value={pricePerDay}
-                onChange={(e) => setPricePerDay(e.target.value)}
-                className={inputClass()}
-              />
-              {fieldErrors.pricePerDay && (
-                <p className={errorTextClass()}>{fieldErrors.pricePerDay}</p>
-              )}
+              <input type="number" min={0} value={pricePerDay} onChange={(e) => setPricePerDay(e.target.value)} className={inputClass()} />
+              {fieldErrors.pricePerDay && <p className={errorTextClass()}>{fieldErrors.pricePerDay}</p>}
             </div>
           </div>
 
@@ -270,9 +205,7 @@ export default function NewVenuePage() {
             <label className={labelClass()}>Booking payment policy</label>
             <select
               value={bookingPaymentPolicy}
-              onChange={(e) =>
-                setBookingPaymentPolicy(e.target.value as PaymentPolicy)
-              }
+              onChange={(e) => setBookingPaymentPolicy(e.target.value as PaymentPolicy)}
               className={inputClass()}
             >
               <option value="">Select a policy...</option>
@@ -280,41 +213,26 @@ export default function NewVenuePage() {
               <option value="advanceAllowed">Advance allowed</option>
               <option value="payAfterEvent">Pay after event</option>
             </select>
-            {fieldErrors.bookingPaymentPolicy && (
-              <p className={errorTextClass()}>
-                {fieldErrors.bookingPaymentPolicy}
-              </p>
-            )}
+            {fieldErrors.bookingPaymentPolicy && <p className={errorTextClass()}>{fieldErrors.bookingPaymentPolicy}</p>}
           </div>
 
           {bookingPaymentPolicy === 'advanceAllowed' && (
             <div>
               <label className={labelClass()}>Advance percentage</label>
               <input
-                type="number"
-                min={1}
-                max={100}
+                type="number" min={1} max={100}
                 value={advancePercentage}
                 onChange={(e) => setAdvancePercentage(e.target.value)}
                 placeholder="e.g. 30"
                 className={inputClass()}
               />
-              {fieldErrors.advancePercentage && (
-                <p className={errorTextClass()}>
-                  {fieldErrors.advancePercentage}
-                </p>
-              )}
+              {fieldErrors.advancePercentage && <p className={errorTextClass()}>{fieldErrors.advancePercentage}</p>}
             </div>
           )}
 
           <div>
             <label className={labelClass()}>Image URL (optional)</label>
-            <input
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..."
-              className={inputClass()}
-            />
+            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." className={inputClass()} />
           </div>
 
           <div className="flex items-center gap-3 pt-2">
@@ -325,10 +243,7 @@ export default function NewVenuePage() {
             >
               {submitting ? 'Adding...' : 'Add Venue'}
             </button>
-            <Link
-              href="/venues"
-              className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-            >
+            <Link href="/venues" className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
               Cancel
             </Link>
           </div>

@@ -18,47 +18,15 @@ const router = Router();
 router.use(authenticate, authorize('ADMIN'));
 
 router.get('/stats', adminController.getAdminStats);
-router.get(
-  '/organizations',
-  validate(listOrganizationsSchema),
-  adminController.listOrganizations,
-);
-router.get(
-  '/organizations/:id',
-  validate(organizationActionSchema),
-  adminController.getOrganizationDetail,
-);
-router.patch(
-  '/organizations/:id/approve',
-  validate(organizationActionSchema),
-  adminController.approveOrganization,
-);
-router.patch(
-  '/organizations/:id/reject',
-  validate(rejectOrganizationSchema),
-  adminController.rejectOrganization,
-);
-router.get(
-  '/venue-owners',
-  validate(listVenueOwnersSchema),
-  adminController.listVenueOwners,
-);
-router.patch(
-  '/venue-owners/:id/approve',
-  validate(venueOwnerActionSchema),
-  adminController.approveVenueOwner,
-);
-router.patch(
-  '/venue-owners/:id/reject',
-  validate(venueOwnerActionSchema),
-  adminController.rejectVenueOwner,
-);
+router.get('/organizations', validate(listOrganizationsSchema), adminController.listOrganizations);
+router.get('/organizations/:id', validate(organizationActionSchema), adminController.getOrganizationDetail);
+router.patch('/organizations/:id/approve', validate(organizationActionSchema), adminController.approveOrganization);
+router.patch('/organizations/:id/reject', validate(rejectOrganizationSchema), adminController.rejectOrganization);
+router.get('/venue-owners', validate(listVenueOwnersSchema), adminController.listVenueOwners);
+router.patch('/venue-owners/:id/approve', validate(venueOwnerActionSchema), adminController.approveVenueOwner);
+router.patch('/venue-owners/:id/reject', validate(venueOwnerActionSchema), adminController.rejectVenueOwner);
 
 router.get('/users', validate(listUsersSchema), adminController.listUsers);
-router.patch(
-  '/users/:id/role',
-  validate(updateUserRoleSchema),
-  adminController.updateUserRole,
-);
+router.patch('/users/:id/role', validate(updateUserRoleSchema), adminController.updateUserRole);
 
 export default router;

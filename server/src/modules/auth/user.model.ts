@@ -1,10 +1,6 @@
 import bcrypt from 'bcrypt';
 import mongoose, { type HydratedDocument, type Model, Schema } from 'mongoose';
-import {
-  USER_PROVIDER,
-  USER_ROLE,
-  USER_STATUS,
-} from '../../constants/index.js';
+import { USER_PROVIDER, USER_ROLE, USER_STATUS } from '../../constants/index.js';
 import type { UserProvider, UserRole, UserStatus } from '../../types/index.js';
 
 export interface IUser {
@@ -22,8 +18,8 @@ export interface IUser {
   verificationExpires?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
-  isDeleted: boolean;
-
+  isDeleted:boolean;
+ 
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,8 +45,6 @@ interface UserMethods {
   toSafeObject(): SafeUser;
 }
 
-// Second generic is mongoose's "query helpers" placeholder (empty by design).
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 type UserModel = Model<IUser, {}, UserMethods>;
 
 export type UserDoc = HydratedDocument<IUser, UserMethods>;
@@ -68,36 +62,26 @@ const userSchema = new Schema<IUser, UserModel, UserMethods>(
       match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     },
     password: { type: String, select: false },
-    provider: {
-      type: String,
-      enum: Object.values(USER_PROVIDER),
-      default: USER_PROVIDER.LOCAL,
-    },
+    provider: { type: String, enum: Object.values(USER_PROVIDER), default: USER_PROVIDER.LOCAL },
     googleId: { type: String },
     avatar: { type: String },
     emailVerified: { type: Boolean, default: false },
-    status: {
-      type: String,
-      enum: Object.values(USER_STATUS),
-      default: USER_STATUS.PENDING,
-    },
-    role: {
-      type: String,
-      enum: Object.values(USER_ROLE),
-      default: USER_ROLE.USER,
-    },
+    status: { type: String, enum: Object.values(USER_STATUS), default: USER_STATUS.PENDING },
+    role: { type: String, enum: Object.values(USER_ROLE), default: USER_ROLE.USER },
     verificationToken: { type: String },
     verificationExpires: { type: Date },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
-    isDeleted: { type: Boolean, default: false },
+    isDeleted:{type:Boolean,default:false},
     // Soft delete ready: set this to a date instead of removing the document.
+  
   },
   { timestamps: true },
 );
 
 userSchema.index({ status: 1 });
 userSchema.index({ googleId: 1 }, { sparse: true });
+
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password') || !this.password) return next();
@@ -107,9 +91,7 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-userSchema.methods.comparePassword = async function (
-  candidate: string,
-): Promise<boolean> {
+userSchema.methods.comparePassword = async function (candidate: string): Promise<boolean> {
   if (!this.password) return false;
   return bcrypt.compare(candidate, this.password);
 };

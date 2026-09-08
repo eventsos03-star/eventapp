@@ -65,83 +65,46 @@ async function captureLogs(fn) {
   return lines.join('\n');
 }
 
-const user = {
-  firstName: 'Ada',
-  lastName: 'Lovelace',
-  email: 'ada@test.dev',
-  password: 'supersecret123',
-};
+const user = { firstName: 'Ada', lastName: 'Lovelace', email: 'ada@test.dev', password: 'supersecret123' };
 let r;
 let logs;
 
 console.log('\n== Verify email ==');
-logs = await captureLogs(() =>
-  request('/api/auth/register', {
-    method: 'POST',
-    body: {
-      firstName: 'Blaise',
-      lastName: 'Pascal',
-      email: 'blaise@test.dev',
-      password: 'supersecret123',
-    },
-  }),
-);
+logs = await captureLogs(() => request('/api/auth/register', { method: 'POST', body: { firstName: 'Blaise', lastName: 'Pascal', email: 'blaise@test.dev', password: 'supersecret123' } }));
 const verifyToken = logs.match(/verify-email\?token=([a-f0-9]+)/)?.[1];
 assert(Boolean(verifyToken), 'verification token logged in dev mode');
 r = await request(`/api/auth/verify-email?token=${verifyToken}`);
 assert(r.status === 200, `verify-email activates account (got ${r.status})`);
 r = await request(`/api/auth/verify-email?token=${verifyToken}`);
-assert(
-  r.status === 200 && r.json.data.emailVerified === true,
-  `verify-email replay is idempotent (got ${r.status})`,
-);
+assert(r.status === 200 && r.json.data.emailVerified === true, `verify-email replay is idempotent (got ${r.status})`);
 
 console.log('\n== Register ada (capture her verify token) ==');
-logs = await captureLogs(() =>
-  request('/api/auth/register', { method: 'POST', body: user }),
-);
+logs = await captureLogs(() => request('/api/auth/register', { method: 'POST', body: user }));
 const adaVerifyToken = logs.match(/verify-email\?token=([a-f0-9]+)/)?.[1];
 assert(Boolean(adaVerifyToken), 'ada verification token captured');
 
 console.log('\n== Login before verification ==');
-r = await request('/api/auth/login', {
-  method: 'POST',
-  body: { email: user.email, password: user.password },
-});
+r = await request('/api/auth/login', { method: 'POST', body: { email: user.email, password: user.password } });
 assert(r.status === 403, `unverified login blocked with 403 (got ${r.status})`);
 
 console.log('\n== Login wrong password ==');
-r = await request('/api/auth/login', {
-  method: 'POST',
-  body: { email: 'ada@test.dev', password: 'wrongpassword' },
-});
-assert(
-  r.status === 401 && r.json.message === 'Invalid email or password',
-  `generic login error (got ${r.status})`,
-);
+r = await request('/api/auth/login', { method: 'POST', body: { email: 'ada@test.dev', password: 'wrongpassword' } });
+assert(r.status === 401 && r.json.message === 'Invalid email or password', `generic login error (got ${r.status})`);
 
 console.log('\n== Verify ada ==');
 r = await request(`/api/auth/verify-email?token=${adaVerifyToken}`);
 assert(r.status === 200, `ada verified (got ${r.status})`);
 
 console.log('\n== Login success ==');
-r = await request('/api/auth/login', {
-  method: 'POST',
-  body: { email: user.email, password: user.password },
-});
+r = await request('/api/auth/login', { method: 'POST', body: { email: user.email, password: user.password } });
 assert(r.status === 200, `login returns 200 (got ${r.status})`);
 assert(r.json.data.accessToken?.length > 0, 'access token issued');
 assert(lastCookies.startsWith('refreshToken='), 'refresh cookie set');
 const accessToken = r.json.data.accessToken;
 
 console.log('\n== Me ==');
-r = await request('/api/auth/me', {
-  headers: { Authorization: `Bearer ${accessToken}` },
-});
-assert(
-  r.status === 200 && r.json.data.email === user.email,
-  `me returns profile (got ${r.status})`,
-);
+r = await request('/api/auth/me', { headers: { Authorization: `Bearer ${accessToken}` } });
+assert(r.status === 200 && r.json.data.email === user.email, `me returns profile (got ${r.status})`);
 
 console.log('\n== Me without token ==');
 r = await request('/api/auth/me');
@@ -149,10 +112,7 @@ assert(r.status === 401, `me without token returns 401 (got ${r.status})`);
 
 console.log('\n== Refresh ==');
 r = await request('/api/auth/refresh', { method: 'POST' });
-assert(
-  r.status === 200 && r.json.data.accessToken,
-  `refresh issues new tokens (got ${r.status})`,
-);
+assert(r.status === 200 && r.json.data.accessToken, `refresh issues new tokens (got ${r.status})`);
 const oldCookie = lastCookies;
 r = await request('/api/auth/refresh', { method: 'POST' });
 assert(r.status === 200, 'rotated refresh token still works');
@@ -165,46 +125,23 @@ r = await request('/api/auth/refresh', { method: 'POST' });
 assert(r.status === 401, `refresh after logout fails (got ${r.status})`);
 
 console.log('\n== Login again for remaining tests ==');
-r = await request('/api/auth/login', {
-  method: 'POST',
-  body: { email: user.email, password: user.password },
-});
+r = await request('/api/auth/login', { method: 'POST', body: { email: user.email, password: user.password } });
 assert(r.status === 200, 're-login works');
 const accessToken2 = r.json.data.accessToken;
 
 console.log('\n== Forgot password ==');
-logs = await captureLogs(() =>
-  request('/api/auth/forgot-password', {
-    method: 'POST',
-    body: { email: user.email },
-  }),
-);
+logs = await captureLogs(() => request('/api/auth/forgot-password', { method: 'POST', body: { email: user.email } }));
 const resetToken = logs.match(/reset-password\?token=([a-f0-9]+)/)?.[1];
 assert(Boolean(resetToken), 'reset token logged in dev mode');
-r = await request('/api/auth/forgot-password', {
-  method: 'POST',
-  body: { email: 'nobody@test.dev' },
-});
-assert(
-  r.status === 200,
-  'forgot-password for unknown email still 200 (no user enumeration)',
-);
+r = await request('/api/auth/forgot-password', { method: 'POST', body: { email: 'nobody@test.dev' } });
+assert(r.status === 200, 'forgot-password for unknown email still 200 (no user enumeration)');
 
 console.log('\n== Reset password ==');
-r = await request('/api/auth/reset-password', {
-  method: 'POST',
-  body: { token: resetToken, password: 'newpassword123' },
-});
+r = await request('/api/auth/reset-password', { method: 'POST', body: { token: resetToken, password: 'newpassword123' } });
 assert(r.status === 200, `reset-password returns 200 (got ${r.status})`);
-r = await request('/api/auth/login', {
-  method: 'POST',
-  body: { email: user.email, password: 'newpassword123' },
-});
+r = await request('/api/auth/login', { method: 'POST', body: { email: user.email, password: 'newpassword123' } });
 assert(r.status === 200, 'login with new password works');
-r = await request('/api/auth/login', {
-  method: 'POST',
-  body: { email: user.email, password: 'supersecret123' },
-});
+r = await request('/api/auth/login', { method: 'POST', body: { email: user.email, password: 'supersecret123' } });
 assert(r.status === 401, 'old password no longer works');
 
 console.log('\n== Change password ==');
@@ -214,10 +151,7 @@ r = await request('/api/auth/change-password', {
   body: { currentPassword: 'newpassword123', newPassword: 'finalpass456' },
 });
 assert(r.status === 200, `change-password returns 200 (got ${r.status})`);
-r = await request('/api/auth/login', {
-  method: 'POST',
-  body: { email: user.email, password: 'finalpass456' },
-});
+r = await request('/api/auth/login', { method: 'POST', body: { email: user.email, password: 'finalpass456' } });
 assert(r.status === 200, 'login with changed password works');
 
 console.log('\n== Google login ==');
@@ -247,31 +181,14 @@ OAuth2Client.prototype.verifyIdToken = async function ({ idToken }) {
   return { getPayload: () => payload };
 };
 try {
-  r = await request('/api/auth/google', {
-    method: 'POST',
-    body: { credential: 'fake-credential' },
-  });
+  r = await request('/api/auth/google', { method: 'POST', body: { credential: 'fake-credential' } });
   assert(r.status === 200, `google links existing account (got ${r.status})`);
-  assert(
-    r.json.data.isNewUser === false,
-    'google existing account: isNewUser=false',
-  );
-  assert(
-    r.json.data.user.emailVerified === true,
-    'existing user linked + verified',
-  );
-  const googleUser = await (
-    await import('../src/modules/auth/user.model.js')
-  ).default.findOne({ email: user.email });
-  assert(
-    googleUser.googleId === 'google-id-1',
-    'googleId stored on linked account',
-  );
+  assert(r.json.data.isNewUser === false, 'google existing account: isNewUser=false');
+  assert(r.json.data.user.emailVerified === true, 'existing user linked + verified');
+  const googleUser = await (await import('../src/modules/auth/user.model.js')).default.findOne({ email: user.email });
+  assert(googleUser.googleId === 'google-id-1', 'googleId stored on linked account');
 
-  r = await request('/api/auth/google', {
-    method: 'POST',
-    body: { credential: 'fake-credential-2' },
-  });
+  r = await request('/api/auth/google', { method: 'POST', body: { credential: 'fake-credential-2' } });
   assert(r.status === 201, `google creates new user (got ${r.status})`);
   assert(r.json.data.isNewUser === true, 'google new user: isNewUser=true');
 } finally {
@@ -286,17 +203,9 @@ r = await request('/api/auth/me', {
   body: { firstName: 'New', lastName: 'GoogleName' },
 });
 assert(r.status === 200, `PATCH /auth/me returns 200 (got ${r.status})`);
-assert(
-  r.json.data.firstName === 'New' && r.json.data.lastName === 'GoogleName',
-  'profile fields updated',
-);
-r = await request('/api/auth/me', {
-  headers: { Authorization: `Bearer ${googleAccessToken}` },
-});
-assert(
-  r.status === 200 && r.json.data.firstName === 'New',
-  'updated name persists via me',
-);
+assert(r.json.data.firstName === 'New' && r.json.data.lastName === 'GoogleName', 'profile fields updated');
+r = await request('/api/auth/me', { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+assert(r.status === 200 && r.json.data.firstName === 'New', 'updated name persists via me');
 
 console.log('\n== Change password (google user) ==');
 r = await request('/api/auth/change-password', {
@@ -304,10 +213,7 @@ r = await request('/api/auth/change-password', {
   headers: { Authorization: `Bearer ${googleAccessToken}` },
   body: { currentPassword: 'whatever123', newPassword: 'newpassword123' },
 });
-assert(
-  r.status === 400,
-  `google user change-password blocked with 400 (got ${r.status})`,
-);
+assert(r.status === 400, `google user change-password blocked with 400 (got ${r.status})`);
 
 console.log('\n== Update profile validation ==');
 r = await request('/api/auth/me', {
@@ -318,10 +224,7 @@ r = await request('/api/auth/me', {
 assert(r.status === 400, `empty profile update rejected (got ${r.status})`);
 
 console.log('\n== Logout all ==');
-r = await request('/api/auth/logout-all', {
-  method: 'POST',
-  headers: { Authorization: `Bearer ${accessToken2}` },
-});
+r = await request('/api/auth/logout-all', { method: 'POST', headers: { Authorization: `Bearer ${accessToken2}` } });
 assert(r.status === 200, `logout-all returns 200 (got ${r.status})`);
 r = await request('/api/auth/refresh', { method: 'POST' });
 assert(r.status === 401, `refresh after logout-all fails (got ${r.status})`);
@@ -331,31 +234,17 @@ r = await request('/api/does-not-exist');
 assert(r.status === 404, `unknown route returns 404 (got ${r.status})`);
 
 console.log('\n== Admin access control ==');
-r = await request('/api/auth/login', {
-  method: 'POST',
-  body: { email: 'ada@test.dev', password: 'finalpass456' },
-});
+r = await request('/api/auth/login', { method: 'POST', body: { email: 'ada@test.dev', password: 'finalpass456' } });
 const userToken = r.json.data.accessToken;
 r = await request('/api/admin/stats');
-assert(
-  r.status === 401,
-  `anonymous blocked from /admin/stats (got ${r.status})`,
-);
-r = await request('/api/admin/stats', {
-  headers: { Authorization: `Bearer ${userToken}` },
-});
-assert(
-  r.status === 403,
-  `regular user blocked from /admin/stats (got ${r.status})`,
-);
+assert(r.status === 401, `anonymous blocked from /admin/stats (got ${r.status})`);
+r = await request('/api/admin/stats', { headers: { Authorization: `Bearer ${userToken}` } });
+assert(r.status === 403, `regular user blocked from /admin/stats (got ${r.status})`);
 
 console.log('\n== Seed admin + pending resources ==');
-const { default: UserModel } =
-  await import('../src/modules/auth/user.model.js');
-const { default: OrganizationModel } =
-  await import('../src/modules/organization/organization.model.js');
-const { default: VenueModel } =
-  await import('../src/modules/venue/venue.model.js');
+const { default: UserModel } = await import('../src/modules/auth/user.model.js');
+const { default: OrganizationModel } = await import('../src/modules/organization/organization.model.js');
+const { default: VenueModel } = await import('../src/modules/venue/venue.model.js');
 
 const owner = await UserModel.create({
   firstName: 'Venue',
@@ -377,28 +266,16 @@ await UserModel.create({
 });
 await OrganizationModel.create({
   organizationName: 'Pending Org',
-  organizationType: 'startup',
   description: 'desc',
   email: 'org@test.dev',
-  address: {
-    street: '1 Main St',
-    city: 'City',
-    state: 'State',
-    country: 'India',
-  },
+  address: '1 Main St',
   ownerId: owner._id,
   status: 'pending',
 });
 await OrganizationModel.create({
   organizationName: 'Approved Org',
-  organizationType: 'startup',
   email: 'org2@test.dev',
-  address: {
-    street: '2 Main St',
-    city: 'City',
-    state: 'State',
-    country: 'India',
-  },
+  address: '2 Main St',
   ownerId: owner._id,
   status: 'approved',
 });
@@ -407,112 +284,53 @@ await VenueModel.create({
   venueName: 'Hall A',
   description: 'desc',
   images: [{ url: 'https://example.com/a.png', publicId: 'a' }],
-  location: {
-    type: 'Point',
-    coordinates: [77.2, 28.6],
-    address: '1 Main St',
-    city: 'City',
-    state: 'State',
-    country: 'India',
-  },
+  location: { address: '1 Main St', city: 'City', state: 'State' },
   capacity: 100,
   pricePerDay: 500,
   bookingPaymentPolicy: 'fullpayment',
   status: 'pending',
 });
 
-r = await request('/api/auth/login', {
-  method: 'POST',
-  body: { email: 'root@test.dev', password: 'adminpass123' },
-});
+r = await request('/api/auth/login', { method: 'POST', body: { email: 'root@test.dev', password: 'adminpass123' } });
 assert(r.status === 200, `admin login works (got ${r.status})`);
 const adminToken = r.json.data.accessToken;
 
 console.log('\n== Admin stats ==');
-r = await request('/api/admin/stats', {
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
+r = await request('/api/admin/stats', { headers: { Authorization: `Bearer ${adminToken}` } });
 assert(r.status === 200, `admin stats returns 200 (got ${r.status})`);
-assert(
-  r.json.data.totalOrganizations === 2,
-  'stats counts total organizations',
-);
-assert(
-  r.json.data.pendingOrganizations === 1,
-  'stats counts pending organizations',
-);
+assert(r.json.data.totalOrganizations === 2, 'stats counts total organizations');
+assert(r.json.data.pendingOrganizations === 1, 'stats counts pending organizations');
 assert(r.json.data.totalVenueOwners === 1, 'stats counts venue owners');
-assert(
-  r.json.data.pendingVenueOwners === 1,
-  'stats counts pending venue owners',
-);
+assert(r.json.data.pendingVenueOwners === 1, 'stats counts pending venue owners');
 
 console.log('\n== List + approve organizations ==');
-r = await request('/api/admin/organizations?status=pending', {
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
-assert(
-  r.status === 200 && r.json.data.length === 1,
-  'lists pending organizations',
-);
+r = await request('/api/admin/organizations?status=pending', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.length === 1, 'lists pending organizations');
 const orgId = r.json.data[0].id;
-r = await request(`/api/admin/organizations/${orgId}/approve`, {
-  method: 'PATCH',
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
-assert(
-  r.status === 200 && r.json.data.status === 'approved',
-  `org approved (got ${r.status})`,
-);
-r = await request(`/api/admin/organizations/${orgId}/approve`, {
-  method: 'PATCH',
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
+r = await request(`/api/admin/organizations/${orgId}/approve`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.status === 'approved', `org approved (got ${r.status})`);
+r = await request(`/api/admin/organizations/${orgId}/approve`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
 assert(r.status === 400, 're-approving an approved org blocked');
 
 console.log('\n== Reject (only pending actionable) ==');
-r = await request('/api/admin/organizations?status=approved', {
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
+r = await request('/api/admin/organizations?status=approved', { headers: { Authorization: `Bearer ${adminToken}` } });
 const approvedOrgId = r.json.data[0].id;
-r = await request(`/api/admin/organizations/${approvedOrgId}/reject`, {
-  method: 'PATCH',
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
+r = await request(`/api/admin/organizations/${approvedOrgId}/reject`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
 assert(r.status === 400, 'rejecting a non-pending org blocked');
 
 console.log('\n== List + approve venue owners ==');
-r = await request('/api/admin/venue-owners?status=pending', {
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
-assert(
-  r.status === 200 && r.json.data.length === 1,
-  'lists pending venue owners',
-);
+r = await request('/api/admin/venue-owners?status=pending', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.length === 1, 'lists pending venue owners');
 const ownerId = r.json.data[0].ownerId;
-r = await request(`/api/admin/venue-owners/${ownerId}/approve`, {
-  method: 'PATCH',
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
-assert(
-  r.status === 200 && r.json.data.venues[0].status === 'approved',
-  `venue owner approved (got ${r.status})`,
-);
-r = await request(`/api/admin/venue-owners/${ownerId}/approve`, {
-  method: 'PATCH',
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
+r = await request(`/api/admin/venue-owners/${ownerId}/approve`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.venues[0].status === 'approved', `venue owner approved (got ${r.status})`);
+r = await request(`/api/admin/venue-owners/${ownerId}/approve`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
 assert(r.status === 400, 'approving an owner with no pending venues blocked');
 
 console.log('\n== Admin validation ==');
-r = await request('/api/admin/organizations/abc/approve', {
-  method: 'PATCH',
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
+r = await request('/api/admin/organizations/abc/approve', { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
 assert(r.status === 400, 'invalid organization id rejected');
-r = await request('/api/admin/organizations?status=bogus', {
-  headers: { Authorization: `Bearer ${adminToken}` },
-});
+r = await request('/api/admin/organizations?status=bogus', { headers: { Authorization: `Bearer ${adminToken}` } });
 assert(r.status === 400, 'invalid status rejected');
 
 await mongoose.connection.dropDatabase();

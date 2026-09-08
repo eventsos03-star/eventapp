@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { api } from '../lib/api'
 import type { LoginInput, RegisterInput, SafeUser } from '../types'
@@ -21,10 +14,7 @@ interface AuthContextValue {
   logout: () => Promise<void>
   logoutAll: () => Promise<void>
   refreshUser: () => Promise<SafeUser>
-  updateProfile: (body: {
-    firstName?: string
-    lastName?: string
-  }) => Promise<SafeUser>
+  updateProfile: (body: { firstName?: string; lastName?: string }) => Promise<SafeUser>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -48,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (active) setInitializing(false)
       }
     }
+
 
     void bootstrap()
     return () => {
@@ -128,17 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshUser,
       updateProfile,
     }),
-    [
-      user,
-      initializing,
-      login,
-      register,
-      loginWithGoogle,
-      logout,
-      logoutAll,
-      refreshUser,
-      updateProfile,
-    ],
+    [user, initializing, login, register, loginWithGoogle, logout, logoutAll, refreshUser, updateProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

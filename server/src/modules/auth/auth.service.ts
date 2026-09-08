@@ -13,17 +13,10 @@ import Session from './session.model.js';
 import { AppError } from '../../utils/AppError.js';
 import type { ClientInfo } from '../../utils/getClientInfo.js';
 import { generateEmailToken, hashToken } from '../../utils/token.js';
-import {
-  signAccessToken,
-  signRefreshToken,
-  verifyRefreshToken,
-} from '../../services/token.service.js';
-import {
-  getUserByEmail,
-  getUserById,
-  getSafeUserById,
-} from '../../services/user.service.js';
-import { getOwnedOrganizationId } from '../../middleware/getOwnedOrganizationId.js';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../services/token.service.js';
+import { getUserByEmail, getUserById, getSafeUserById } from '../../services/user.service.js';
+import {getOwnedOrganizationId} from "../../middleware/getOwnedOrganizationId.js"
+import { log } from 'console';
 const MAX_REFRESH_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID || undefined);
@@ -42,22 +35,62 @@ export interface AuthResult {
 }
 
 /**
- * Issues a fresh access token and refresh cookie, and persists a session.
- * The session id is embedded inside the token so we can look the session back
- * up when it is presented.
+ * Creates a session document for a refresh token. The session id is embedded
+ * inside the token so we can look the session back up when it is presented.
  */
-async function issueTokens(
-  user: SafeUser,
+async function createSession(
+  userId: string,
+  refreshToken: string,
   client: ClientInfo,
-): Promise<AuthResult> {
+): Promise<string> {
+  const sessionId = new Types.ObjectId();
+  await Session.create({
+    _id: sessionId,
+    user: userId,
+    refreshToken: hashToken(refreshToken),
+    browser: client.browser,
+    ip: client.ip,
+    userAgent: client.userAgent,
+    expiresAt: new Date(Date.now() + MAX_REFRESH_AGE_MS),
+  });
+  return sessionId.toString();
+}
+
+// async function issueTokens(user: SafeUser, client: ClientInfo): Promise<AuthResult> {
+//   const sessionId = new Types.ObjectId();
+//   const refreshToken = signRefreshToken({ id: user.id, sessionId: sessionId.toString() });
+
+//   await Session.create({
+//     _id: sessionId,
+//     user: user.id,
+//     refreshToken: hashToken(refreshToken),
+//     browser: client.browser,
+//     ip: client.ip,
+//     userAgent: client.userAgent,
+//     expiresAt: new Date(Date.now() + MAX_REFRESH_AGE_MS),
+//   });
+
+//   console.log("hellooo")
+//     const organizationId = await getOwnedOrganizationId(user.id);
+//     console.log('DEBUG organizationId:', organizationId);
+//   const userWithOrg = { ...user, organizationId };
+
+  
+//   const accessToken = signAccessToken({
+//     id: user.id,
+//     role: user.role,
+//     organizationId,
+//     sessionId: sessionId.toString(),
+//   });
+
+//   return { accessToken, refreshToken, user : userWithOrg };
+// }
+async function issueTokens(user: SafeUser, client: ClientInfo): Promise<AuthResult> {
   console.log('\n========== issueTokens START ==========');
   console.log('[1] Input user:', JSON.stringify(user, null, 2));
 
   const sessionId = new Types.ObjectId();
-  const refreshToken = signRefreshToken({
-    id: user.id,
-    sessionId: sessionId.toString(),
-  });
+  const refreshToken = signRefreshToken({ id: user.id, sessionId: sessionId.toString() });
   console.log('[2] sessionId:', sessionId.toString());
 
   await Session.create({
@@ -72,12 +105,7 @@ async function issueTokens(
   console.log('[3] Session created for user:', user.id);
 
   const organizationId = await getOwnedOrganizationId(user.id);
-  console.log(
-    '[4] getOwnedOrganizationId returned:',
-    organizationId,
-    '| typeof:',
-    typeof organizationId,
-  );
+  console.log('[4] getOwnedOrganizationId returned:', organizationId, '| typeof:', typeof organizationId);
 
   const userWithOrg = { ...user, organizationId };
   console.log('[5] userWithOrg:', JSON.stringify(userWithOrg, null, 2));
@@ -88,16 +116,10 @@ async function issueTokens(
     organizationId,
     sessionId: sessionId.toString(),
   });
-  console.log(
-    '[6] accessToken signed (payload had organizationId):',
-    organizationId,
-  );
+  console.log('[6] accessToken signed (payload had organizationId):', organizationId);
 
   const result = { accessToken, refreshToken, user: userWithOrg };
-  console.log(
-    '[7] Final return object user key:',
-    JSON.stringify(result.user, null, 2),
-  );
+  console.log('[7] Final return object user key:', JSON.stringify(result.user, null, 2));
   console.log('========== issueTokens END ==========\n');
 
   return result;
@@ -107,8 +129,7 @@ export async function registerUser(input: RegisterInput): Promise<SafeUser> {
   const { firstName, lastName, email, password } = input;
 
   const existing = await getUserByEmail(email);
-  if (existing)
-    throw new AppError('An account with this email already exists', 409);
+  if (existing) throw new AppError('An account with this email already exists', 409);
 
   const { raw, hashed } = generateEmailToken();
 
@@ -145,14 +166,8 @@ export async function verifyEmail(token: string): Promise<SafeUser> {
   // find the account.
   if (user.emailVerified) return user.toSafeObject();
 
-  if (
-    user.verificationExpires &&
-    user.verificationExpires.getTime() < Date.now()
-  ) {
-    throw new AppError(
-      'Verification link has expired. Please request a new one.',
-      400,
-    );
+  if (user.verificationExpires && user.verificationExpires.getTime() < Date.now()) {
+    throw new AppError('Verification link has expired. Please request a new one.', 400);
   }
 
   user.emailVerified = true;
@@ -176,21 +191,14 @@ export async function resendVerificationEmail(email: string): Promise<void> {
   await sendVerifyEmail(user.email, user.firstName, raw);
 }
 
-export async function login(
-  email: string,
-  password: string,
-  client: ClientInfo,
-): Promise<AuthResult> {
+export async function login(email: string, password: string, client: ClientInfo): Promise<AuthResult> {
   const user = await getUserByEmail(email, true);
   if (!user || !(await user.comparePassword(password))) {
     throw new AppError('Invalid email or password', 401);
   }
 
   if (user.status === USER_STATUS.BLOCKED) {
-    throw new AppError(
-      'Your account has been blocked. Please contact support.',
-      403,
-    );
+    throw new AppError('Your account has been blocked. Please contact support.', 403);
   }
   if (!user.emailVerified) {
     throw new AppError('Please verify your email before logging in', 403);
@@ -218,10 +226,7 @@ export interface SessionInfo {
   isCurrent: boolean;
 }
 
-export async function listSessions(
-  userId: string,
-  currentSessionId?: string,
-): Promise<SessionInfo[]> {
+export async function listSessions(userId: string, currentSessionId?: string): Promise<SessionInfo[]> {
   const sessions = await Session.find({ user: userId }).sort({ createdAt: -1 });
   return sessions.map((session) => ({
     id: session._id.toString(),
@@ -235,21 +240,12 @@ export async function listSessions(
   }));
 }
 
-export async function revokeSession(
-  userId: string,
-  sessionId: string,
-): Promise<void> {
-  const session = await Session.findOneAndDelete({
-    _id: sessionId,
-    user: userId,
-  });
+export async function revokeSession(userId: string, sessionId: string): Promise<void> {
+  const session = await Session.findOneAndDelete({ _id: sessionId, user: userId });
   if (!session) throw new AppError('Session not found', 404);
 }
 
-export async function refresh(
-  refreshToken: string,
-  client: ClientInfo,
-): Promise<AuthResult> {
+export async function refresh(refreshToken: string, client: ClientInfo): Promise<AuthResult> {
   let payload;
   try {
     payload = verifyRefreshToken(refreshToken);
@@ -281,11 +277,7 @@ export async function refresh(
   const issued = await issueTokens(safe, client);
   await session.deleteOne();
 
-  return {
-    accessToken: issued.accessToken,
-    refreshToken: issued.refreshToken,
-    user: safe,
-  };
+  return { accessToken: issued.accessToken, refreshToken: issued.refreshToken, user: safe };
 }
 
 export async function forgotPassword(email: string): Promise<void> {
@@ -300,10 +292,7 @@ export async function forgotPassword(email: string): Promise<void> {
   await sendPasswordResetEmail(user.email, user.firstName, raw);
 }
 
-export async function resetPassword(
-  token: string,
-  newPassword: string,
-): Promise<void> {
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
   if (!token) throw new AppError('Reset token is required', 400);
 
   const user = await User.findOne({
@@ -333,10 +322,7 @@ export async function changePassword(
   if (!user) throw new AppError('User not found', 404);
 
   if (user.provider === USER_PROVIDER.GOOGLE) {
-    throw new AppError(
-      'Google accounts sign in with Google. Set a password to use this feature.',
-      400,
-    );
+    throw new AppError('Google accounts sign in with Google. Set a password to use this feature.', 400);
   }
 
   if (!(await user.comparePassword(currentPassword))) {
@@ -443,26 +429,19 @@ export async function googleAuth(
   const email = profile.email?.toLowerCase();
   if (!email) throw new AppError('Google account has no email address', 400);
 
-  const emailVerified =
-    profile.email_verified === true || profile.email_verified === 'true';
+  const emailVerified = profile.email_verified === true || profile.email_verified === 'true';
   if (!emailVerified) throw new AppError('Google email is not verified', 400);
 
   const nameParts = profile.name?.trim().split(/\s+/).filter(Boolean) || [];
   const firstName = nameParts[0] || 'Google';
   const lastName = nameParts.slice(1).join(' ') || 'User';
 
-  let user = await User.findOne({
-    email,
-    $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-  });
+  let user = await User.findOne({ email, $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
   let isNewUser = false;
 
   if (user) {
     if (user.status === USER_STATUS.BLOCKED) {
-      throw new AppError(
-        'Your account has been blocked. Please contact support.',
-        403,
-      );
+      throw new AppError('Your account has been blocked. Please contact support.', 403);
     }
     // Link Google to the existing account instead of creating a duplicate.
     let changed = false;
@@ -497,10 +476,7 @@ export async function googleAuth(
     isNewUser = true;
   }
 
-  const { accessToken, refreshToken } = await issueTokens(
-    user.toSafeObject(),
-    client,
-  );
+  const { accessToken, refreshToken } = await issueTokens(user.toSafeObject(), client);
 
   return { accessToken, refreshToken, user: user.toSafeObject(), isNewUser };
 }

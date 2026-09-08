@@ -1,27 +1,20 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import type { MapContainerProps } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 
-const MapContainer = dynamic(
-  () => import('react-leaflet').then((m) => m.MapContainer),
-  { ssr: false },
-)
-const TileLayer = dynamic(
-  () => import('react-leaflet').then((m) => m.TileLayer),
-  { ssr: false },
-)
+const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false })
+const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer), { ssr: false })
 
 function fixLeafletIcon() {
   if (typeof window === 'undefined') return
-  // @ts-expect-error — leaflet default icon fix for bundlers
+  // @ts-expect-error — Leaflet default icon fix for bundlers
   delete L.Icon.Default.prototype._getIconUrl
-  // @ts-expect-error — leaflet default icon fix for bundlers
+  // @ts-expect-error
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl:
-      'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   })

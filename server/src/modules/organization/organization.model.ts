@@ -32,15 +32,7 @@ const organizationSchema = new Schema<IOrganization>(
     organizationType: {
       type: String,
       required: true,
-      enum: [
-        'college',
-        'company',
-        'startup',
-        'ngo',
-        'community',
-        'event_org',
-        'other',
-      ],
+      enum: ['college', 'company', 'startup', 'ngo', 'community', 'event_org', 'other'],
     },
     description: { type: String, default: '' },
     logo: { type: String },
@@ -70,9 +62,6 @@ const organizationSchema = new Schema<IOrganization>(
 organizationSchema.index({ ownerId: 1 });
 organizationSchema.index({ status: 1 });
 
-const Organization = mongoose.model<IOrganization>(
-  'Organization',
-  organizationSchema,
-);
+const Organization = mongoose.model<IOrganization>('Organization', organizationSchema);
 
 export default Organization;

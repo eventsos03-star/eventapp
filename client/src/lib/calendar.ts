@@ -43,11 +43,7 @@ export function buildCalendar(
 
   while (cells.length % 7 !== 0) {
     const last = cells[cells.length - 1].date
-    const date = new Date(
-      last.getFullYear(),
-      last.getMonth(),
-      last.getDate() + 1,
-    )
+    const date = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1)
     cells.push(makeCell(date, false, bookings, today))
   }
 
@@ -57,19 +53,10 @@ export function buildCalendar(
 function coversDay(dayStart: Date, booking: VenueBooking): boolean {
   const start = startOfDay(parseISO(booking.startDate))
   const end = startOfDay(parseISO(booking.endDate))
-  return (
-    (dayStart >= start && dayStart <= end) ||
-    isSameDay(dayStart, start) ||
-    isSameDay(dayStart, end)
-  )
+  return (dayStart >= start && dayStart <= end) || isSameDay(dayStart, start) || isSameDay(dayStart, end)
 }
 
-function makeCell(
-  date: Date,
-  inMonth: boolean,
-  bookings: VenueBooking[],
-  today: Date,
-): DayCell {
+function makeCell(date: Date, inMonth: boolean, bookings: VenueBooking[], today: Date): DayCell {
   const todayStart = startOfDay(today)
   const dayStart = startOfDay(date)
   const isPast = isAfter(todayStart, dayStart)

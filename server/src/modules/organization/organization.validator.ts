@@ -2,15 +2,7 @@ import { z } from 'zod';
 
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 
-const organizationTypes = [
-  'college',
-  'company',
-  'startup',
-  'ngo',
-  'community',
-  'event_org',
-  'other',
-] as const;
+const organizationTypes = ['college', 'company', 'startup', 'ngo', 'community', 'event_org', 'other'] as const;
 
 const addressSchema = z.object({
   street: z.string().optional().default(''),
@@ -22,13 +14,8 @@ const addressSchema = z.object({
 
 export const createOrganizationSchema = z.object({
   body: z.object({
-    organizationName: z
-      .string()
-      .min(1, 'Organization name is required')
-      .max(200),
-    organizationType: z.enum(organizationTypes, {
-      required_error: 'Organization type is required',
-    }),
+    organizationName: z.string().min(1, 'Organization name is required').max(200),
+    organizationType: z.enum(organizationTypes, { required_error: 'Organization type is required' }),
     description: z.string().max(2000).optional(),
     email: z.string().email('Valid email is required'),
     phoneNumber: z.string().max(20).optional(),
@@ -56,8 +43,6 @@ export const organizationIdParamSchema = z.object({
 export const addMemberSchema = z.object({
   body: z.object({
     email: z.string().email('Valid email is required'),
-    role: z.enum(['organizer', 'member'], {
-      required_error: 'Role is required',
-    }),
+    role: z.enum(['organizer', 'member'], { required_error: 'Role is required' }),
   }),
 });

@@ -2,8 +2,7 @@
 
 import Link from 'next/link'
 
-export type OwnerTab =
-  'dashboard' | 'venues' | 'availability' | 'bookings' | 'settings'
+export type OwnerTab = 'dashboard' | 'venues' | 'availability' | 'bookings' | 'settings'
 
 const TABS: { id: OwnerTab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -42,14 +41,7 @@ export function Sidebar({
             onClick={onClose}
             className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 lg:hidden"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
@@ -78,9 +70,7 @@ export function Sidebar({
 
       <div className="mt-auto rounded-xl border border-slate-800 p-4 text-xs text-slate-400">
         <p className="font-semibold text-slate-200">Owner Dashboard</p>
-        <p className="mt-1">
-          Manage your venues, availability and booking requests.
-        </p>
+        <p className="mt-1">Manage your venues, availability and booking requests.</p>
       </div>
     </div>
   )
