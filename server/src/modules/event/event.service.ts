@@ -129,7 +129,7 @@ export async function getEventById(eventId: string) {
   });
 
   if (event && event.status !== "cancelled" && event.status !== "draft") {
-    const { startOfToday, startOfTomorrow } = getTodayBounds();
+    const { startOfToday, startOfTomorrow } = getTodayBoundsUTC();
     const eventDate = new Date(event.eventDate);
 
     if (eventDate < startOfToday && event.status !== "completed") {
