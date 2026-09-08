@@ -104,7 +104,7 @@ export default function EditEventPage() {
 
     try {
       await eventService.update(id, payload);
-      router.push("/events/my-events");
+      router.push("/my-organization");
     } catch (err: any) {
       setSaveError(err?.response?.data?.message ?? "Failed to update event");
       setSaving(false);
@@ -133,7 +133,7 @@ export default function EditEventPage() {
           </div>
 
           <Link
-            href="/events/my-events"
+            href="/my-organization"
             className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 hover:text-white transition shadow-sm"
           >
             &larr; Back

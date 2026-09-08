@@ -9,7 +9,7 @@ const objectId = z.string().refine(
 const createEventBody = z
   .object({
     organizationId: objectId,
-    venueBookingId: objectId.optional(),
+    venueId: objectId,
     eventName: z.string().trim().min(3).max(120),
     description: z.string().trim().min(3),
     bannerImage: z

@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
-const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid resource id');
+const objectIdSchema = z
+  .string()
+  .regex(/^[0-9a-fA-F]{24}$/, 'Invalid resource id');
 
 const bodySchema = z
   .object({
+    eventId: objectIdSchema,
     venueId: objectIdSchema,
     startDate: z.coerce.date(),
     endDate: z.coerce.date(),
@@ -18,9 +21,13 @@ export const createBookingSchema = z.object({
 });
 
 export const bookingIdParamSchema = z.object({
-  params: z.object({ id: objectIdSchema }),
+  params: z.object({
+    id: objectIdSchema,
+  }),
 });
 
 export const venueBookingsParamSchema = z.object({
-  params: z.object({ venueId: objectIdSchema }),
+  params: z.object({
+    venueId: objectIdSchema,
+  }),
 });
