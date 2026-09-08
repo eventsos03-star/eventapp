@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useEffect, useRef, useState } from 'react'
 
 export default function Navbar() {
-  const { user } = useAuth()
+  const { user ,logout} = useAuth()
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -24,7 +24,16 @@ export default function Navbar() {
   return () => {
     document.removeEventListener('mousedown', handleClickOutside)
   }
-}, [])
+}, []);
+
+const handleLogOut=async()=>{
+  try{
+    await logout()
+  }catch(e){
+    console.error("logout Failed:",e)
+  }
+
+}
   return (
     <nav className="flex items-center justify-between border-b border-ink-line px-5 py-6 sm:px-10 lg:px-16">
       {/* Logo */}
@@ -78,7 +87,7 @@ export default function Navbar() {
       </Link>
 
       <Link
-        href="/profile"
+        href="/dashboard"
         className="block rounded-lg px-3 py-2.5 text-sm text-paper-dim transition hover:bg-ink-line"
         onClick={() => setProfileOpen(false)}
       >
@@ -91,7 +100,7 @@ export default function Navbar() {
         type="button"
         onClick={() => {
           setProfileOpen(false)
-          // logout here
+          handleLogOut()
         }}
         className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-paper-dim transition hover:bg-ink-line"
       >
