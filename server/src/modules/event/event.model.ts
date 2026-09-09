@@ -61,7 +61,7 @@ export default Event;
 
 export type CreateEventInput = Omit<IEvent,
  'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted' | 'createdBy'> 
- & { organizationId: string; venueBookingId?: string; };
+ & { organizationId: string; venueBookingId?: string; venueId: string; };
 
  export type UpdateEventInput = Partial<
   Omit<IEvent, 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted' | 'createdBy'>

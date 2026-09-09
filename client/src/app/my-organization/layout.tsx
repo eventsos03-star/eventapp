@@ -53,10 +53,10 @@ export default function OrganizationLayout({
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-white">
-              {user?.organizationName ?? "My Organization"}
+              {user?.firstName ?? user?.email ?? "My Organization"}
             </p>
             <p className="text-[11px] text-slate-400">
-              {user?.organizationRole ?? "Owner"}
+              {user?.organizationId ? "Organization" : "No organization"}
             </p>
           </div>
         </div>

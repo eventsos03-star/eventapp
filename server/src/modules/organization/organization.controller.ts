@@ -17,6 +17,11 @@ export const updateOrganization = asyncHandler(async (req, res) => {
   success(res, 200, 'Organization updated successfully', org);
 });
 
+export const deleteMyOrganization = asyncHandler(async (req, res) => {
+  await orgService.deleteMyOrganization(req.user!.id);
+  success(res, 200, 'Organization deleted successfully');
+});
+
 export const addMember = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { email, role } = req.body;

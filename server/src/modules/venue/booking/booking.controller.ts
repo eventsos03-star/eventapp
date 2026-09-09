@@ -2,102 +2,17 @@ import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { success } from "../../../utils/response.js";
 import * as bookingService from "./booking.service.js";
 
-export const createBooking = async (params: {
-  userId: string;
-  organizationId: string | null;
-  venueId: string;
-  startDate: Date;
-  endDate: Date;
-}) => {
-  const {
-    userId,
-    organizationId,
-    venueId,
-  } = params;
-
-  // params.startDate/endDate may arrive as ISO strings (e.g. from req.body),
-  // so coerce to real Date instances before using Date methods on them.
-  const startDate = new Date(params.startDate);
-  const endDate = new Date(params.endDate);
-
-  if (!organizationId) {
-    throw new AppError(
-      "You must own or belong to an approved organization to book a venue",
-      403
-    );
-  }
-
-  /* Check organization */
-
-  const eligible = await isOrgEligible(
-    userId,
-    organizationId
-  );
-
-  if (!eligible) {
-    throw new AppError(
-      "You are not authorized to book for this organization",
-      403
-    );
-  }
-
-  /* Check venue */
-
-  const venue = await Venue.findOne({
-    _id: venueId,
-    ...NOT_DELETED,
+export const createBooking = asyncHandler(async (req, res) => {
+  const booking = await bookingService.createBooking({
+    userId: req.user!.id,
+    organizationId: req.user!.organizationId,
+    venueId: req.body.venueId,
+    startDate: req.body.startDate,
+    endDate: req.body.endDate,
   });
 
-  if (!venue) {
-    throw new AppError(
-      "Venue not found",
-      404
-    );
-  }
-
-  if (venue.status !== "approved") {
-    throw new AppError(
-      "This venue is not available for booking",
-      400
-    );
-  }
-
-  /* Check date overlap */
-
-  const conflict = await hasOverlap(
-    venueId,
-    startDate,
-    endDate
-  );
-
-  if (conflict) {
-    throw new AppError(
-      "This venue is already booked for part or all of the selected date range",
-      409
-    );
-  }
-
-  /* Calculate price */
-
-  const bookingAmount =
-    venue.pricePerDay *
-    countDays(startDate, endDate);
-
-  /* Create pending booking */
-
-  const booking = await VenueBooking.create({
-    organizationId,
-    venueId,
-    requestedBy: userId,
-    startDate,
-    endDate,
-    bookingAmount,
-    status: "pending",
-    paymentStatus: "pending",
-  });
-
-  return booking;
-};
+  return success(res, 201, "Booking created successfully", booking);
+});
 
 export const getVenueAvailability =
   asyncHandler(async (req, res) => {

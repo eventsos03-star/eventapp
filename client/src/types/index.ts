@@ -87,6 +87,8 @@ export interface Organization {
   approvedAt?: string
   approvedBy?: string | { firstName: string; lastName: string; email: string }
   rejectionReason?: string
+  isDeleted?: boolean
+  isOwnerDeleted?: boolean
   createdAt: string
   updatedAt: string
 }
