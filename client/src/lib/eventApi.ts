@@ -62,6 +62,7 @@ export interface CreateEventPayload {
   registrationStartDate: string;
   registrationEndDate: string;
   eventDate: string;
+  eventEndDate?: string;
   certificateEnabled?: boolean;
   ticketPrice?: number;
   teamSize?: number;
@@ -76,6 +77,7 @@ export interface UpdateEventPayload {
   registrationStartDate?: string;
   registrationEndDate?: string;
   eventDate?: string;
+  eventEndDate?: string;
   certificateEnabled?: boolean;
   ticketPrice?: number;
   teamSize?: number;
@@ -83,6 +85,7 @@ export interface UpdateEventPayload {
 export interface VenueAvailability {
   startDate: string;
   endDate: string;
+  status: "approved" | "pending";
 }
 export interface EventRecord extends CreateEventPayload {
   _id: string;

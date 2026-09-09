@@ -19,6 +19,7 @@ export interface IEvent {
     registrationStartDate: Date;
     registrationEndDate: Date;
     eventDate: Date;
+    eventEndDate?: Date;
     certificateEnabled: boolean;
     status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
     ticketPrice?: number;
@@ -44,6 +45,7 @@ const eventSchema = new Schema<IEvent>({
     registrationStartDate:{type:Date,required:true},
     registrationEndDate:{type:Date,required:true},
     eventDate:{type:Date,required:true},
+    eventEndDate:{type:Date},
     certificateEnabled:{type:Boolean,default:false},
     status:{type:String,enum:['draft' , 'published' , 'ongoing' , 'completed' , 'cancelled'],default:'draft'},
     ticketPrice:{type:Number},

@@ -254,6 +254,7 @@ export interface AdminEvent {
   teamSize?: number
   status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled'
   eventDate: string
+  eventEndDate?: string
   registrationStartDate: string
   registrationEndDate: string
   certificateEnabled: boolean
