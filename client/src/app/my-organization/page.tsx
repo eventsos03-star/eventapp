@@ -83,12 +83,12 @@ export default function MyOrganizationPage() {
               </span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Welcome back, <span className="text-amber-400">{user?.name ?? "there"}</span>
+              Welcome back, <span className="text-amber-400">{user?.firstName ?? "there"}</span>
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-slate-400">
-              {user?.organizationName
-                ? `Here's what's happening with ${user.organizationName}.`
-                : "Manage your organization's events."}
+              {user?.organizationId
+                ? "Here's what's happening with your organization."
+                : "You are not a member of an organization yet."}
             </p>
           </div>
 
