@@ -28,6 +28,7 @@ export default function EditEventPage() {
     registrationStartDate: "",
     registrationEndDate: "",
     eventDate: "",
+    eventEndDate: "",
     certificateEnabled: false,
     ticketPrice: 0,
     teamSize: undefined,
@@ -51,6 +52,7 @@ export default function EditEventPage() {
           registrationStartDate: toDateInputValue(event.registrationStartDate),
           registrationEndDate: toDateInputValue(event.registrationEndDate),
           eventDate: toDateInputValue(event.eventDate),
+          eventEndDate: toDateInputValue(event.eventEndDate),
           certificateEnabled: event.certificateEnabled ?? false,
           ticketPrice: event.ticketPrice ?? 0,
           teamSize: event.teamSize,
@@ -100,6 +102,9 @@ export default function EditEventPage() {
     }
     if (payload.registrationType !== "team") {
       delete payload.teamSize;
+    }
+    if (!payload.eventEndDate) {
+      delete payload.eventEndDate;
     }
 
     try {
@@ -288,6 +293,16 @@ export default function EditEventPage() {
                   value={form.eventDate ?? ""}
                   onChange={handleChange}
                   required
+                  className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Event End Date <span className="text-slate-500">(optional)</span></label>
+                <input
+                  type="date"
+                  name="eventEndDate"
+                  value={form.eventEndDate ?? ""}
+                  onChange={handleChange}
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
                 />
               </div>

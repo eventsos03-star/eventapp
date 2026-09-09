@@ -345,19 +345,19 @@ export const api = {
   // -------------------------
 
   createVenueBooking: (input: CreateBookingInput) =>
-    request<VenueBooking>('/bookings', { method: 'POST', body: input, auth: true }),
+    request<VenueBooking>('/venue-bookings', { method: 'POST', body: input, auth: true }),
 
   getVenueBookings: (venueId: string) =>
-    request<VenueBooking[]>(`/bookings/venue/${venueId}`, { auth: true }),
+    request<VenueBooking[]>(`/venue-bookings/venue/${venueId}`, { auth: true }),
 
   getVenueBooking: (id: string) =>
-    request<VenueBooking>(`/bookings/${id}`, { auth: true }),
+    request<VenueBooking>(`/venue-bookings/${id}`, { auth: true }),
 
   approveVenueBooking: (id: string) =>
-    request<VenueBooking>(`/bookings/${id}/approve`, { method: 'PATCH', auth: true }),
+    request<VenueBooking>(`/venue-bookings/${id}/approve`, { method: 'PATCH', auth: true }),
 
   rejectVenueBooking: (id: string) =>
-    request<VenueBooking>(`/bookings/${id}/reject`, { method: 'PATCH', auth: true }),
+    request<VenueBooking>(`/venue-bookings/${id}/reject`, { method: 'PATCH', auth: true }),
 
   // -------------------------
   // GEOCODING

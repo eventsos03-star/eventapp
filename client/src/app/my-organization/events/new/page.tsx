@@ -38,6 +38,7 @@ export default function CreateEventPage() {
     registrationStartDate: "",
     registrationEndDate: "",
     eventDate: "",
+    eventEndDate: "",
     certificateEnabled: false,
     ticketPrice: "",
     teamSize: "",
@@ -286,7 +287,35 @@ function formatDateKey(date: Date) {
   }
 
   /*
+   * Determine whether a whole day range is fully available
+   * (no past or booked dates inside it).
+   */
+  function isRangeClear(startKey: string, endKey: string) {
+    const start = toDateOnly(
+      new Date(`${startKey}T00:00:00`)
+    );
+    const end = toDateOnly(
+      new Date(`${endKey}T00:00:00`)
+    );
+
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      if (isDateInPast(cursor) || isDateBooked(cursor)) {
+        return false;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return true;
+  }
+
+  /*
    * Select an available date.
+   *
+   * Multi-day support: the first click sets the range start, the
+   * second click sets the range end. A third click starts a new
+   * range.
    */
   function selectEventDate(date: Date) {
     if (!form.venueId) {
@@ -304,7 +333,41 @@ function formatDateKey(date: Date) {
 
     const dateKey = formatDateKey(date);
 
-    update("eventDate", dateKey);
+    if (!form.eventDate) {
+      setForm((f) => ({
+        ...f,
+        eventDate: dateKey,
+        eventEndDate: "",
+      }));
+    } else if (!form.eventEndDate) {
+      let startKey = form.eventDate;
+      let endKey = dateKey;
+
+      if (dateKey < form.eventDate) {
+        startKey = dateKey;
+        endKey = form.eventDate;
+      }
+
+      if (!isRangeClear(startKey, endKey)) {
+        setError(
+          "The selected range includes an unavailable date. Please choose a different end date."
+        );
+        return;
+      }
+
+      setForm((f) => ({
+        ...f,
+        eventDate: startKey,
+        eventEndDate: endKey,
+      }));
+    } else {
+      setForm((f) => ({
+        ...f,
+        eventDate: dateKey,
+        eventEndDate: "",
+      }));
+    }
+
     setError(null);
   }
 
@@ -339,11 +402,12 @@ function formatDateKey(date: Date) {
      * again because another user may have booked the venue after
      * this calendar was loaded.
      */
-    const selectedDate = new Date(`${form.eventDate}T00:00:00`);
+    const startKey = form.eventDate;
+    const endKey = form.eventEndDate || form.eventDate;
 
-    if (isDateBooked(selectedDate)) {
+    if (!isRangeClear(startKey, endKey)) {
       setError(
-        "This venue is no longer available on the selected date. Please choose another date."
+        "This venue is no longer available on the selected date range. Please choose another date."
       );
       return;
     }
@@ -386,6 +450,12 @@ function formatDateKey(date: Date) {
         eventDate: new Date(
           `${form.eventDate}T00:00:00`
         ).toISOString(),
+
+        eventEndDate: form.eventEndDate
+          ? new Date(
+              `${form.eventEndDate}T00:00:00`
+            ).toISOString()
+          : undefined,
       };
 
       await eventService.create(payload);
@@ -480,6 +550,7 @@ function formatDateKey(date: Date) {
                 onChange={(e) => {
                   update("venueId", e.target.value);
                   update("eventDate", "");
+                  update("eventEndDate", "");
                 }}
                 disabled={venuesLoading}
                 required
@@ -528,7 +599,7 @@ function formatDateKey(date: Date) {
                     </h2>
 
                     <p className="mt-1 text-[11px] text-slate-400">
-                      Select an available date for your event.
+                      Select a start date, then an end date for multi-day events (one date = single day).
                     </p>
                   </div>
 
@@ -605,6 +676,17 @@ function formatDateKey(date: Date) {
 
                     const booked = isDateBooked(date);
                     const past = isDateInPast(date);
+
+                    const rangeActive =
+                      form.eventDate && form.eventEndDate;
+                    const inRange =
+                      rangeActive &&
+                      dateKey >= form.eventDate &&
+                      dateKey <= form.eventEndDate;
+                    const isEndpoint =
+                      form.eventDate === dateKey ||
+                      (form.eventEndDate &&
+                        form.eventEndDate === dateKey);
                     const selected =
                       form.eventDate === dateKey;
 
@@ -621,13 +703,17 @@ function formatDateKey(date: Date) {
                           "relative aspect-square rounded-lg text-xs font-semibold transition",
                           "border",
 
-                          selected
+                          inRange && isEndpoint
                             ? "border-amber-400 bg-amber-500 text-slate-950"
-                            : booked
-                              ? "border-red-500/30 bg-red-500/20 text-red-400 cursor-not-allowed"
-                              : past
-                                ? "border-white/5 bg-slate-900/30 text-slate-700 cursor-not-allowed"
-                                : "border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:border-emerald-400 hover:bg-emerald-500/20",
+                            : inRange
+                              ? "border-amber-500/40 bg-amber-500/20 text-amber-300"
+                              : selected
+                                ? "border-amber-400 bg-amber-500 text-slate-950"
+                                : booked
+                                  ? "border-red-500/30 bg-red-500/20 text-red-400 cursor-not-allowed"
+                                  : past
+                                    ? "border-white/5 bg-slate-900/30 text-slate-700 cursor-not-allowed"
+                                    : "border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:border-emerald-400 hover:bg-emerald-500/20",
 
                           disabled && !selected
                             ? "cursor-not-allowed"
@@ -638,9 +724,13 @@ function formatDateKey(date: Date) {
                             ? "Already booked"
                             : past
                               ? "Date has passed"
-                              : selected
-                                ? "Selected event date"
-                                : "Available"
+                              : inRange && isEndpoint
+                                ? "Selected event range"
+                                : inRange
+                                  ? "Selected event range"
+                                  : selected
+                                    ? "Selected event date"
+                                    : "Available"
                         }
                       >
                         {date.getDate()}
@@ -680,19 +770,41 @@ function formatDateKey(date: Date) {
                   <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3.5 py-3">
 
                     <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
-                      Selected Event Date
+                      Selected Event Date{form.eventEndDate ? " Range" : ""}
                     </p>
 
                     <p className="mt-1 text-sm font-bold text-amber-400">
-                      {new Date(
-                        `${form.eventDate}T00:00:00`
-                      ).toLocaleDateString("en-US", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
+                      {form.eventEndDate
+                        ? `${new Date(
+                            `${form.eventDate}T00:00:00`
+                          ).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                          })} – ${new Date(
+                            `${form.eventEndDate}T00:00:00`
+                          ).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            month: "long",
+                            day: "numeric",
+                          })}, ${new Date(
+                            `${form.eventEndDate}T00:00:00`
+                          ).getFullYear()}`
+                        : new Date(
+                            `${form.eventDate}T00:00:00`
+                          ).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
                     </p>
+
+                    {!form.eventEndDate && (
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        Pick one more date to set an end date
+                        (multi-day event).
+                      </p>
+                    )}
 
                   </div>
                 )}
