@@ -163,7 +163,7 @@ function LoginForm() {
     setSubmitting(true)
     try {
       await login({ email, password })
-      router.push('/dashboard')
+      router.replace('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -174,7 +174,7 @@ function LoginForm() {
   async function handleGoogleCredential(credential: string) {
     try {
       await loginWithGoogle(credential)
-      router.push('/dashboard')
+      router.replace('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed')
     }
