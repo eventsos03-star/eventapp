@@ -5,6 +5,8 @@ import { AppError } from '../../utils/AppError.js';
 
 type OrgResponse = Record<string, unknown> & { id: string };
 
+const NOT_DELETED = { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
+
 function serialize(doc: object): OrgResponse {
   const raw = doc as unknown as Record<string, unknown>;
   const { _id, ...rest } = raw;
@@ -24,7 +26,7 @@ export async function createOrganization(
     address?: { street?: string; city?: string; state?: string; postalCode?: string; country?: string };
   },
 ): Promise<OrgResponse> {
-  const existing = await Organization.findOne({ ownerId, isDeleted: false });
+  const existing = await Organization.findOne({ ownerId, ...NOT_DELETED });
   if (existing) {
     throw new AppError('You already have an organization. One user can own one organization.', 400);
   }
@@ -58,9 +60,17 @@ export async function createOrganization(
 }
 
 export async function getOrganizationByOwner(ownerId: string): Promise<OrgResponse | null> {
-  const org = await Organization.findOne({ ownerId, isDeleted: false }).lean();
+  const org = await Organization.findOne({ ownerId }).lean();
   if (!org) return null;
   return serialize(org as object);
+}
+
+export async function deleteMyOrganization(ownerId: string): Promise<void> {
+  const org = await Organization.findOne({ ownerId, ...NOT_DELETED });
+  if (!org) throw new AppError('Organization not found', 404);
+
+  org.isDeleted = true;
+  await org.save();
 }
 
 export async function updateOrganization(
