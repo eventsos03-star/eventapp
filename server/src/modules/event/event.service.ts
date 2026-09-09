@@ -2,6 +2,7 @@ import { AppError } from "../../utils/AppError.js";
 import Event from "./event.model.js";
 import type { CreateEventInput, UpdateEventInput } from "./event.model.js";
 import * as bookingService from "../venue/booking/booking.service.js";
+import VenueBooking from "../venue/venueBooking.model.js";
 
 export async function createEvent(
   data: CreateEventInput,
@@ -11,16 +12,17 @@ export async function createEvent(
     venueId,
     organizationId,
     eventDate,
+    eventEndDate,
     ...eventData
   } = data;
 
-  // Create venue booking request
+  // Create venue booking request (multi-day events reserve the whole range).
   const booking = await bookingService.createBooking({
     userId,
     organizationId,
     venueId,
     startDate: eventDate,
-    endDate: eventDate,
+    endDate: eventEndDate ?? eventDate,
   });
 
   // Create event as draft
@@ -28,6 +30,7 @@ export async function createEvent(
     ...eventData,
     organizationId,
     eventDate,
+    eventEndDate,
     createdBy: userId,
     venueBookingId: booking._id,
     status: "draft",
@@ -180,7 +183,24 @@ export async function deleteEvent(eventId: string) {
   }
   event.isDeleted = true;
   await event.save();
+
+  // Free up the venue for the event's date by cancelling the linked booking.
+  if (event.venueBookingId) {
+    await VenueBooking.updateOne(
+      { _id: event.venueBookingId, status: { $in: ["pending", "approved"] } },
+      { $set: { status: "cancelled" } }
+    );
+  }
+
   return event;
+}
+
+function isSameCalendarDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 export async function updateEvent(eventId: string, data: UpdateEventInput) {
@@ -189,8 +209,56 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
     throw new AppError("Event not found", 404);
   }
 
+  // Effective date range: pending change or existing value.
+  const nextStart = data.eventDate ? new Date(data.eventDate) : event.eventDate;
+  const nextEnd = data.eventEndDate
+    ? new Date(data.eventEndDate)
+    : event.eventEndDate ?? event.eventDate;
+
+  if (nextEnd < nextStart) {
+    throw new AppError("eventEndDate must be on or after eventDate", 400);
+  }
+
+  // Moving the event to another date/range must respect venue availability.
+  const rangeChanged =
+    !isSameCalendarDay(event.eventDate, nextStart) ||
+    !isSameCalendarDay(event.eventEndDate ?? event.eventDate, nextEnd);
+
+  if (rangeChanged && event.venueBookingId) {
+    const booking = await VenueBooking.findById(event.venueBookingId).select(
+      "venueId status"
+    );
+    if (
+      booking &&
+      booking.status !== "cancelled" &&
+      booking.status !== "rejected"
+    ) {
+      const conflict = await bookingService.hasOverlap(
+        booking.venueId.toString(),
+        nextStart,
+        nextEnd,
+        event.venueBookingId.toString(),
+        ["approved", "pending"]
+      );
+      if (conflict) {
+        throw new AppError(
+          "This venue is already booked for the selected date",
+          409
+        );
+      }
+    }
+  }
+
   Object.assign(event, data);
   await event.save();
+
+  // Keep the linked booking's dates in sync with the event.
+  if (rangeChanged && event.venueBookingId) {
+    await VenueBooking.updateOne(
+      { _id: event.venueBookingId, status: { $in: ["pending", "approved"] } },
+      { $set: { startDate: nextStart, endDate: nextEnd } }
+    );
+  }
 
   return event;
 }

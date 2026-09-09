@@ -24,6 +24,7 @@ const createEventBody = z
     registrationStartDate: z.coerce.date(),
     registrationEndDate: z.coerce.date(),
     eventDate: z.coerce.date(),
+    eventEndDate: z.coerce.date().optional(),
     certificateEnabled: z.boolean().optional(),
     ticketPrice: z.number().positive().optional(),
     teamSize: z.number().int().positive().optional(),
@@ -46,6 +47,10 @@ const createEventBody = z
   ).refine(
     (data) => data.eventDate >= new Date(new Date().toDateString()),
     { message: "eventDate cannot be in the past", path: ["eventDate"] }
+  )
+  .refine(
+    (data) => !data.eventEndDate || data.eventEndDate >= data.eventDate,
+    { message: "eventEndDate must be on or after eventDate", path: ["eventEndDate"] }
   )
   .refine(
     (data) => data.registrationStartDate >= new Date(new Date().toDateString()),
@@ -83,6 +88,7 @@ const updateEventBody = z
     registrationStartDate: z.coerce.date().optional(),
     registrationEndDate: z.coerce.date().optional(),
     eventDate: z.coerce.date().optional(),
+    eventEndDate: z.coerce.date().optional(),
     certificateEnabled: z.boolean().optional(),
     ticketPrice: z.number().positive().optional(),
     teamSize: z.number().int().positive().optional(),
@@ -97,6 +103,11 @@ const updateEventBody = z
     (data) => !data.registrationEndDate || !data.eventDate ||
       data.registrationEndDate <= data.eventDate,
     { message: "registrationEndDate must be before or on eventDate", path: ["registrationEndDate"] }
+  )
+  .refine(
+    (data) => !data.eventEndDate || !data.eventDate ||
+      data.eventEndDate >= data.eventDate,
+    { message: "eventEndDate must be on or after eventDate", path: ["eventEndDate"] }
   );
 
 export const updateEventSchema = z.object({

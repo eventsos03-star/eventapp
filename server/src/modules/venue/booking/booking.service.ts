@@ -53,17 +53,19 @@ async function isOrgEligible(
 /* Check booking overlap */
 /* -------------------------------- */
 
-async function hasOverlap(
+export async function hasOverlap(
   venueId: string,
   startDate: Date,
   endDate: Date,
-  excludeBookingId?: string
+  excludeBookingId?: string,
+  blockingStatuses: string[] = ["approved"]
 ): Promise<boolean> {
   const filter: Record<string, unknown> = {
     venueId,
 
-    // Only approved bookings block availability.
-    status: "approved",
+    // Only the given statuses block availability (approved by default;
+    // event creation also treats pending requests as blocking).
+    status: { $in: blockingStatuses },
 
     // Overlap condition: startDate <= requestedEndDate AND endDate >= requestedStartDate
     startDate: {
@@ -179,7 +181,9 @@ export const createBooking = async (params: {
   const conflict = await hasOverlap(
     venueId,
     startDate,
-    endDate
+    endDate,
+    undefined,
+    ["approved", "pending"]
   );
 
   if (conflict) {
@@ -239,9 +243,9 @@ export const getVenueAvailability = async (
 
   const bookings = await VenueBooking.find({
     venueId,
-    status: "approved",
+    status: { $in: ["approved", "pending"] },
   })
-    .select("startDate endDate")
+    .select("startDate endDate status")
     .sort({
       startDate: 1,
     });
@@ -249,6 +253,7 @@ export const getVenueAvailability = async (
   return bookings.map((booking) => ({
     startDate: booking.startDate,
     endDate: booking.endDate,
+    status: booking.status,
   }));
 };
 
@@ -478,7 +483,7 @@ export const approveBooking = async (params: {
   // Guarded on status: "draft" so this is a safe no-op if the event
   // was already moved out of draft some other way.
   await Event.updateOne(
-    { venueBookingId: bookingId, status: "draft" },
+    { venueBookingId: bookingId, status: "draft", isDeleted: false },
     { $set: { status: "published" } }
   );
 
@@ -555,7 +560,7 @@ export const rejectBooking = async (params: {
   // Guarded on status: "draft" so this is a safe no-op if the event
   // was already moved out of draft some other way.
   await Event.updateOne(
-    { venueBookingId: bookingId, status: "draft" },
+    { venueBookingId: bookingId, status: "draft", isDeleted: false },
     { $set: { status: "cancelled" } }
   );
 

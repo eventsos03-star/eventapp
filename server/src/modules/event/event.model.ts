@@ -19,6 +19,7 @@ export interface IEvent {
     registrationStartDate: Date;
     registrationEndDate: Date;
     eventDate: Date;
+    eventEndDate?: Date;
     certificateEnabled: boolean;
     status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
     ticketPrice?: number;
@@ -44,6 +45,7 @@ const eventSchema = new Schema<IEvent>({
     registrationStartDate:{type:Date,required:true},
     registrationEndDate:{type:Date,required:true},
     eventDate:{type:Date,required:true},
+    eventEndDate:{type:Date},
     certificateEnabled:{type:Boolean,default:false},
     status:{type:String,enum:['draft' , 'published' , 'ongoing' , 'completed' , 'cancelled'],default:'draft'},
     ticketPrice:{type:Number},
@@ -61,7 +63,7 @@ export default Event;
 
 export type CreateEventInput = Omit<IEvent,
  'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted' | 'createdBy'> 
- & { organizationId: string; venueBookingId?: string; };
+ & { organizationId: string; venueBookingId?: string; venueId: string; };
 
  export type UpdateEventInput = Partial<
   Omit<IEvent, 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted' | 'createdBy'>
