@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { Providers } from "./providers";
+import HelpWidget from "@/components/ai/HelpWidget";
 
 export const metadata: Metadata = {
   title: "EventOS",
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <Providers>{children}</Providers>
+        <HelpWidget />
       </body>
     </html>
   );
