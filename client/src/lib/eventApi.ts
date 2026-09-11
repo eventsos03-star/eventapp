@@ -93,6 +93,9 @@ export interface EventRecord extends CreateEventPayload {
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
+   registeredCount: number;
+  availableSeats: number;
+  isFull: boolean;
 }
 
 export const eventService = {
@@ -116,10 +119,19 @@ export const eventService = {
    byOrganization: () =>
     eventApi.get("/events/organization").then((res) => res.data),
 
+   publicList:(params?:{search?:string;page?:number;limit?:number; location?: string;eventType?: "free" | "paid"; sort?: "upcoming" | "latest" | "price-low" | "price-high";})=>
+    eventApi.get("/events/public",{params}).then((res)=>res.data),
+    
+   publicGetById:(id:string)=>
+    eventApi.get(`/events/public/${id}`).then((res)=>res.data),
+
+   
+
    getVenueAvailability: (venueId: string) =>
-  eventApi
+     eventApi
     .get(`/venue-bookings/venue/${venueId}/availability`)
     .then((res) => res.data),
 
   
 };
+

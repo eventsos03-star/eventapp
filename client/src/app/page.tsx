@@ -84,12 +84,14 @@ export default function HomePage() {
             >
               {user ? 'Events' : 'Create your first event'}
             </Link>
-            <Link
-              href="/login"
-              className="text-[15.5px] font-semibold text-paper-dim/50 transition hover:text-amber"
-            >
-              I already have an account →
-            </Link>
+          {!user && (
+  <Link
+    href="/login"
+    className="text-[15.5px] font-semibold text-paper-dim/50 transition hover:text-amber"
+  >
+    I already have an account →
+  </Link>
+)}
           </div>
         </section>
 
@@ -179,10 +181,10 @@ export default function HomePage() {
             Your next event starts with one page.
           </h2>
           <Link
-            href={user ? '/dashboard' : '/register'}
+            href={user ? '/events' : '/register'}
             className="rounded-lg bg-amber px-6.5 py-3.5 text-[15.5px] font-semibold text-ink transition hover:bg-amber-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber"
           >
-            {user ? 'Open dashboard' : 'Create free account'}
+            {user ? 'Events' : 'Create free account'}
           </Link>
         </section>
       </main>

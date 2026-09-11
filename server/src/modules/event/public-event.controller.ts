@@ -7,9 +7,9 @@ import { publicEventQueryValidator } from "./event.validator.js";
 
 export const getAllEventsController=asyncHandler(async(req ,res)=>{
     
-    const {search,page,limit}=publicEventQueryValidator.parse(req.query);
+    const {search,page,limit,location,eventType,sort}=publicEventQueryValidator.parse(req.query);
 
-    const events= await publicEventService.getAllEvents({search,page,limit})
+    const events= await publicEventService.getAllEvents({search,page,limit,location,eventType,sort,})
 
     return success(res,200,"event fatched successfull",events)
 
