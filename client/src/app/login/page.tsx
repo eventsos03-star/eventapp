@@ -5,6 +5,7 @@ import type { FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
+import Navbar from '@/components/navbar'
 
 let googleInitialized = false
 
@@ -314,7 +315,8 @@ function LoginForm() {
       <div className="w-full lg:w-1/2">
         <EventOpsHeroPanel />
       </div>
-    </div>
+      </div>
+
   )
 }
 

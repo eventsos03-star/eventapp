@@ -50,11 +50,19 @@ const handleLogOut=async()=>{
       {/* Navigation */}
       <div className="flex items-center gap-2.5">
         <Link
-          href="/events"
-          className="absolute left-1/2 -translate-x-1/2 rounded-lg px-4 py-2.5 text-sm font-semibold text-paper-dim transition hover:text-amber"
-        >
-          Events
-        </Link>
+    href="/"
+    className="rounded-lg px-4 py-2.5 text-sm font-semibold text-paper-dim transition hover:text-amber"
+  >
+    HOME
+  </Link>
+
+       
+     <Link
+    href="/events"
+    className="rounded-lg px-4 py-2.5 text-sm font-semibold text-paper-dim transition hover:text-amber"
+  >
+    EVENTS
+  </Link>
 
         {user ? (
          <div ref={profileRef} className="relative">
@@ -87,7 +95,7 @@ const handleLogOut=async()=>{
       </Link>
 
       <Link
-        href="/dashboard"
+        href="/profile"
         className="block rounded-lg px-3 py-2.5 text-sm text-paper-dim transition hover:bg-ink-line"
         onClick={() => setProfileOpen(false)}
       >

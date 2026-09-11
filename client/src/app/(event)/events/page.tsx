@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Layout } from "@/components/Layout";
 
 import { eventService } from "@/lib/eventApi";
 import { useAuth } from "@/context/AuthContext";
@@ -85,6 +86,7 @@ export default function EventsListPage() {
   };
 
   return (
+    <Layout>
     <div className="relative min-h-screen w-full overflow-hidden bg-[#090d16] text-white font-sans antialiased px-4 py-8 sm:px-8 lg:px-10">
 
       {/* Background glow */}
@@ -641,5 +643,6 @@ export default function EventsListPage() {
 
       </div>
     </div>
+    </Layout>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams ,useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -17,9 +17,12 @@ import {
 } from "lucide-react";
 
 import { eventService, type EventRecord } from "@/lib/eventApi";
+import { useAuth } from "@/context/AuthContext";
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const {user}=useAuth();
+  const router = useRouter();
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +52,8 @@ export default function EventDetailPage() {
       cancelled = true;
     };
   }, [id]);
+
+
 
   /* ==========================================
      LOADING
@@ -189,6 +194,18 @@ const googleMapsUrl =
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
         formattedLocation || venueName || ""
       )}`;
+
+
+
+const handleRegister = () => {
+  if (!user) {
+    alert("Please login to register for this event.");
+    router.push("/login");
+    return;
+  }
+
+  router.push(`/events/${event._id}/register`);
+};
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#090d16] text-white font-sans antialiased">
@@ -365,16 +382,17 @@ const googleMapsUrl =
               <div className="mt-6">
 
                 {event.status === "published" ? (
-                  <Link
-                    href={`/events/${event._id}/register`}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/10 transition hover:bg-amber-400 active:scale-[0.99]"
-                  >
-                    <Ticket className="h-4 w-4" />
+                  <button
+  type="button"
+  onClick={handleRegister}
+  className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/10 transition hover:bg-amber-400 active:scale-[0.99]"
+>
+  <Ticket className="h-4 w-4" />
 
-                    {isPaid
-                      ? "Buy Tickets"
-                      : "Register for Event"}
-                  </Link>
+  {isPaid
+    ? "Buy Tickets"
+    : "Register for Event"}
+</button>
                 ) : (
                   <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center text-xs text-slate-500">
                     Registration opens once this event is published.
@@ -672,12 +690,13 @@ const googleMapsUrl =
       Event Full
     </button>
   ) : (
-    <Link
-      href={`/events/${event._id}/register`}
-      className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-slate-950 transition hover:bg-amber-400"
-    >
-      Register Now
-    </Link>
+  <button
+  type="button"
+  onClick={handleRegister}
+  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-slate-950 transition hover:bg-amber-400"
+>
+  Register Now
+</button>
   )
 ) : (
   <button
