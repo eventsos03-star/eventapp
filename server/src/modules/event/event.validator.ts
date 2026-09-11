@@ -119,18 +119,18 @@ export const updateEventSchema = z.object({
 });
 
 export const publicEventQueryValidator = z.object({
-  search: z.string().trim().optional(),
+  search: z.string().optional(),
+  location: z.string().optional(),
 
-  page: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(1),
+  eventType: z
+    .enum(["free", "paid"])
+    .optional(),
 
-  limit: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(10),
+  sort: z
+    .enum(["upcoming", "latest", "price-low", "price-high"])
+    .optional(),
+
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().optional(),
 });
 

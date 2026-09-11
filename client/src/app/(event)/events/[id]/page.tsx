@@ -3,6 +3,19 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Clock3,
+  MapPin,
+  Users,
+  Ticket,
+  Building2,
+  CheckCircle2,
+  Globe2,
+  Wifi,
+} from "lucide-react";
+
 import { eventService, type EventRecord } from "@/lib/eventApi";
 
 export default function EventDetailPage() {
@@ -16,7 +29,7 @@ export default function EventDetailPage() {
     let cancelled = false;
 
     eventService
-      .getById(id)
+      .publicGetById(id)
       .then((res) => {
         if (!cancelled) {
           setEvent(res.data);
@@ -25,7 +38,9 @@ export default function EventDetailPage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err?.response?.data?.message ?? "Failed to load event");
+          setError(
+            err?.response?.data?.message ?? "Failed to load event"
+          );
           setLoading(false);
         }
       });
@@ -35,125 +50,768 @@ export default function EventDetailPage() {
     };
   }, [id]);
 
+  /* ==========================================
+     LOADING
+  ========================================== */
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#090d16] p-5 sm:p-10 lg:p-12">
-        <div className="max-w-3xl mx-auto animate-pulse space-y-4">
-          <div className="h-6 bg-slate-800 rounded w-1/4" />
-          <div className="h-10 bg-slate-800 rounded w-2/3" />
-          <div className="h-40 bg-slate-800 rounded" />
+      <div className="min-h-screen bg-[#090d16] px-4 py-8 text-white sm:px-8 lg:px-10">
+        <div className="mx-auto max-w-7xl animate-pulse space-y-6">
+
+          <div className="h-4 w-32 rounded bg-slate-800" />
+
+          <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-white/10 bg-[#111726] lg:grid-cols-2">
+            <div className="h-[300px] bg-slate-800 lg:h-[400px]" />
+
+            <div className="space-y-5 p-6">
+              <div className="h-5 w-24 rounded bg-slate-800" />
+              <div className="h-8 w-3/4 rounded bg-slate-800" />
+              <div className="h-16 w-full rounded bg-slate-800" />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="h-10 rounded bg-slate-800" />
+                <div className="h-10 rounded bg-slate-800" />
+                <div className="h-10 rounded bg-slate-800" />
+                <div className="h-10 rounded bg-slate-800" />
+              </div>
+
+              <div className="h-11 rounded bg-slate-800" />
+            </div>
+          </div>
+
+          <div className="h-48 rounded-2xl bg-slate-800" />
+
         </div>
       </div>
     );
   }
 
+  /* ==========================================
+     ERROR
+  ========================================== */
+
   if (error || !event) {
     return (
-      <div className="min-h-screen bg-[#090d16] p-5 sm:p-10 lg:p-12">
-        <div className="max-w-3xl mx-auto rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-center">
-          <p className="text-sm font-medium text-red-400">{error ?? "Event not found"}</p>
-          <Link href="/events" className="mt-4 inline-block text-xs text-amber-400 hover:underline">
-            &larr; Back to events
+      <div className="min-h-screen bg-[#090d16] px-4 py-8 text-white sm:px-8 lg:px-10">
+
+        <div className="mx-auto max-w-2xl rounded-2xl border border-red-500/20 bg-[#111726] p-10 text-center">
+
+          <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-red-500/10 text-red-400">
+            !
+          </div>
+
+          <h2 className="text-lg font-bold text-white">
+            Event not found
+          </h2>
+
+          <p className="mt-2 text-sm text-slate-500">
+            {error ?? "The requested event could not be found."}
+          </p>
+
+          <Link
+            href="/events"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-amber-500 px-5 py-2.5 text-xs font-bold text-slate-950 transition hover:bg-amber-400"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to events
           </Link>
+
         </div>
       </div>
     );
   }
 
   const isPaid = event.eventType === "paid";
+
+  /*
+   * Supports common image field names.
+   * If your backend has one specific field, keep that field here.
+   */
+  const eventImage =
+    (event as any).imageUrl ||
+    (event as any).image ||
+    (event as any).bannerImage;
+
+
+  const eventDate = new Date(event.eventDate);
+
+
+
+  
+  const formattedDate = eventDate.toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const formattedTime = eventDate.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  const registrationEnd = event.registrationEndDate
+    ? new Date(event.registrationEndDate).toLocaleDateString(
+        undefined,
+        {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }
+      )
+    : "Not specified";
+
   const statusColor =
     event.status === "published"
-      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
       : event.status === "draft"
-      ? "border-slate-500/30 bg-slate-500/10 text-slate-300"
-      : "border-amber-500/30 bg-amber-500/10 text-amber-400";
+        ? "bg-slate-500/10 text-slate-400 border-slate-500/20"
+        : "bg-amber-500/10 text-amber-400 border-amber-500/20";
+
+        const venue = (event as any).venueBookingId?.venueId;
+
+       const venueName = venue?.venueName;
+
+          const location = venue?.location;
+
+          const formattedLocation =
+                 location?.formattedAddress ||
+                [location?.city, location?.state]
+                  .filter(Boolean)
+                    .join(", ");  
+
+
+const coordinates = location?.coordinates;
+
+const googleMapsUrl =
+  coordinates?.length === 2
+    ? `https://www.google.com/maps/search/?api=1&query=${coordinates[1]},${coordinates[0]}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        formattedLocation || venueName || ""
+      )}`;
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#090d16] text-white font-sans antialiased p-5 sm:p-10 lg:p-12">
-      <div className="pointer-events-none absolute -top-20 -right-20 h-72 sm:h-96 w-72 sm:w-96 rounded-full bg-amber-500/15 blur-[120px]" />
-      <div className="pointer-events-none absolute -bottom-20 -left-20 h-72 sm:h-96 w-72 sm:w-96 rounded-full bg-emerald-500/10 blur-[120px]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#090d16] text-white font-sans antialiased">
 
-      <div className="relative z-10 max-w-3xl mx-auto space-y-6">
-        <Link href="/events" className="text-xs text-slate-400 hover:text-amber-400 transition">
-          &larr; Back to events
+      {/* Background glow */}
+      <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-amber-500/10 blur-[130px]" />
+
+      <div className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-emerald-500/10 blur-[130px]" />
+
+      <main className="relative z-10 mx-auto max-w-7xl px-4 py-7 sm:px-8 lg:px-10">
+
+        {/* ==========================================
+            BACK
+        ========================================== */}
+
+        <Link
+          href="/events"
+          className="mb-5 inline-flex items-center gap-2 text-xs font-medium text-slate-400 transition hover:text-amber-400"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to events
         </Link>
 
-        <div className="rounded-2xl border border-white/10 bg-[#111726]/80 p-6 sm:p-8 backdrop-blur-xl space-y-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border ${statusColor}`}>
-              {event.status}
-            </span>
-            <span
-              className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold border ${
-                isPaid
-                  ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-              }`}
-            >
-              {isPaid ? `$${event.ticketPrice ?? "0"} Ticket` : "Free Entry"}
-            </span>
-          </div>
+        {/* ==========================================
+            HERO
+        ========================================== */}
 
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              {event.eventName}
-            </h1>
-            <p className="mt-2 text-sm text-slate-400 leading-relaxed">{event.description}</p>
-          </div>
+        <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#111726]/90 shadow-2xl backdrop-blur-xl">
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-            <div>
-              <span className="text-slate-500 block mb-1">Event Date</span>
-              <span className="text-slate-200 font-semibold">
-                {new Date(event.eventDate).toLocaleDateString(undefined, {
-                  month: "short", day: "numeric", year: "numeric",
-                })}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-500 block mb-1">Registration</span>
-              <span className="text-slate-200 font-semibold capitalize">{event.registrationType}</span>
-            </div>
-            <div>
-              <span className="text-slate-500 block mb-1">Capacity</span>
-              <span className="text-slate-200 font-semibold">{event.maxParticipants} max</span>
-            </div>
-            {event.registrationType === "team" && (
-              <div>
-                <span className="text-slate-500 block mb-1">Team Size</span>
-                <span className="text-slate-200 font-semibold">{event.teamSize}</span>
+          <div className="grid lg:grid-cols-[1.4fr_1fr]">
+
+            {/* IMAGE */}
+
+            <div className="relative min-h-[280px] bg-[#151d2c] sm:min-h-[360px] lg:min-h-[440px]">
+
+              {eventImage ? (
+                <img
+                  src={eventImage}
+                  alt={event.eventName}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
+
+                  <span className="text-5xl font-black tracking-widest text-amber-500/20">
+                    EVENT
+                  </span>
+
+                </div>
+              )}
+
+              {/* Image overlay */}
+
+              <div className="absolute inset-0 bg-gradient-to-t from-[#090d16]/70 via-transparent to-transparent" />
+
+              {/* Bottom status */}
+
+              <div className="absolute bottom-4 left-4">
+
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide ${statusColor}`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                  {event.status}
+                </span>
+
               </div>
-            )}
-            <div>
-              <span className="text-slate-500 block mb-1">Reg. Opens</span>
-              <span className="text-slate-200 font-semibold">
-                {new Date(event.registrationStartDate).toLocaleDateString()}
-              </span>
+
             </div>
-            <div>
-              <span className="text-slate-500 block mb-1">Reg. Closes</span>
-              <span className="text-slate-200 font-semibold">
-                {new Date(event.registrationEndDate).toLocaleDateString()}
-              </span>
+
+            {/* EVENT SUMMARY */}
+
+            <div className="flex flex-col p-5 sm:p-7 lg:p-8">
+
+              {/* Category */}
+
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+
+              
+
+                <span
+                  className={`rounded-md px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide border ${
+                    isPaid
+                      ? "border-amber-500/20 bg-amber-500/10 text-amber-400"
+                      : "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                  }`}
+                >
+                  {isPaid ? "Paid Event" : "Free Event"}
+                </span>
+
+              </div>
+
+              {/* Title */}
+
+              <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl lg:text-4xl">
+                {event.eventName}
+              </h1>
+
+              {/* Description */}
+
+              <p className="mt-3 line-clamp-4 text-xs leading-relaxed text-slate-400 sm:text-sm">
+                {event.description}
+              </p>
+
+              {/* Event information */}
+
+              <div className="mt-6 grid grid-cols-1 gap-4 border-y border-white/5 py-5 sm:grid-cols-2">
+
+                <EventInfo
+                  icon={<CalendarDays className="h-4 w-4" />}
+                  label="Date"
+                  value={formattedDate}
+                />
+
+                {/* <EventInfo
+                  icon={<Clock3 className="h-4 w-4" />}
+                  label="Time"
+                  value={formattedTime}
+                /> */}
+
+                <EventInfo
+                  icon={<MapPin className="h-4 w-4" />}
+                  label="Location"
+                  value={formattedLocation ||  "Location not specified"}
+                />
+
+              <EventInfo
+  icon={<Users className="h-4 w-4" />}
+  label="Capacity"
+  value={`${event.availableSeats} seats left (${event.maxParticipants} total)`}
+/>
+              </div>
+
+              {/* Price */}
+
+              <div className="mt-5 flex items-center justify-between">
+
+                <div>
+
+                  <p className="text-[10px] text-slate-500">
+                    Ticket Price
+                  </p>
+
+                  <p
+                    className={`mt-0.5 text-xl font-extrabold ${
+                      isPaid
+                        ? "text-amber-400"
+                        : "text-emerald-400"
+                    }`}
+                  >
+                    {isPaid
+                      ? `₹${event.ticketPrice ?? "0"}`
+                      : "Free"}
+                  </p>
+
+                </div>
+
+                <div className="text-right">
+
+                  <p className="text-[10px] text-slate-500">
+                    Registration closes
+                  </p>
+
+                  <p className="mt-0.5 text-xs font-semibold text-slate-300">
+                    {registrationEnd}
+                  </p>
+
+                </div>
+
+              </div>
+
+              {/* Register */}
+
+              <div className="mt-6">
+
+                {event.status === "published" ? (
+                  <Link
+                    href={`/events/${event._id}/register`}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/10 transition hover:bg-amber-400 active:scale-[0.99]"
+                  >
+                    <Ticket className="h-4 w-4" />
+
+                    {isPaid
+                      ? "Buy Tickets"
+                      : "Register for Event"}
+                  </Link>
+                ) : (
+                  <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center text-xs text-slate-500">
+                    Registration opens once this event is published.
+                  </div>
+                )}
+
+              </div>
+
             </div>
+
           </div>
 
-          {/* View-only page — register/buy is the only action here.
-              Publish/Edit/Delete now live under the organization's event management page. */}
-          <div className="pt-4 border-t border-white/5">
-            {event.status === "published" ? (
-              <Link
-                href={`/events/${event._id}/register`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-md transition hover:bg-amber-400 active:scale-[0.98]"
-              >
-                {isPaid ? "Buy Tickets" : "Register Now"} &rarr;
-              </Link>
-            ) : (
-              <p className="text-xs text-slate-500">Registration opens once this event is published.</p>
-            )}
-          </div>
-        </div>
+        </section>
+
+        {/* ==========================================
+            CONTENT
+        ========================================== */}
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
+
+          {/* ========================================
+              LEFT COLUMN
+          ======================================== */}
+
+          <div className="space-y-6">
+
+            {/* ABOUT */}
+
+            <section className="rounded-2xl border border-white/10 bg-[#111726]/80 p-5 backdrop-blur-xl sm:p-7">
+
+              <SectionTitle
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                title="About This Event"
+              />
+
+              <div className="mt-5 space-y-4">
+
+                <p className="text-sm leading-7 text-slate-400">
+                  {event.description ||
+                    "Join us for this exciting event and connect with other participants, professionals, and industry experts."}
+                </p>
+
+                <div className="grid gap-2 text-xs text-slate-500">
+
+                  <p>
+                    • Collaborate with other participants and
+                    industry experts.
+                  </p>
+
+                  <p>
+                    • Access valuable resources and practical
+                    knowledge.
+                  </p>
+
+                  <p>
+                    • Connect with professionals and expand your
+                    network.
+                  </p>
+
+                  <p>
+                    • Gain useful insights and experience from the
+                    event.
+                  </p>
+
+                </div>
+
+              </div>
+
+            </section>
+
+            {/* EVENT SCHEDULE */}
+
+          <section className="rounded-2xl border border-white/10 bg-[#111726]/80 p-5 backdrop-blur-xl sm:p-7">
+  <SectionTitle
+    icon={<Clock3 className="h-4 w-4" />}
+    title="Event Schedule"
+  />
+
+  <div className="mt-6 space-y-5">
+
+    {/* Event Date & Time */}
+    <div className="flex items-start gap-4">
+      <div className="mt-1 h-3 w-3 shrink-0 rounded-full bg-amber-500" />
+
+      <div>
+        <p className="text-xs font-semibold text-amber-400">
+          Event Date & Time
+        </p>
+
+        <p className="mt-1 text-sm text-slate-300">
+          {formattedDate}
+        </p>
+
+        {/* <p className="mt-1 text-xs text-slate-500">
+          {formattedTime}
+        </p> */}
       </div>
+    </div>
+
+    {/* Registration Deadline */}
+    <div className="flex items-start gap-4">
+      <div className="mt-1 h-3 w-3 shrink-0 rounded-full bg-slate-500" />
+
+      <div>
+        <p className="text-xs font-semibold text-slate-400">
+          Registration Deadline
+        </p>
+
+        <p className="mt-1 text-sm text-slate-300">
+          {registrationEnd}
+        </p>
+      </div>
+    </div>
+
+    {/* Event Status */}
+    <div className="flex items-start gap-4">
+      <div className="mt-1 h-3 w-3 shrink-0 rounded-full bg-emerald-500" />
+
+      <div>
+        <p className="text-xs font-semibold text-slate-400">
+          Event Status
+        </p>
+
+        <p className="mt-1 text-sm capitalize text-slate-300">
+          {event.status}
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+            {/* VENUE */}
+
+            <section className="rounded-2xl border border-white/10 bg-[#111726]/80 p-5 backdrop-blur-xl sm:p-7">
+
+              <SectionTitle
+                icon={<MapPin className="h-4 w-4" />}
+                title="Venue"
+              />
+
+              <div className="mt-5 grid gap-5 sm:grid-cols-[1fr_260px] sm:items-center">
+
+                <div>
+
+                 <h3 className="text-sm font-bold text-white">
+  {venueName || "Event Venue"}
+</h3>
+
+<p className="mt-1 text-xs leading-relaxed text-slate-500">
+  {formattedLocation ||
+    "Venue information will be provided by the organizer."}
+</p>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+
+                    <span className="inline-flex items-center gap-1 rounded-md border border-white/5 bg-white/[0.03] px-2 py-1 text-[9px] text-slate-500">
+                      <Wifi className="h-3 w-3" />
+                      Wi-Fi
+                    </span>
+
+                    <span className="inline-flex items-center gap-1 rounded-md border border-white/5 bg-white/[0.03] px-2 py-1 text-[9px] text-slate-500">
+                      <MapPin className="h-3 w-3" />
+                      Parking
+                    </span>
+
+                    <span className="inline-flex items-center gap-1 rounded-md border border-white/5 bg-white/[0.03] px-2 py-1 text-[9px] text-slate-500">
+                      <Globe2 className="h-3 w-3" />
+                      Accessible
+                    </span>
+
+                  </div>
+
+                </div>
+
+
+                
+
+                <div className="relative h-48 overflow-hidden rounded-xl border border-white/10 bg-[#0d1320]">
+
+  {coordinates?.length === 2 ? (
+    <iframe
+      title={`${venueName || "Venue"} location`}
+      src={`https://www.google.com/maps?q=${coordinates[1]},${coordinates[0]}&z=15&output=embed`}
+      className="h-full w-full"
+      loading="lazy"
+      referrerPolicy="no-referrer-when-downgrade"
+    />
+  ) : (
+    <div className="flex h-full items-center justify-center text-xs text-slate-500">
+      Location unavailable
+    </div>
+  )}
+
+  {/* Open Google Maps */}
+
+  <a
+    href={googleMapsUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="absolute bottom-3 right-3 rounded-lg bg-amber-500 px-3 py-2 text-[10px] font-bold text-slate-950 shadow-lg transition hover:bg-amber-400"
+  >
+    Open in Google Maps ↗
+  </a>
+
+</div>
+
+              </div>
+
+            </section>
+
+          </div>
+
+          {/* ========================================
+              RIGHT COLUMN
+          ======================================== */}
+
+          <aside className="space-y-6">
+
+    
+            {/* QUICK REGISTER */}
+
+            <section className="sticky top-6 rounded-2xl border border-white/10 bg-[#111726]/90 p-5 backdrop-blur-xl">
+
+              <h3 className="text-sm font-bold text-white">
+                Quick Register
+              </h3>
+
+              <div className="mt-5 space-y-4">
+
+                <div className="flex items-center justify-between border-b border-white/5 pb-3">
+
+                  <span className="text-xs text-slate-500">
+                    Fee
+                  </span>
+
+                  <span
+                    className={`text-xs font-bold ${
+                      isPaid
+                        ? "text-amber-400"
+                        : "text-emerald-400"
+                    }`}
+                  >
+                    {isPaid
+                      ? `₹${event.ticketPrice ?? "0"}`
+                      : "Free"}
+                  </span>
+
+                </div>
+
+              <div className="flex items-center justify-between border-b border-white/5 pb-3">
+  <span className="text-xs text-slate-500">
+    Total Seats
+  </span>
+
+  <span className="text-xs font-bold text-slate-300">
+    {event.maxParticipants}
+  </span>
+</div>
+
+<div className="flex items-center justify-between border-b border-white/5 pb-3">
+  <span className="text-xs text-slate-500">
+    Available Seats
+  </span>
+
+  <span
+    className={`text-xs font-bold ${
+      event.availableSeats === 0
+        ? "text-red-400"
+        : "text-emerald-400"
+    }`}
+  >
+    {event.availableSeats}
+  </span>
+</div>
+                <div className="flex items-center justify-between">
+
+                  <span className="text-xs text-slate-500">
+                    Registration
+                  </span>
+
+                  <span className="text-xs font-semibold capitalize text-slate-300">
+                    {event.registrationType}
+                  </span>
+
+                </div>
+
+              </div>
+
+             {event.status === "published" ? (
+  event.availableSeats === 0 ? (
+    <button
+      disabled
+      className="mt-6 w-full cursor-not-allowed rounded-xl bg-slate-800 py-3 text-xs font-bold text-slate-500"
+    >
+      Event Full
+    </button>
+  ) : (
+    <Link
+      href={`/events/${event._id}/register`}
+      className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-slate-950 transition hover:bg-amber-400"
+    >
+      Register Now
+    </Link>
+  )
+) : (
+  <button
+    disabled
+    className="mt-6 w-full rounded-xl bg-slate-800 py-3 text-xs font-bold text-slate-500"
+  >
+    Registration Unavailable
+  </button>
+)}
+
+              <p className="mt-3 text-center text-[9px] text-slate-600">
+                Registration closes on {registrationEnd}
+              </p>
+
+            </section>
+
+          </aside>
+
+        </div>
+
+      </main>
+
+    </div>
+  );
+}
+
+/* ==================================================
+   SMALL COMPONENTS
+================================================== */
+
+function EventInfo({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex gap-3">
+
+      <div className="mt-0.5 text-amber-400">
+        {icon}
+      </div>
+
+      <div className="min-w-0">
+
+        <p className="text-[9px] uppercase tracking-wide text-slate-600">
+          {label}
+        </p>
+
+        <p className="mt-1 truncate text-xs font-semibold text-slate-300">
+          {value}
+        </p>
+
+      </div>
+
+    </div>
+  );
+}
+
+function SectionTitle({
+  icon,
+  title,
+}: {
+  icon: React.ReactNode;
+  title: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+
+      <span className="text-amber-400">
+        {icon}
+      </span>
+
+      <h2 className="text-sm font-bold text-white sm:text-base">
+        {title}
+      </h2>
+
+    </div>
+  );
+}
+
+function TimelineItem({
+  time,
+  title,
+  active = false,
+  muted = false,
+}: {
+  time: string;
+  title: string;
+  active?: boolean;
+  muted?: boolean;
+}) {
+  return (
+    <div className="relative flex gap-4">
+
+      <div
+        className={`relative z-10 mt-1 h-3 w-3 shrink-0 rounded-full border-2 border-[#111726] ${
+          active
+            ? "bg-amber-500"
+            : muted
+              ? "bg-slate-700"
+              : "bg-slate-500"
+        }`}
+      />
+
+      <div>
+
+        <p
+          className={`text-[10px] font-semibold ${
+            muted
+              ? "text-slate-600"
+              : active
+                ? "text-amber-400"
+                : "text-slate-500"
+          }`}
+        >
+          {time}
+        </p>
+
+        <p
+          className={`mt-1 text-xs ${
+            muted
+              ? "text-slate-600"
+              : "text-slate-300"
+          }`}
+        >
+          {title}
+        </p>
+
+      </div>
+
     </div>
   );
 }

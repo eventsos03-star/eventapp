@@ -84,12 +84,14 @@ export default function HomePage() {
             >
               {user ? 'Events' : 'Create your first event'}
             </Link>
-            <Link
-              href="/login"
-              className="text-[15.5px] font-semibold text-paper-dim/50 transition hover:text-amber"
-            >
-              I already have an account →
-            </Link>
+          {!user && (
+  <Link
+    href="/login"
+    className="text-[15.5px] font-semibold text-paper-dim/50 transition hover:text-amber"
+  >
+    I already have an account →
+  </Link>
+)}
           </div>
         </section>
 
