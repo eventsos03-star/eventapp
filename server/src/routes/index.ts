@@ -5,6 +5,7 @@ import adminRoutes from '../modules/admin/index.js';
 import organizationRoutes from '../modules/organization/organization.routes.js';
 import venueRoutes from '../modules/venue/index.js';
 import bookingRoutes from '../modules/venue/booking/index.js';
+import aiRouter from '../modules/ai/index.js';
 
 const router = Router();
 
@@ -15,4 +16,5 @@ router.use('/venues', venueRoutes);
 router.use('/venue-bookings', bookingRoutes);
 
 router.use("/events" , eventRouter)
+router.use('/ai', aiRouter);
 export default router;
