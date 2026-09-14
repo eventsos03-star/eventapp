@@ -26,6 +26,12 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional().default(''),
 
   CLIENT_URL: z.string().url().default('http://localhost:3000'),
+  
+   GROQ_API_KEY: z.string().optional().default(''),
+  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+  AI_EMBED_MODEL: z.string().default('Xenova/all-MiniLM-L6-v2'),
+  AI_TOP_K: z.coerce.number().default(4),
+  AI_VECTOR_INDEX: z.string().default('ai_search'),
 });
 
 const parsed = envSchema.safeParse(process.env);
