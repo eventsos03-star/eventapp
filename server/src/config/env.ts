@@ -28,7 +28,7 @@ const envSchema = z.object({
   CLIENT_URL: z.string().url().default('http://localhost:3000'),
   
    GROQ_API_KEY: z.string().optional().default(''),
-  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+  GROQ_MODEL: z.string().default('openai/gpt-oss-120b'),
   AI_EMBED_MODEL: z.string().default('Xenova/all-MiniLM-L6-v2'),
   AI_TOP_K: z.coerce.number().default(4),
   AI_VECTOR_INDEX: z.string().default('ai_search'),

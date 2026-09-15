@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import mongoose from 'mongoose';
 import { connectDB } from '../../config/db.js';
 import { chunkMarkdown } from './docs-chunker.js';
-import { upsertChunks,countEmbeddings } from './embed.store.js';
+import { upsertChunks, countEmbeddings, clearIndex } from './embed.store.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // server/src/modules/ai => repo root is 4 levels up
@@ -23,10 +23,7 @@ async function main(): Promise<void> {
   await connectDB();
 
   const sources: Array<{ source: string; content: string }> = [
-    { source: 'README.md', content: await loadFile('README.md') },
-    { source: 'docs/database-design.md', content: await loadFile('docs/database-design.md') },
-    { source: 'docs/venue-location-discovery.md', content: await loadFile('docs/venue-location-discovery.md') },
-    { source: 'docs/platform-qa.md', content: await loadFile('docs/platform-qa.md') },
+    { source: 'docs/assistant-knowledge.md', content: await loadFile('docs/assistant-knowledge.md') },
   ];
    const loaded = sources.filter((s) => s.content.length > 0);
   const chunks = loaded.flatMap(({ source, content }) => chunkMarkdown(source, content));
@@ -36,6 +33,9 @@ async function main(): Promise<void> {
     console.log('Nothing to index.');
     return;
   }
+
+  const cleared = await clearIndex(CONTENT_TYPE);
+  console.log(`Cleared ${cleared} existing embedding(s) from '${CONTENT_TYPE}'.`);
 
   const added = await upsertChunks(CONTENT_TYPE, chunks, true);
   const total = await countEmbeddings(CONTENT_TYPE);

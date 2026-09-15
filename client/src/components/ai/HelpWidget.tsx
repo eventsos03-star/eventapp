@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HelpCircle, Send, X, Loader2 } from "lucide-react";
-import { askAiDocs, type AiAnswer } from "@/lib/aiApi";
+import { askAiDocs, type AiSource } from "@/lib/aiApi";
 
 interface ChatMessage {
   id: number;
   role: "user" | "assistant";
   text: string;
-  sources?: AiAnswer["sources"];
+  sources?: AiSource[];
+  streaming?: boolean;
 }
 
 let nextId = 1;
@@ -19,26 +20,55 @@ export default function HelpWidget() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [messages, open]);
+
+  const patchMessage = (id: number, updater: (m: ChatMessage) => ChatMessage) =>
+    setMessages((prev) => prev.map((m) => (m.id === id ? updater(m) : m)));
+
+  const setText = (id: number, text: string) =>
+    patchMessage(id, (m) => ({ ...m, text, streaming: false }));
+
+  const appendDelta = (id: number, text: string) =>
+    patchMessage(id, (m) => ({ ...m, text: m.text + text, streaming: true }));
+
+  const setSources = (id: number, sources: AiSource[]) =>
+    patchMessage(id, (m) => ({ ...m, sources }));
+
+  const finish = (id: number) => patchMessage(id, (m) => ({ ...m, streaming: false }));
 
   const send = async () => {
     const question = input.trim();
     if (!question || loading) return;
 
-    setMessages((prev) => [...prev, { id: nextId++, role: "user", text: question }]);
+    const userMsgId = nextId++;
+    const aiMsgId = nextId++;
+
+    setMessages((prev) => [...prev, { id: userMsgId, role: "user", text: question }]);
+    setMessages((prev) => [...prev, { id: aiMsgId, role: "assistant", text: "", streaming: true }]);
     setInput("");
     setError(null);
     setLoading(true);
 
     try {
-      const result = await askAiDocs(question);
-      setMessages((prev) => [...prev, { id: nextId++, role: "assistant", text: result.answer, sources: result.sources }]);
+      await askAiDocs(question, {
+        onDelta: (text) => appendDelta(aiMsgId, text),
+        onSources: (sources) => setSources(aiMsgId, sources),
+      });
     } catch (err: any) {
-      const message = err?.response?.data?.message ?? "Sorry, something went wrong. Try again.";
-      setMessages((prev) => [...prev, { id: nextId++, role: "assistant", text: message }]);
+      const message = err?.message ?? "Sorry, something went wrong. Try again.";
+      setText(aiMsgId, message);
     } finally {
+      finish(aiMsgId);
       setLoading(false);
     }
   };
+
+  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
 
   return (
     <>
@@ -62,7 +92,7 @@ export default function HelpWidget() {
             </div>
           </div>
 
-          <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
             {messages.length === 0 && (
               <p className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-xs text-slate-400">
                 Example: "How do I get my venue approved?" or "What is the difference between soft-delete and
@@ -78,7 +108,10 @@ export default function HelpWidget() {
                       : "border border-white/10 bg-white/[0.03] text-slate-200"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{m.text}</p>
+                  <p className="whitespace-pre-wrap">
+                    {m.text}
+                    {m.streaming && <span className="ml-0.5 inline-block h-3 w-[2px] animate-pulse bg-amber-400 align-middle" />}
+                  </p>
                   {m.sources && m.sources.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {m.sources.map((s, i) => (
@@ -95,7 +128,7 @@ export default function HelpWidget() {
                 </div>
               </div>
             ))}
-            {loading && (
+            {loading && (!lastAssistant || lastAssistant.text === "") && (
               <div className="flex justify-start">
                 <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-slate-300">
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-400" />
