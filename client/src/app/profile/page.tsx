@@ -114,6 +114,8 @@ function  ProfileContent() {
   const [signingOutAll, setSigningOutAll] =
     useState(false)
 
+  const hasOrganization = Boolean(user?.organizationId);
+
   useEffect(() => {
     if (!user) return
 

@@ -182,7 +182,7 @@ function MembersContent() {
                       <p className="text-xs text-ink/45">{userObj?.email ?? m.inviteEmail}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-ink-soft px-2.5 py-0.5 text-xs font-semibold text-ink/60">{ROLE_LABELS[m.role] ?? m.role}</span>
+                      <span className="rounded-full bg px-2.5 py-0.5 text-xs font-semibold text-ink/60">{ROLE_LABELS[m.role] ?? m.role}</span>
                       {m.role !== 'owner' && (
                         <button
                           type="button"

@@ -132,6 +132,7 @@ export const eventService = {
     .get(`/venue-bookings/venue/${venueId}/availability`)
     .then((res) => res.data),
 
+    
   
 };
 
