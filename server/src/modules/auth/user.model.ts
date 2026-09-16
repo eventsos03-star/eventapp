@@ -14,8 +14,6 @@ export interface IUser {
   emailVerified: boolean;
   status: UserStatus;
   role: UserRole;
-  verificationToken?: string;
-  verificationExpires?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   isDeleted:boolean;
@@ -68,8 +66,6 @@ const userSchema = new Schema<IUser, UserModel, UserMethods>(
     emailVerified: { type: Boolean, default: false },
     status: { type: String, enum: Object.values(USER_STATUS), default: USER_STATUS.PENDING },
     role: { type: String, enum: Object.values(USER_ROLE), default: USER_ROLE.USER },
-    verificationToken: { type: String },
-    verificationExpires: { type: Date },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
     isDeleted:{type:Boolean,default:false},

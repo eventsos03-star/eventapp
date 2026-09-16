@@ -26,6 +26,10 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional().default(''),
 
   CLIENT_URL: z.string().url().default('http://localhost:3000'),
+
+  UPSTASH_REDIS_REST_URL:z.string().url('Invalid UPSTASH_REDIS_REST_URL'),
+  UPSTASH_REDIS_REST_TOKEN:z.string().min(1,'UPSTASH_REDIS_REST_TOKEN is required'),
+
 });
 
 const parsed = envSchema.safeParse(process.env);
