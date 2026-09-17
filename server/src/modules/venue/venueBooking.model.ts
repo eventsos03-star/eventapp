@@ -22,6 +22,12 @@ export interface IVenueBooking {
     | "advancePaid"
     | "fullyPaid";
 
+  cancellationReason?: string;
+
+  cancelledBy?: Types.ObjectId;
+
+  cancelledAt?: Date;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,6 +89,19 @@ const venueBookingSchema = new Schema<IVenueBooking>(
       ],
       default: "pending",
     },
+    cancellationReason: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+    cancelledBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    cancelledAt: {
+      type: Date,
+    },
+
   },
   {
     timestamps: true,

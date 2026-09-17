@@ -38,10 +38,10 @@ export function AdminRoute({ children }: { children: ReactNode }) {
           </p>
           <button
             type="button"
-            onClick={() => router.replace('/dashboard')}
+            onClick={() => router.replace('/profile')}
             className="mt-6 rounded-lg bg-amber px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-amber-deep"
           >
-            Back to dashboard
+            Back to profile
           </button>
         </div>
       </div>

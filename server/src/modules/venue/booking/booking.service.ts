@@ -566,3 +566,82 @@ export const rejectBooking = async (params: {
 
   return updatedBooking;
 };
+export const cancelBooking = async (params: {
+  userId: string;
+  userRole: string;
+  bookingId: string;
+  cancellationReason?: string;
+}) => {
+  const {
+    userId,
+    userRole,
+    bookingId,
+    cancellationReason,
+  } = params;
+
+  const booking =
+    await VenueBooking.findById(bookingId).select(
+      "requestedBy startDate status"
+    );
+
+  if (!booking) {
+    throw new AppError("Booking not found", 404);
+  }
+
+  const isRequester =
+    booking.requestedBy &&
+    booking.requestedBy.toString() === userId;
+
+  const isAdmin = userRole === "ADMIN";
+
+  if (!isRequester && !isAdmin) {
+    throw new AppError(
+      "Only the booking organizer can cancel this booking",
+      403
+    );
+  }
+
+  if (
+    booking.status !== "pending" &&
+    booking.status !== "approved"
+  ) {
+    throw new AppError(
+      "Only pending or approved bookings can be cancelled",
+      400
+    );
+  }
+
+  if (new Date(booking.startDate) <= new Date()) {
+    throw new AppError(
+      "This booking has already started and cannot be cancelled",
+      400
+    );
+  }
+
+  const updatedBooking = await VenueBooking.findByIdAndUpdate(
+    bookingId,
+    {
+      status: "cancelled",
+      cancellationReason:
+        cancellationReason?.trim()
+          ? cancellationReason.trim()
+          : null,
+      cancelledBy: userId,
+      cancelledAt: new Date(),
+    },
+    {
+      new: true,
+    }
+  );
+
+  await Event.updateOne(
+    {
+      venueBookingId: bookingId,
+      status: { $in: ["draft", "published"] },
+      isDeleted: false,
+    },
+    { $set: { status: "cancelled" } }
+  );
+
+  return updatedBooking;
+};

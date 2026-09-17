@@ -129,7 +129,7 @@ function CreateContent() {
           <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">E</span>
           <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">EventOS</span>
         </div>
-        <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
+        <Link href="/profile" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Profile</Link>
       </nav>
 
       <main className="mx-auto max-w-2xl px-5 pb-24 pt-12 sm:px-10">
