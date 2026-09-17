@@ -687,12 +687,13 @@ function  ProfileContent() {
                   <div>
 
                     <h2 className="text-xs font-semibold text-[#ddd6c9]">
-                      Become an Organization
+                      {user?.organizationId ? 'Your Organization' : 'Become an Organization'}
                     </h2>
 
                     <p className="mt-1 max-w-xl text-[9px] leading-relaxed text-[#77746d]">
-                      Create an organization, organize events, build
-                      your team, and manage event operations.
+                      {user?.organizationId
+                        ? 'Manage your organization, members, and events.'
+                        : 'Create an organization, organize events, build your team, and manage event operations.'}
                     </p>
 
                   </div>
@@ -700,10 +701,10 @@ function  ProfileContent() {
                 </div>
 
                 <a
-                  href="/organization/create"
+                  href={user?.organizationId ? '/organization' : '/organization/create'}
                   className="shrink-0 rounded-lg bg-amber px-5 py-2.5 text-center text-[9px] font-bold text-[#11141c] transition hover:bg-[#ffc15a]"
                 >
-                  Become an Organization
+                  {user?.organizationId ? 'View Your Organization' : 'Become an Organization'}
                 </a>
 
               </div>
