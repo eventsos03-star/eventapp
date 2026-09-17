@@ -385,7 +385,7 @@ function OrgContent() {
             <h2 className="mb-4 font-display text-xl font-semibold text-ink">Quick Actions</h2>
             <div className="flex flex-col gap-3">
               <Link href="/organization/members" className="rounded-lg border border-paper-dim px-4 py-3 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Manage Members</Link>
-              <Link href="/events/new" className="rounded-lg border border-paper-dim px-4 py-3 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Create Event</Link>
+              <Link href="/my-organization/events/new" className="rounded-lg border border-paper-dim px-4 py-3 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Create Event</Link>
               <span className="rounded-lg border border-ink-line px-4 py-3 text-sm text-ink/30 cursor-not-allowed">Venue Booking — Coming Soon</span>
               {org.status === 'approved' && (
                 <button type="button" disabled={deleting} onClick={() => void handleDeleteOrg()} className="rounded-lg border border-red-300 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">

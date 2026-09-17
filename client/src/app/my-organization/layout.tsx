@@ -85,7 +85,7 @@ export default function OrganizationLayout({
         {/* Bottom actions */}
         <div className="mt-4 space-y-2 border-t border-white/10 pt-4">
           <Link
-            href="my-organization/events/new"
+            href="/my-organization/events/new"
             className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-400 transition shadow-sm"
           >
             <Plus className="h-4 w-4" />
