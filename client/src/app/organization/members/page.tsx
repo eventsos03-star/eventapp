@@ -122,7 +122,7 @@ function MembersContent() {
         </div>
         <div className="flex items-center gap-4">
           <Link href="/organization" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Organization</Link>
-          <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
+          <Link href="/profile" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Profile</Link>
         </div>
       </nav>
 

@@ -155,7 +155,7 @@ export default function EditVenuePage() {
     <div className="min-h-screen bg-slate-50 font-sans antialiased">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-10">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
+          <Link href="/profile" className="flex items-center gap-2.5">
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-slate-950 text-amber-400 font-black text-base shadow-md">E</div>
             <span className="text-lg font-bold tracking-tight text-slate-950">
               Event<span className="text-amber-500">OS</span>

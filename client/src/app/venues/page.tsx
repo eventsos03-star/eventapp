@@ -203,7 +203,7 @@ function VenuePageInner() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans antialiased">
-      <VenueHeader backHref="/dashboard" showAddVenue={!isAdmin} />
+      <VenueHeader backHref="/profile" showAddVenue={!isAdmin} />
 
       {/* HERO */}
       <section className="border-b border-slate-200 bg-white">

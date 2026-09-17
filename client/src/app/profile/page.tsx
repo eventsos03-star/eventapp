@@ -1123,7 +1123,7 @@ function  ProfileContent() {
   )
 }
 
-export default function DashboardPage() {
+export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <ProfileContent />
