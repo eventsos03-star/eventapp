@@ -186,6 +186,9 @@ export interface VenueBooking {
   bookingAmount: number
   status: VenueBookingStatus
   paymentStatus: 'pending' | 'advancePaid' | 'fullyPaid'
+  cancellationReason?: string
+  cancelledBy?: string
+  cancelledAt?: string
   createdAt: string
   updatedAt: string
 }
