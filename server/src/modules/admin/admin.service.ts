@@ -55,6 +55,14 @@ function serializeVenue<T extends object>(doc: T): VenueResponse {
   return { id: String(_id), ...rest };
 }
 
+function ownerIdOf(org: Record<string, unknown>): string {
+  const owner = org.ownerId;
+  if (owner && typeof owner === 'object') {
+    return String((owner as { _id?: unknown })._id ?? '');
+  }
+  return owner ? String(owner) : '';
+}
+
 export async function getAdminStats(): Promise<AdminStats> {
   const [totalOrganizations, pendingOrganizations, totalVenueOwners, pendingVenueOwners, totalUsers] =
     await Promise.all([
@@ -80,18 +88,20 @@ export async function listOrganizations(status: ResourceStatus | 'deleted' = DEF
     isDeletedStatus
       ? { isDeleted: true }
       : { status, ...NOT_DELETED };
-  const organizations = await Organization.find(filter).sort({ createdAt: 1 }).lean();
+  const organizations = await Organization.find(filter)
+    .populate('ownerId', 'firstName lastName email')
+    .sort({ createdAt: 1 }).lean();
 
   let ownerDeletedById = new Map<string, boolean>();
   if (isDeletedStatus) {
-    const ownerIds = [...new Set(organizations.map((org) => String(org.ownerId)))];
+    const ownerIds = [...new Set(organizations.map((org) => ownerIdOf(org)))].filter(Boolean);
     const ownerUsers = await User.find({ _id: { $in: ownerIds } }).select('isDeleted').lean();
     ownerDeletedById = new Map(ownerUsers.map((user) => [String(user._id), user.isDeleted === true]));
   }
 
   return organizations.map((org) => {
     const response = serializeOrganization(org);
-    response.isOwnerDeleted = isDeletedStatus ? ownerDeletedById.get(String(org.ownerId)) ?? true : false;
+    response.isOwnerDeleted = isDeletedStatus ? ownerDeletedById.get(ownerIdOf(org)) ?? true : false;
     return response;
   });
 }
