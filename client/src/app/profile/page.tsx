@@ -743,7 +743,7 @@ function  ProfileContent() {
                 </div>
 
                 <a
-                  href="/venues/create"
+                  href="/venues/new"
                   className="shrink-0 rounded-lg border border-[#3a3e48] px-5 py-2 text-center text-[9px] font-semibold text-[#c9c2b5] transition hover:border-amber hover:text-amber"
                 >
                   Become a Venue Owner
