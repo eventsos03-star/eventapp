@@ -779,7 +779,7 @@ function AdminContent() {
           <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">EventOS Admin</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
+          <Link href="/profile" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Profile</Link>
           <span className="text-sm text-paper-dim/50">{user?.email}</span>
         </div>
       </nav>

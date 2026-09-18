@@ -98,3 +98,21 @@ export const rejectBooking =
       booking
     );
   });
+export const cancelBooking =
+  asyncHandler(async (req, res) => {
+    const booking =
+      await bookingService.cancelBooking({
+        userId: req.user!.id,
+        userRole: req.user!.role,
+        bookingId: req.params.id,
+        cancellationReason:
+          req.body.cancellationReason,
+      });
+
+    return success(
+      res,
+      200,
+      "Booking cancelled successfully",
+      booking
+    );
+  });

@@ -358,7 +358,12 @@ export const api = {
 
   rejectVenueBooking: (id: string) =>
     request<VenueBooking>(`/venue-bookings/${id}/reject`, { method: 'PATCH', auth: true }),
-
+  cancelVenueBooking: (id: string, cancellationReason?: string) =>
+    request<VenueBooking>(`/venue-bookings/${id}/cancel`, {
+      method: 'PATCH',
+      body: { cancellationReason },
+      auth: true,
+    }),
   // -------------------------
   // GEOCODING
   // -------------------------

@@ -37,6 +37,7 @@ export default function EditVenuePage() {
   const [pricePerDay, setPricePerDay] = useState('')
   const [bookingPaymentPolicy, setBookingPaymentPolicy] = useState<PaymentPolicy | ''>('')
   const [advancePercentage, setAdvancePercentage] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [location, setLocation] = useState<VenueLocation | null>(null)
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -70,6 +71,7 @@ export default function EditVenuePage() {
       setPricePerDay(v.pricePerDay ? String(v.pricePerDay) : '')
       setBookingPaymentPolicy(v.bookingPaymentPolicy || '')
       setAdvancePercentage(v.advancePercentage ? String(v.advancePercentage) : '')
+      setImageUrl(v.images?.[0]?.url ?? '')
       setLocation(v.location ?? null)
       setLoading(false)
     }).catch((err) => {
@@ -123,6 +125,9 @@ export default function EditVenuePage() {
         advancePercentage: bookingPaymentPolicy === 'advanceAllowed' && advancePercentage
           ? Number(advancePercentage)
           : undefined,
+        images: imageUrl.trim()
+          ? [{ url: imageUrl.trim(), publicId: imageUrl.trim() }]
+          : [],
         location: location ?? undefined,
       })
       router.push(`/venues/${id}`)
@@ -155,7 +160,7 @@ export default function EditVenuePage() {
     <div className="min-h-screen bg-slate-50 font-sans antialiased">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-10">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
+          <Link href="/profile" className="flex items-center gap-2.5">
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-slate-950 text-amber-400 font-black text-base shadow-md">E</div>
             <span className="text-lg font-bold tracking-tight text-slate-950">
               Event<span className="text-amber-500">OS</span>
@@ -228,6 +233,16 @@ export default function EditVenuePage() {
               {fieldErrors.advancePercentage && <p className={errorTextClass()}>{fieldErrors.advancePercentage}</p>}
             </div>
           )}
+
+          <div>
+            <label className={labelClass()}>Image URL (optional)</label>
+            <input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://..."
+              className={inputClass()}
+            />
+          </div>
 
           <div className="flex items-center gap-3 pt-2">
             <button

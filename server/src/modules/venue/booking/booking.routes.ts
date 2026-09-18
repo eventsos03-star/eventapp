@@ -3,10 +3,12 @@ import { Router } from "express";
 import { authenticate } from "../../../middleware/authenticate.js";
 import { validate } from "../../../middleware/validate.js";
 
+
 import {
   createBookingSchema,
   bookingIdParamSchema,
   venueBookingsParamSchema,
+  cancelBookingSchema,
 } from "./booking.validator.js";
 
 import {
@@ -16,6 +18,7 @@ import {
   getBookingById,
   approveBooking,
   rejectBooking,
+  cancelBooking,
 } from "./booking.controller.js";
 
 const router = Router();
@@ -78,6 +81,12 @@ router.patch(
   authenticate,
   validate(bookingIdParamSchema),
   rejectBooking
+);
+router.patch(
+  "/:id/cancel",
+  authenticate,
+  validate(cancelBookingSchema),
+  cancelBooking
 );
 
 export default router;

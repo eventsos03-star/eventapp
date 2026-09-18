@@ -25,7 +25,7 @@ export function Sidebar({
     <div className="flex h-full flex-col gap-8 bg-slate-950 px-5 py-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
+          <Link href="/profile" className="flex items-center gap-2.5">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-slate-950 text-sm font-black text-amber-400">
               E
             </span>
