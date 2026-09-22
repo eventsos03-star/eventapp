@@ -107,7 +107,7 @@ export interface OrganizationMember {
 
 export interface VenueImage {
   url: string
-  publicId: string
+  key: string
 }
 
 export interface VenueLocation {
@@ -222,29 +222,6 @@ export interface AdminStats {
   pendingVenueOwners: number
   totalUsers: number
 }
-
-export interface CreateVenueInput {
-  venueName: string
-  description: string
-  images: VenueImage[]
-  location: VenueLocation
-  capacity: number
-  pricePerDay: number
-  bookingPaymentPolicy: BookingPaymentPolicy
-  advancePercentage?: number
-}
-
-export interface UpdateVenueInput {
-  venueName?: string
-  description?: string
-  images?: VenueImage[]
-  location?: Partial<VenueLocation>
-  capacity?: number
-  pricePerDay?: number
-  bookingPaymentPolicy?: BookingPaymentPolicy
-  advancePercentage?: number
-}
-
 
 export interface AdminEvent {
   _id: string

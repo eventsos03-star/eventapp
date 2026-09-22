@@ -10,8 +10,6 @@ import type {
   Venue,
   VenueBooking,
   VenueSearchResult,
-  CreateVenueInput,
-  UpdateVenueInput,
   GeocodingResult,
 } from '../types'
 
@@ -59,7 +57,9 @@ async function rawRequest<T>(
 
   const headers: Record<string, string> = {}
 
-  if (body !== undefined) {
+  // For multipart FormData the browser sets the Content-Type header (with the
+  // boundary) automatically — setting it manually here would break uploads.
+  if (body !== undefined && !(body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
   }
 
@@ -69,7 +69,9 @@ async function rawRequest<T>(
     credentials: 'include',
     body:
       body !== undefined
-        ? JSON.stringify(body)
+        ? body instanceof FormData
+          ? body
+          : JSON.stringify(body)
         : undefined,
   })
 
@@ -331,10 +333,10 @@ export const api = {
   getVenue: (id: string) =>
     request<Venue>(`/venues/${id}`),
 
-  createVenue: (input: CreateVenueInput) =>
+  createVenue: (input: FormData) =>
     request<Venue>('/venues', { method: 'POST', body: input, auth: true }),
 
-  updateVenue: (id: string, input: UpdateVenueInput) =>
+  updateVenue: (id: string, input: FormData) =>
     request<Venue>(`/venues/${id}`, { method: 'PATCH', body: input, auth: true }),
 
   deleteVenue: (id: string) =>

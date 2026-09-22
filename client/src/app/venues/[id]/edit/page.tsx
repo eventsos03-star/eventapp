@@ -37,7 +37,7 @@ export default function EditVenuePage() {
   const [pricePerDay, setPricePerDay] = useState('')
   const [bookingPaymentPolicy, setBookingPaymentPolicy] = useState<PaymentPolicy | ''>('')
   const [advancePercentage, setAdvancePercentage] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageFiles, setImageFiles] = useState<File[]>([])
   const [location, setLocation] = useState<VenueLocation | null>(null)
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -71,7 +71,6 @@ export default function EditVenuePage() {
       setPricePerDay(v.pricePerDay ? String(v.pricePerDay) : '')
       setBookingPaymentPolicy(v.bookingPaymentPolicy || '')
       setAdvancePercentage(v.advancePercentage ? String(v.advancePercentage) : '')
-      setImageUrl(v.images?.[0]?.url ?? '')
       setLocation(v.location ?? null)
       setLoading(false)
     }).catch((err) => {
@@ -100,7 +99,20 @@ export default function EditVenuePage() {
         errs.advancePercentage = 'Enter an advance percentage between 1 and 100.'
       }
     }
+
+    const imageError = validateImages(imageFiles)
+    if (imageError) errs.images = imageError
+
     return errs
+  }
+
+  function validateImages(files: File[]): string | null {
+    if (files.length > 10) return 'You can upload at most 10 images.'
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) return `"${file.name}" is not an image file. Only JPEG, PNG, GIF, WebP and AVIF are allowed.`
+      if (file.size > 5 * 1024 * 1024) return `"${file.name}" exceeds the 5 MB per-image limit.`
+    }
+    return null
   }
 
   const handleLocationChange = useCallback((loc: VenueLocation) => {
@@ -116,20 +128,20 @@ export default function EditVenuePage() {
 
     setSubmitting(true)
     try {
-      await api.updateVenue(id, {
-        venueName: venueName.trim(),
-        description: description.trim(),
-        capacity: capacity ? Number(capacity) : undefined,
-        pricePerDay: pricePerDay ? Number(pricePerDay) : undefined,
-        bookingPaymentPolicy: bookingPaymentPolicy as PaymentPolicy,
-        advancePercentage: bookingPaymentPolicy === 'advanceAllowed' && advancePercentage
-          ? Number(advancePercentage)
-          : undefined,
-        images: imageUrl.trim()
-          ? [{ url: imageUrl.trim(), publicId: imageUrl.trim() }]
-          : [],
-        location: location ?? undefined,
-      })
+      const formData = new FormData()
+      formData.append('venueName', venueName.trim())
+      formData.append('description', description.trim())
+      if (capacity) formData.append('capacity', String(capacity))
+      if (pricePerDay) formData.append('pricePerDay', String(pricePerDay))
+      formData.append('bookingPaymentPolicy', bookingPaymentPolicy as PaymentPolicy)
+      if (bookingPaymentPolicy === 'advanceAllowed' && advancePercentage) {
+        formData.append('advancePercentage', String(advancePercentage))
+      }
+      if (location) formData.append('location', JSON.stringify(location))
+      // New images are uploaded to S3; existing images are preserved by the backend.
+      imageFiles.forEach((file) => formData.append('images', file))
+
+      await api.updateVenue(id, formData)
       router.push(`/venues/${id}`)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not update venue.')
@@ -235,13 +247,24 @@ export default function EditVenuePage() {
           )}
 
           <div>
-            <label className={labelClass()}>Image URL (optional)</label>
+            <label className={labelClass()}>Images (optional — add up to 10, 5 MB each)</label>
+            {venue && venue.images.length > 0 && (
+              <p className="mb-1.5 text-xs text-slate-500">
+                {venue.images.length} existing image(s). Existing images are kept; use the venue
+                page's delete-image endpoint to remove individual images.
+              </p>
+            )}
             <input
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..."
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))}
               className={inputClass()}
             />
+            {imageFiles.length > 0 && (
+              <p className="mt-1 text-xs text-slate-500">{imageFiles.length} new image(s) selected.</p>
+            )}
+            {fieldErrors.images && <p className={errorTextClass()}>{fieldErrors.images}</p>}
           </div>
 
           <div className="flex items-center gap-3 pt-2">
