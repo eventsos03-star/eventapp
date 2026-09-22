@@ -25,6 +25,14 @@ const envSchema = z.object({
   // audience of Google ID tokens. Optional: if empty, the audience is not checked.
   GOOGLE_CLIENT_ID: z.string().optional().default(''),
 
+  // AWS S3 — used for venue image uploads. Marked optional at boot so the
+  // server still starts without AWS configured; config/s3.ts validates them
+  // lazily at request time with a clear error when an upload is attempted.
+  AWS_REGION: z.string().optional().default(''),
+  AWS_ACCESS_KEY_ID: z.string().optional().default(''),
+  AWS_SECRET_ACCESS_KEY: z.string().optional().default(''),
+  AWS_S3_BUCKET_NAME: z.string().optional().default(''),
+
   CLIENT_URL: z.string().url().default('http://localhost:3000'),
 });
 
