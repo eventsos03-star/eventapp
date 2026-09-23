@@ -1,214 +1,193 @@
-'use client'
+"use client";
 
-import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
-import { ProtectedRoute } from '../../../components/ProtectedRoute'
-import { Spinner } from '../../../components/Spinner'
-import { useAuth } from '../../../context/AuthContext'
-import { organizationApi } from '../../../lib/organizationApi'
-import type { Organization, OrganizationMember } from '../../../types'
+import { useEffect, useState } from "react";
+import { organizationApi } from "@/lib/organizationApi";
+import { UserPlus, Trash2, ShieldCheck, Mail } from "lucide-react";
+import type { OrganizationMember, OrgMemberRole } from "@/types";
 
-type Message = { type: 'success' | 'error'; text: string } | null
-
-function inputClass() {
-  return 'rounded-lg border border-paper-dim bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35 outline-none transition focus:border-amber focus:ring-2 focus:ring-amber/30'
-}
-
-const ROLE_LABELS: Record<string, string> = {
-  owner: 'Owner',
-  organizer: 'Organizer',
-  member: 'Member',
-}
-
-function MembersContent() {
-  const { user } = useAuth()
-  const [org, setOrg] = useState<Organization | null>(null)
-  const [members, setMembers] = useState<OrganizationMember[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<Message>(null)
-
-  const [addEmail, setAddEmail] = useState('')
-  const [addRole, setAddRole] = useState<'organizer' | 'member'>('member')
-  const [adding, setAdding] = useState(false)
-  const [removing, setRemoving] = useState<string | null>(null)
-
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const orgRes = await organizationApi.getMy()
-      const orgData = orgRes.data ?? null
-      setOrg(orgData)
-      if (orgData) {
-        const membersRes = await organizationApi.getMembers(orgData.id)
-        setMembers(membersRes.data ?? [])
-      }
-    } catch {
-      setError('Could not load organization data')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetchData()
-  }, [fetchData])
-
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault()
-    if (!org || adding) return
-    setAdding(true)
-    setMessage(null)
-    try {
-      await organizationApi.addMember(org.id, addEmail.trim(), addRole)
-      setMessage({ type: 'success', text: 'Member added successfully' })
-      setAddEmail('')
-      setAddRole('member')
-      await fetchData()
-    } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to add member' })
-    } finally {
-      setAdding(false)
-    }
-  }
-
-  async function handleRemove(memberId: string) {
-    if (!org || removing) return
-    setRemoving(memberId)
-    setMessage(null)
-    try {
-      await organizationApi.removeMember(org.id, memberId)
-      setMessage({ type: 'success', text: 'Member removed' })
-      await fetchData()
-    } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to remove member' })
-    } finally {
-      setRemoving(null)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-ink">
-        <Spinner size={28} />
-      </div>
-    )
-  }
-
-  if (!org || org.status !== 'approved') {
-    return (
-      <div className="min-h-screen bg-ink font-sans text-paper-dim">
-        <nav className="flex items-center justify-between border-b border-ink-line px-5 py-6 sm:px-10 lg:px-16">
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">E</span>
-            <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">EventOS</span>
-          </div>
-          <Link href="/organization" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Back to Organization</Link>
-        </nav>
-        <main className="mx-auto max-w-2xl px-5 pb-24 pt-16 sm:px-10 text-center">
-          <p className="text-sm text-ink/50">Member management is available after your organization is approved.</p>
-        </main>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen bg-ink font-sans text-paper-dim">
-      <nav className="flex items-center justify-between border-b border-ink-line px-5 py-6 sm:px-10 lg:px-16">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">E</span>
-          <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">EventOS</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/organization" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Organization</Link>
-          <Link href="/profile" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Profile</Link>
-        </div>
-      </nav>
-
-      <main className="mx-auto max-w-3xl px-5 pb-24 pt-12 sm:px-10">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-semibold text-paper-dim sm:text-4xl">Manage Members</h1>
-          <p className="mt-2 text-paper-dim/55">{org.organizationName}</p>
-        </div>
-
-        {message && (
-          <div className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${message.type === 'success' ? 'border-teal/30 bg-teal/10 text-teal' : 'border-red-300 bg-red-50 text-red-700'}`}>
-            {message.text}
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</div>
-        )}
-
-        <div className="relative mb-8 rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-          <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
-          <h2 className="mb-4 font-display text-xl font-semibold text-ink">Add Member</h2>
-          <form onSubmit={handleAdd} className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <label className="flex flex-1 flex-col gap-1.5">
-              <span className="text-xs font-semibold tracking-wide text-ink/60">EMAIL</span>
-              <input required type="email" value={addEmail} onChange={(e) => setAddEmail(e.target.value)} placeholder="member@email.com" className={inputClass()} />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold tracking-wide text-ink/60">ROLE</span>
-              <select value={addRole} onChange={(e) => setAddRole(e.target.value as 'organizer' | 'member')} className={inputClass()}>
-                <option value="member">Member</option>
-                <option value="organizer">Organizer</option>
-              </select>
-            </label>
-            <button type="submit" disabled={adding} className="flex items-center justify-center gap-2 rounded-lg bg-amber px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-amber-deep disabled:cursor-not-allowed disabled:opacity-60">
-              {adding && <Spinner size={14} />}
-              Add
-            </button>
-          </form>
-        </div>
-
-        <div className="relative rounded-2xl border border-paper-dim bg-paper px-6.5 py-6">
-          <span className="absolute -top-2.5 right-8 h-5 w-5 rounded-full bg-ink" aria-hidden="true" />
-          <h2 className="mb-4 font-display text-xl font-semibold text-ink">Members ({members.length})</h2>
-          {members.length === 0 ? (
-            <p className="text-sm text-ink/45">No members yet.</p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {members.map((m) => {
-                const userObj = typeof m.userId === 'object' && m.userId !== null ? m.userId : null
-                return (
-                  <li key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-paper-dim px-4 py-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-ink">
-                        {userObj ? `${userObj.firstName} ${userObj.lastName}` : m.inviteEmail ?? '—'}
-                      </p>
-                      <p className="text-xs text-ink/45">{userObj?.email ?? m.inviteEmail}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full bg px-2.5 py-0.5 text-xs font-semibold text-ink/60">{ROLE_LABELS[m.role] ?? m.role}</span>
-                      {m.role !== 'owner' && (
-                        <button
-                          type="button"
-                          disabled={removing === m.id}
-                          onClick={() => void handleRemove(m.id)}
-                          className="text-xs font-semibold text-red-600 transition hover:text-red-700 disabled:opacity-60"
-                        >
-                          {removing === m.id ? '...' : 'Remove'}
-                        </button>
-                      )}
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </div>
-      </main>
-    </div>
-  )
-}
+const ROLE_OPTIONS: { value: OrgMemberRole; label: string; desc: string }[] = [
+  { value: "finance_manager", label: "Finance Manager", desc: "Manages ticket revenue, venue payments & reports" },
+  { value: "user_manager", label: "User / Participant Manager", desc: "Manages registrations, attendee check-ins & teams" },
+  { value: "certificate_manager", label: "Certificate Manager", desc: "Issues & manages certificates for attendees" },
+  { value: "organizer", label: "General Organizer", desc: "Helps schedule and manage general event details" },
+  { value: "member", label: "General Member", desc: "Standard organization team member" },
+];
 
 export default function MembersPage() {
+  const [members, setMembers] = useState<OrganizationMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<OrgMemberRole>("finance_manager");
+  const [submitting, setSubmitting] = useState(false);
+  const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const fetchMembers = async () => {
+    try {
+      const org = await organizationApi.getMy();
+      if (org.data) {
+        const res = await organizationApi.getMembers(org.data.id);
+        setMembers(res.data ?? []);
+      }
+    } catch {
+      setMsg({ type: "error", text: "Failed to load members" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setMsg(null);
+    try {
+      const org = await organizationApi.getMy();
+      if (!org.data) return;
+      await organizationApi.addMember(org.data.id, email.trim(), role as any);
+      setMsg({ type: "success", text: `Invited ${email} as ${role.replace("_", " ")}` });
+      setEmail("");
+      fetchMembers();
+    } catch (err: any) {
+      setMsg({ type: "error", text: err.response?.data?.message ?? "Failed to invite member" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRemove = async (memberId: string) => {
+    if (!confirm("Are you sure you want to remove this member?")) return;
+    try {
+      const org = await organizationApi.getMy();
+      if (!org.data) return;
+      await organizationApi.removeMember(org.data.id, memberId);
+      fetchMembers();
+    } catch (err: any) {
+      setMsg({ type: "error", text: "Failed to remove member" });
+    }
+  };
+
   return (
-    <ProtectedRoute>
-      <MembersContent />
-    </ProtectedRoute>
-  )
+    <div className="space-y-8 max-w-6xl">
+      <div>
+        <h1 className="text-2xl font-bold text-white">Team Roles & Task Delegation</h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Assign dedicated managers for Finance, Participants, and Certificates.
+        </p>
+      </div>
+
+      {msg && (
+        <div
+          className={`p-4 rounded-xl text-sm ${
+            msg.type === "success"
+              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              : "bg-red-500/10 border border-red-500/20 text-red-400"
+          }`}
+        >
+          {msg.text}
+        </div>
+      )}
+
+      {/* Invite Box */}
+      <form onSubmit={handleInvite} className="bg-[#111726] border border-white/10 rounded-2xl p-6 space-y-4">
+        <h2 className="text-base font-semibold text-white flex items-center gap-2">
+          <UserPlus className="h-5 w-5 text-amber-500" />
+          Assign a Member to a Specific Role
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-1">
+            <label className="text-xs text-slate-400 block mb-1.5 font-medium">User Email</label>
+            <input
+              type="email"
+              required
+              placeholder="colleague@domain.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-[#090d16] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="text-xs text-slate-400 block mb-1.5 font-medium">Role Responsibility</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as OrgMemberRole)}
+              className="w-full bg-[#090d16] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+            >
+              {ROLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label} — {opt.desc}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="bg-amber-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs hover:bg-amber-400 transition"
+        >
+          {submitting ? "Assigning..." : "Assign Role"}
+        </button>
+      </form>
+
+      {/* Members Table */}
+      <div className="bg-[#111726] border border-white/10 rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-white/10">
+          <h3 className="font-semibold text-white">Current Organization Members</h3>
+        </div>
+
+        {loading ? (
+          <div className="p-8 text-center text-slate-500 text-sm">Loading members...</div>
+        ) : members.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 text-sm">No members added yet.</div>
+        ) : (
+          <div className="divide-y divide-white/5">
+            {members.map((m) => {
+              const u: any = m.userId;
+              return (
+                <div key={m.id} className="p-5 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-slate-800 grid place-items-center font-bold text-amber-400">
+                      {u?.firstName?.[0] ?? "U"}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        {u?.firstName} {u?.lastName}
+                      </p>
+                      <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+                        <Mail className="h-3 w-3" />
+                        {u?.email ?? m.inviteEmail}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 capitalize flex items-center gap-1">
+                      <ShieldCheck className="h-3 w-3" />
+                      {m.role.replace("_", " ")}
+                    </span>
+
+                    {m.role !== "owner" && (
+                      <button
+                        onClick={() => handleRemove(m.id)}
+                        className="text-red-400 hover:text-red-300 p-1.5 transition"
+                        title="Remove member"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

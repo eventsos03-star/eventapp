@@ -8,6 +8,7 @@ export interface AuthUser {
   role: UserRole;
   status: UserStatus;
   organizationId: string | null;
+  orgRole?: string | null; 
 }
 
 export interface AccessTokenPayload {

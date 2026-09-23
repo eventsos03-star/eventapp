@@ -267,3 +267,69 @@ export interface AdminEvent {
   createdAt: string
   updatedAt: string
 }
+
+export type OrgMemberRole =
+  | 'owner'
+  | 'organizer'
+  | 'finance_manager'
+  | 'user_manager'
+  | 'certificate_manager'
+  | 'member';
+
+export interface OrgTask {
+  _id: string;
+  organizationId: string;
+  eventId?: { _id: string; eventName: string; eventDate: string };
+  title: string;
+  description?: string;
+  assignedMemberId: {
+    _id: string;
+    role: OrgMemberRole;
+    userId: { _id: string; firstName: string; lastName: string; email: string };
+  };
+  createdByUserId: { firstName: string; lastName: string; email: string };
+  priority: 'low' | 'medium' | 'high';
+  status: 'Todo' | 'InProgress' | 'Done';
+  dueDate: string;
+  createdAt: string;
+}
+
+export interface ParticipantRecord {
+  _id: string;
+  eventId: string;
+  participantId: { _id: string; firstName: string; lastName: string; email: string };
+  teamId?: { _id: string; teamName: string; teamCode: string };
+  checkedIn: boolean;
+  checkedInAt?: string;
+  createdAt: string;
+}
+
+export interface IssuedCertificate {
+  _id: string;
+  certificateNumber: string;
+  certificateUrl: string;
+  createdAt: string;
+  registrationId: {
+    _id: string;
+    participantId: { firstName: string; lastName: string; email: string };
+  };
+}
+
+export interface FinanceSummary {
+  totalRevenue: number;
+  totalVenueExpense: number;
+  netProfit: number;
+  eventRevenueBreakdown: Array<{
+    eventId: string;
+    eventName: string;
+    ticketPrice: number;
+    soldTickets: number;
+    revenue: number;
+  }>;
+  venueBookings: Array<{
+    _id: string;
+    bookingAmount: number;
+    status: string;
+    venueId: { venueName: string };
+  }>;
+}

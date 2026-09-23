@@ -56,3 +56,13 @@ export const updateEvent = asyncHandler(async (req, res) => {
 });
 
 
+export const getParticipants = asyncHandler(async (req, res) => {
+  const participants = await eventService.getEventParticipants(req.params.id);
+  return success(res, 200, 'Participants fetched successfully', participants);
+});
+
+export const toggleCheckIn = asyncHandler(async (req, res) => {
+  const updated = await eventService.toggleParticipantCheckIn(req.params.regId);
+  return success(res, 200, 'Participant check-in updated', updated);
+});
+
