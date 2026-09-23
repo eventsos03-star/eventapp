@@ -6,6 +6,7 @@ import { verifyAccessToken } from '../services/token.service.js';
 import { ACCESS_COOKIE_NAME } from '../constants/index.js';
 import { USER_STATUS } from '../constants/index.js';
 import {getOwnedOrganizationId} from "./getOwnedOrganizationId.js"
+import { getUserOrgContext } from "./getOwnedOrganizationId.js";
 /**
  * Protects routes. Requires a valid access token from the httpOnly access
  * cookie or a Bearer Authorization header, and loads the user into req.user.
@@ -30,7 +31,7 @@ export const authenticate = asyncHandler(async (req, _res: Response, next: NextF
   if (user.status !== USER_STATUS.ACTIVE) {
     throw new AppError(user.status === 'BLOCKED' ? 'Your account has been blocked' : 'Please verify your email before logging in', 403);
   }
-  const organizationId = await getOwnedOrganizationId(user.id);
+    const { organizationId, orgRole } = await getUserOrgContext(user.id);
 
   req.user = {
     id: user.id,
@@ -38,6 +39,7 @@ export const authenticate = asyncHandler(async (req, _res: Response, next: NextF
     role: user.role,
     status: user.status,
     organizationId,
+    orgRole ,
   };
   req.sessionId = payload.sessionId;
 
