@@ -48,6 +48,20 @@ export async function publishEvent(eventId: string) {
   if (event.status === "published") {
     throw new AppError("Event already published", 409);
   }
+
+  // Publish gate: an event can only go live once its venue booking has been
+  // approved by the venue owner. Without this the event would be publicly
+  // visible on a venue that was never actually confirmed for the date.
+  if (event.venueBookingId) {
+    const booking = await VenueBooking.findById(event.venueBookingId).select("status");
+    if (!booking || booking.status !== "approved") {
+      throw new AppError(
+        "This event cannot be published until its venue booking is approved",
+        400,
+      );
+    }
+  }
+
   event.status = "published";
   await event.save();
 
