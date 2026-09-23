@@ -255,7 +255,7 @@ const owner = await UserModel.create({
   status: 'ACTIVE',
   emailVerified: true,
 });
-await UserModel.create({
+const rootAdmin = await UserModel.create({
   firstName: 'Root',
   lastName: 'Admin',
   email: 'root@test.dev',
@@ -266,16 +266,18 @@ await UserModel.create({
 });
 await OrganizationModel.create({
   organizationName: 'Pending Org',
+  organizationType: 'college',
   description: 'desc',
   email: 'org@test.dev',
-  address: '1 Main St',
+  address: { street: '1 Main St', city: 'City', state: 'State' },
   ownerId: owner._id,
   status: 'pending',
 });
 await OrganizationModel.create({
   organizationName: 'Approved Org',
+  organizationType: 'event_org',
   email: 'org2@test.dev',
-  address: '2 Main St',
+  address: { street: '2 Main St', city: 'City', state: 'State' },
   ownerId: owner._id,
   status: 'approved',
 });
@@ -284,7 +286,7 @@ await VenueModel.create({
   venueName: 'Hall A',
   description: 'desc',
   images: [{ url: 'https://example.com/a.png', publicId: 'a' }],
-  location: { address: '1 Main St', city: 'City', state: 'State' },
+  location: { address: '1 Main St', city: 'City', state: 'State', coordinates: [0, 0] },
   capacity: 100,
   pricePerDay: 500,
   bookingPaymentPolicy: 'fullpayment',
@@ -294,6 +296,16 @@ await VenueModel.create({
 r = await request('/api/auth/login', { method: 'POST', body: { email: 'root@test.dev', password: 'adminpass123' } });
 assert(r.status === 200, `admin login works (got ${r.status})`);
 const adminToken = r.json.data.accessToken;
+
+console.log('\n== Admin venue status filter ==');
+r = await request('/api/venues/admin?status=pending', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.length === 1 && r.json.data[0].status === 'pending', 'lists only pending venues');
+r = await request('/api/venues/admin?status=approved', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.length === 0, 'lists no approved venues');
+r = await request('/api/venues/admin?status=blocked', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.length === 0, 'lists no blocked venues');
+r = await request('/api/venues/admin', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.length === 1, 'lists all venues without status filter');
 
 console.log('\n== Admin stats ==');
 r = await request('/api/admin/stats', { headers: { Authorization: `Bearer ${adminToken}` } });
@@ -332,6 +344,77 @@ r = await request('/api/admin/organizations/abc/approve', { method: 'PATCH', hea
 assert(r.status === 400, 'invalid organization id rejected');
 r = await request('/api/admin/organizations?status=bogus', { headers: { Authorization: `Bearer ${adminToken}` } });
 assert(r.status === 400, 'invalid status rejected');
+
+console.log('\n== Seed venue booking for admin endpoints ==');
+const { default: VenueBookingModel } = await import('../src/modules/venue/venueBooking.model.js');
+const { default: EventModel } = await import('../src/modules/event/event.model.js');
+
+const approvedVenue = await VenueModel.findOne({ venueName: 'Hall A' });
+const approvedOrg = await OrganizationModel.findOne({ organizationName: 'Approved Org' });
+
+const bookingIdRaw = await VenueBookingModel.create({
+  venueId: approvedVenue._id,
+  organizationId: approvedOrg._id,
+  requestedBy: owner._id,
+  startDate: new Date('2030-01-10T10:00:00Z'),
+  endDate: new Date('2030-01-12T18:00:00Z'),
+  bookingAmount: 1000,
+  status: 'pending',
+  paymentStatus: 'pending',
+});
+const bookingId = String(bookingIdRaw._id);
+await EventModel.create({
+  organizationId: approvedOrg._id,
+  createdBy: owner._id,
+  eventName: 'Draft Event',
+  eventType: 'free',
+  registrationType: 'team',
+  eventDate: '2030-01-11T09:00:00Z',
+  eventTime: '09:00',
+  location: 'City Hall',
+  description: 'desc',
+  sportCategory: 'Sports',
+  skillLevel: 'beginner',
+  bannerImage: { url: 'https://example.com/b.png', publicId: 'b' },
+  maxParticipants: 100,
+  registrationStartDate: '2029-12-01T00:00:00Z',
+  registrationEndDate: '2030-01-05T00:00:00Z',
+  teamSize: 5,
+  venueBookingId: bookingId,
+  status: 'draft',
+});
+
+console.log('\n== Admin bookings list ==');
+r = await request('/api/admin/bookings', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && Array.isArray(r.json.data), `admin bookings lists (got ${r.status})`);
+assert(r.json.data.length === 1, 'admin bookings returns the seeded booking');
+const listed = r.json.data[0];
+assert(listed.id === bookingId, 'admin booking serialized with id');
+assert(listed.venueId?._id && listed.organizationId?.organizationName === 'Approved Org', 'admin booking populated venue + org');
+assert(listed.requestedBy?.email === 'owner@test.dev', 'admin booking populated requester');
+
+console.log('\n== Admin bookings status filter ==');
+r = await request('/api/admin/bookings?status=pending', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.length === 1, 'pending filter matches');
+r = await request('/api/admin/bookings?status=approved', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200 && r.json.data.length === 0, 'approved filter empty');
+r = await request('/api/admin/bookings?status=bogus', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 400, 'invalid booking status rejected');
+
+console.log('\n== Admin cancel booking ==');
+r = await request(`/api/admin/bookings/${bookingId}/cancel`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` }, body: { cancellationReason: 'Admin override' } });
+assert(r.status === 200 && r.json.data.status === 'cancelled', `admin cancels booking (got ${r.status})`);
+assert(r.json.data.cancelledBy === String(rootAdmin._id), 'cancel attribution set');
+r = await request(`/api/admin/bookings/${bookingId}/cancel`, { method: 'PATCH', headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 400, 'cancelling an already-cancelled booking blocked');
+
+console.log('\n== Admin report counts ==');
+r = await request('/api/admin/reports', { headers: { Authorization: `Bearer ${adminToken}` } });
+assert(r.status === 200, `admin reports returns 200 (got ${r.status})`);
+assert(r.json.data.totalEvents === 1 && r.json.data.totalVenues === 1, 'reports counts events + venues');
+assert(r.json.data.totalBookings === 1 && r.json.data.cancelledBookings === 1, 'reports counts cancelled bookings');
+assert(r.json.data.totalOrganizations === 2 && r.json.data.approvedOrganizations === 2, 'reports counts orgs');
+assert(r.json.data.totalUsers === 5 && r.json.data.totalAdmins === 1, 'reports counts users + admins');
 
 await mongoose.connection.dropDatabase();
 await mongoose.disconnect();

@@ -223,6 +223,42 @@ export interface AdminStats {
   totalUsers: number
 }
 
+export interface AdminReportCounts {
+  totalEvents: number
+  publishedEvents: number
+  totalVenues: number
+  approvedVenues: number
+  pendingVenues: number
+  totalBookings: number
+  pendingBookings: number
+  approvedBookings: number
+  cancelledBookings: number
+  completedBookings: number
+  totalOrganizations: number
+  approvedOrganizations: number
+  totalUsers: number
+  totalAdmins: number
+}
+
+export interface AdminBooking {
+  id: string
+  organizationId: { _id: string; organizationName: string } | null
+  venueId:
+    | { _id: string; venueName: string; location?: { formattedAddress?: string; city?: string } }
+    | null
+  requestedBy: { _id: string; firstName: string; lastName: string; email: string } | null
+  startDate: string
+  endDate: string
+  bookingAmount: number
+  status: VenueBookingStatus
+  paymentStatus: 'pending' | 'advancePaid' | 'fullyPaid'
+  cancellationReason?: string
+  cancelledBy?: string
+  cancelledAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface CreateVenueInput {
   venueName: string
   description: string
