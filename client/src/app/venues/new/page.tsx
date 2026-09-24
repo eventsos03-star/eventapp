@@ -90,7 +90,7 @@ export default function NewVenuePage() {
   }
 
   function validateImages(files: File[]): string | null {
-    if (files.length > 10) return 'You can upload at most 10 images.'
+    if (files.length > 1) return 'You can upload at most 1 image.'
     for (const file of files) {
       if (!file.type.startsWith('image/')) return `"${file.name}" is not an image file. Only JPEG, PNG, GIF, WebP and AVIF are allowed.`
       if (file.size > 5 * 1024 * 1024) return `"${file.name}" exceeds the 5 MB per-image limit.`
@@ -242,16 +242,15 @@ export default function NewVenuePage() {
           )}
 
           <div>
-            <label className={labelClass()}>Images (optional — up to 10, 5 MB each)</label>
+            <label className={labelClass()}>Image (optional — 1 image, 5 MB max)</label>
             <input
               type="file"
               accept="image/*"
-              multiple
-              onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))}
+              onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 1))}
               className={inputClass()}
             />
             {imageFiles.length > 0 && (
-              <p className="mt-1 text-xs text-slate-500">{imageFiles.length} image(s) selected.</p>
+              <p className="mt-1 text-xs text-slate-500">{imageFiles.length} image selected.</p>
             )}
             {fieldErrors.images && <p className={errorTextClass()}>{fieldErrors.images}</p>}
           </div>

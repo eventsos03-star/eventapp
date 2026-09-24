@@ -342,6 +342,9 @@ export const api = {
   deleteVenue: (id: string) =>
     request<void>(`/venues/${id}`, { method: 'DELETE', auth: true }),
 
+  deleteVenueImage: (id: string, key: string) =>
+    request<Venue>(`/venues/${id}/images`, { method: 'DELETE', body: { key }, auth: true }),
+
   // -------------------------
   // VENUE BOOKINGS
   // -------------------------

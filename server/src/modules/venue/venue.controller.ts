@@ -131,6 +131,11 @@ export const updateVenue = asyncHandler(async (req, res) => {
   const newImages: IVenueImage[] = [];
 
   try {
+    // Capture the images currently on the venue so that, once the update
+    // replaces them, the old S3 objects can be cleaned up.
+    const existingVenue = await venueService.getVenueById(req.params.id);
+    const existingKeys = (existingVenue?.images ?? []).map((image) => image.key);
+
     for (const file of files) {
       const { url, key } = await uploadImageToS3({
         buffer: file.buffer,
@@ -147,6 +152,13 @@ export const updateVenue = asyncHandler(async (req, res) => {
       throw new AppError('Venue not found or you are not authorized to update this venue', 404);
     }
 
+    // A venue holds a single image: once the update succeeded with new
+    // uploads, the replaced images are no longer referenced and their S3
+    // objects are deleted best-effort (cleanup failures are swallowed).
+    if (newImages.length > 0) {
+      await Promise.allSettled(existingKeys.map((key) => deleteImageFromS3(key)));
+    }
+
     success(res, 200, 'Venue updated successfully', venue);
   } catch (error) {
     await rollbackS3Uploads(uploadedKeys);
@@ -159,6 +171,8 @@ export const deleteVenue = asyncHandler(async (req, res) => {
   if (!venue) {
     throw new AppError('Venue not found or you are not authorized to delete this venue', 404);
   }
+  // Best-effort cleanup: remove the deleted venue's images from S3.
+  await Promise.allSettled(venue.images.map((image) => deleteImageFromS3(image.key)));
   success(res, 200, 'Venue deleted successfully', null);
 });
 

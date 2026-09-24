@@ -6,11 +6,11 @@ import { AppError } from '../utils/AppError.js';
  * Reusable Multer middleware for venue image uploads.
  *
  * - memory storage (files never touch the local filesystem)
- * - max 10 files, 5 MB each
+ * - max 1 file, 5 MB
  * - rejects anything that is not a JPEG/PNG/GIF/WebP/AVIF image
  */
 
-export const MAX_VENUE_IMAGES = 10;
+export const MAX_VENUE_IMAGES = 1;
 export const MAX_VENUE_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set<string>([
@@ -56,7 +56,7 @@ export function uploadVenueImages(req: Request, _res: Response, next: NextFuncti
           return next(new AppError('Image too large. Maximum file size is 5 MB per image.', 400));
         case 'LIMIT_FILE_COUNT':
         case 'LIMIT_UNEXPECTED_FILE':
-          return next(new AppError('Too many images. Maximum of 10 images per venue is allowed.', 400));
+          return next(new AppError('Too many images. Maximum of 1 image per venue is allowed.', 400));
         default:
           return next(new AppError(`Image upload failed: ${error.message}`, 400));
       }

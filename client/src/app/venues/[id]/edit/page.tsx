@@ -43,6 +43,7 @@ export default function EditVenuePage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [removingImageKey, setRemovingImageKey] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -107,7 +108,7 @@ export default function EditVenuePage() {
   }
 
   function validateImages(files: File[]): string | null {
-    if (files.length > 10) return 'You can upload at most 10 images.'
+    if (files.length > 1) return 'You can upload at most 1 image.'
     for (const file of files) {
       if (!file.type.startsWith('image/')) return `"${file.name}" is not an image file. Only JPEG, PNG, GIF, WebP and AVIF are allowed.`
       if (file.size > 5 * 1024 * 1024) return `"${file.name}" exceeds the 5 MB per-image limit.`
@@ -147,6 +148,21 @@ export default function EditVenuePage() {
       setError(err instanceof ApiError ? err.message : 'Could not update venue.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleDeleteImage() {
+    if (!venue || !venue.images[0]?.key) return
+    const key = venue.images[0].key
+    setRemovingImageKey(key)
+    setError(null)
+    try {
+      const { data } = await api.deleteVenueImage(id, key)
+      if (data) setVenue(data)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not delete image.')
+    } finally {
+      setRemovingImageKey(null)
     }
   }
 
@@ -247,22 +263,31 @@ export default function EditVenuePage() {
           )}
 
           <div>
-            <label className={labelClass()}>Images (optional — add up to 10, 5 MB each)</label>
-            {venue && venue.images.length > 0 && (
-              <p className="mb-1.5 text-xs text-slate-500">
-                {venue.images.length} existing image(s). Existing images are kept; use the venue
-                page's delete-image endpoint to remove individual images.
-              </p>
+            <label className={labelClass()}>Image (optional — 1 image, 5 MB max)</label>
+            {venue?.images[0] ? (
+              <div className="relative mb-3 w-full max-w-xs overflow-hidden rounded-xl border border-slate-200">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={venue.images[0].url} alt={venue.venueName} className="h-44 w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={handleDeleteImage}
+                  disabled={removingImageKey !== null}
+                  className="absolute right-2 top-2 rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white shadow-md transition hover:bg-red-600 disabled:opacity-50"
+                >
+                  {removingImageKey === venue.images[0].key ? 'Removing...' : 'Remove image'}
+                </button>
+              </div>
+            ) : (
+              <p className="mb-1.5 text-xs text-slate-500">No image yet.</p>
             )}
             <input
               type="file"
               accept="image/*"
-              multiple
-              onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))}
+              onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 1))}
               className={inputClass()}
             />
             {imageFiles.length > 0 && (
-              <p className="mt-1 text-xs text-slate-500">{imageFiles.length} new image(s) selected.</p>
+              <p className="mt-1 text-xs text-slate-500">{imageFiles.length} new image selected.</p>
             )}
             {fieldErrors.images && <p className={errorTextClass()}>{fieldErrors.images}</p>}
           </div>

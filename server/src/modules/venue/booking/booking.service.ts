@@ -14,9 +14,7 @@ const NOT_DELETED = {
   ],
 };
 
-/* -------------------------------- */
-/* Organization eligibility */
-/* -------------------------------- */
+
 
 async function isOrgEligible(
   userId: string,
@@ -63,12 +61,9 @@ export async function hasOverlap(
   const filter: Record<string, unknown> = {
     venueId,
 
-    // Only the given statuses block availability (approved by default;
-    // event creation also treats pending requests as blocking).
     status: { $in: blockingStatuses },
 
-    // Overlap condition: startDate <= requestedEndDate AND endDate >= requestedStartDate
-    startDate: {
+      startDate: {
       $lte: endDate,
     },
 
@@ -89,10 +84,6 @@ export async function hasOverlap(
   return Boolean(conflict);
 }
 
-/* -------------------------------- */
-/* Calculate number of days */
-/* -------------------------------- */
-
 function countDays(
   startDate: Date,
   endDate: Date
@@ -112,9 +103,6 @@ function countDays(
   return Math.round((end - start) / dayMs) + 1;
 }
 
-/* -------------------------------- */
-/* Create booking */
-/* -------------------------------- */
 
 export const createBooking = async (params: {
   userId: string;

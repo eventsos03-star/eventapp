@@ -139,10 +139,11 @@ export const updateVenue = async (
     update.$set = data;
   }
 
-  // New images are appended ($push), never replacing the existing list, so a
-  // single-image upload does not wipe the venue's other images.
+  // A venue holds a single image: new uploads replace the existing
+  // image list. The caller is responsible for deleting the old S3
+  // objects once the update succeeds.
   if (newImages.length > 0) {
-    update.$push = { images: { $each: newImages } };
+    update.$set = { ...(update.$set ?? {}), images: newImages };
   }
 
   if (Object.keys(update).length === 0) {
