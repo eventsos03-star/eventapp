@@ -5,6 +5,7 @@ import { validate } from '../../middleware/validate.js';
 import * as adminController from './admin.controller.js';
 import {
   deleteUserSchema,
+  listBookingsSchema,
   listDeletedUsersSchema,
   listOrganizationsSchema,
   listVenueOwnersSchema,
@@ -15,6 +16,7 @@ import {
   restoreUserSchema,
   updateUserRoleSchema,
   venueOwnerActionSchema,
+  bookingActionSchema,
 } from './admin.validator.js';
 
 const router = Router();
@@ -22,6 +24,13 @@ const router = Router();
 router.use(authenticate, authorize('ADMIN'));
 
 router.get('/stats', adminController.getAdminStats);
+router.get('/reports', adminController.getAdminReportCounts);
+router.get('/bookings', validate(listBookingsSchema), adminController.listBookings);
+router.patch(
+  '/bookings/:id/cancel',
+  validate(bookingActionSchema),
+  adminController.cancelBooking,
+);
 router.get('/organizations', validate(listOrganizationsSchema), adminController.listOrganizations);
 router.get('/organizations/:id', validate(organizationActionSchema), adminController.getOrganizationDetail);
 router.patch('/organizations/:id/approve', validate(organizationActionSchema), adminController.approveOrganization);

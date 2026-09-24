@@ -3,7 +3,7 @@ import Event from "./event.model.js";
 import type { CreateEventInput, UpdateEventInput } from "./event.model.js";
 import * as bookingService from "../venue/booking/booking.service.js";
 import VenueBooking from "../venue/venueBooking.model.js";
-
+import Registration from "./registration.model.js";
 export async function createEvent(
   data: CreateEventInput,
   userId: string
@@ -48,6 +48,20 @@ export async function publishEvent(eventId: string) {
   if (event.status === "published") {
     throw new AppError("Event already published", 409);
   }
+
+  // Publish gate: an event can only go live once its venue booking has been
+  // approved by the venue owner. Without this the event would be publicly
+  // visible on a venue that was never actually confirmed for the date.
+  if (event.venueBookingId) {
+    const booking = await VenueBooking.findById(event.venueBookingId).select("status");
+    if (!booking || booking.status !== "approved") {
+      throw new AppError(
+        "This event cannot be published until its venue booking is approved",
+        400,
+      );
+    }
+  }
+
   event.status = "published";
   await event.save();
 
@@ -261,4 +275,21 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
   }
 
   return event;
+}
+
+export async function getEventParticipants(eventId: string) {
+  return Registration.find({ eventId })
+    .populate('participantId', 'firstName lastName email')
+    .populate('teamId', 'teamName teamCode')
+    .sort({ createdAt: -1 });
+}
+
+export async function toggleParticipantCheckIn(registrationId: string) {
+  const reg: any = await Registration.findById(registrationId);
+  if (!reg) throw new AppError('Registration not found', 404);
+
+  reg.checkedIn = !reg.checkedIn;
+  reg.checkedInAt = reg.checkedIn ? new Date() : null;
+  await reg.save();
+  return reg;
 }

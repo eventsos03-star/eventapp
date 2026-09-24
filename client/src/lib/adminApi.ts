@@ -1,5 +1,5 @@
 import { request } from './api'
-import type { AdminEvent, AdminStats, Organization, ResourceStatus, UserRole, UserSummary, VenueOwner } from '../types'
+import type { AdminBooking, AdminEvent, AdminReportCounts, AdminStats, Organization, ResourceStatus, UserRole, UserSummary, Venue, VenueOwner } from '../types'
 
 export type AdminStatus = ResourceStatus | 'deleted'
 
@@ -79,9 +79,27 @@ export const adminApi = {
   getAllEvents: () =>
     request<AdminEvent[]>('/events/admin/allevents', { auth: true }),
 
+  getBookings: (status?: AdminBooking['status']) =>
+    request<AdminBooking[]>(`/admin/bookings${status ? `?status=${status}` : ''}`, { auth: true }),
+
+  getReportCounts: () =>
+    request<AdminReportCounts>('/admin/reports', { auth: true }),
+
+  cancelBooking: (id: string, cancellationReason?: string) =>
+    request<AdminBooking>(`/admin/bookings/${id}/cancel`, { method: 'PATCH', body: { cancellationReason }, auth: true }),
+
   deleteEvent: (id: string) =>
     request<void>(`/events/${id}`, { method: 'DELETE', auth: true }),
 
   publishEvent: (id: string) =>
     request<AdminEvent>(`/events/${id}/publish`, { method: 'PATCH', auth: true }),
+
+  getVenues: (status?: Venue['status']) =>
+    request<Venue[]>(`/venues/admin${status ? `?status=${status}` : ''}`, { auth: true }),
+
+  approveVenue: (id: string) =>
+    request<Venue>(`/venues/${id}/approve`, { method: 'PATCH', auth: true }),
+
+  rejectVenue: (id: string) =>
+    request<Venue>(`/venues/${id}/reject`, { method: 'PATCH', auth: true }),
 }

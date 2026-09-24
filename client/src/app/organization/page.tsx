@@ -160,7 +160,7 @@ function OrgContent() {
           </div>
           <div className="flex items-center gap-4">
             {user?.role === 'ADMIN' && <Link href="/admin" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Admin</Link>}
-            <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
+            <Link href="/profile" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Profile</Link>
           </div>
         </nav>
         <main className="mx-auto max-w-2xl px-5 pb-24 pt-16 sm:px-10 text-center">
@@ -187,7 +187,7 @@ function OrgContent() {
           </div>
           <div className="flex items-center gap-4">
             {user?.role === 'ADMIN' && <Link href="/admin" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Admin</Link>}
-            <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
+            <Link href="/profile" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Profile</Link>
             <span className="text-sm text-paper-dim/50">{user?.email}</span>
           </div>
         </nav>
@@ -198,7 +198,7 @@ function OrgContent() {
             <p className="mt-1 text-xs font-semibold tracking-wide text-red-600">DELETED</p>
             <p className="mt-3 text-sm text-ink/50">This organization was deleted. Contact an admin to restore it.</p>
             <div className="mt-6 flex justify-center gap-3">
-              <Link href="/dashboard" className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-ink transition hover:bg-amber-deep">Back to Dashboard</Link>
+              <Link href="/profile" className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-ink transition hover:bg-amber-deep">Back to Profile</Link>
             </div>
           </div>
         </main>
@@ -215,7 +215,7 @@ function OrgContent() {
             <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">EventOS</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
+            <Link href="/profile" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Profile</Link>
             <span className="text-sm text-paper-dim/50">{user?.email}</span>
           </div>
         </nav>
@@ -227,7 +227,7 @@ function OrgContent() {
             <p className="mt-3 text-sm text-ink/50">Your organization is under review. Our platform team will review it before you can access organization features.</p>
             <div className="mt-6 flex justify-center gap-3">
               <button type="button" onClick={() => void fetchOrg()} className="rounded-lg border border-paper-dim px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Refresh Status</button>
-              <Link href="/dashboard" className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-ink transition hover:bg-amber-deep">Back to Dashboard</Link>
+              <Link href="/profile" className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-ink transition hover:bg-amber-deep">Back to Profile</Link>
             </div>
           </div>
 
@@ -255,7 +255,7 @@ function OrgContent() {
             <span className="font-display text-lg font-semibold tracking-tight text-paper-dim">EventOS</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
+            <Link href="/profile" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Profile</Link>
             <span className="text-sm text-paper-dim/50">{user?.email}</span>
           </div>
         </nav>
@@ -271,7 +271,7 @@ function OrgContent() {
             )}
             <div className="mt-6 flex justify-center gap-3">
               <button type="button" onClick={startEditing} className="rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-ink transition hover:bg-amber-deep">Edit &amp; Resubmit</button>
-              <Link href="/dashboard" className="rounded-lg border border-paper-dim px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Back to Dashboard</Link>
+              <Link href="/profile" className="rounded-lg border border-paper-dim px-4 py-2 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Back to Profile</Link>
             </div>
           </div>
 
@@ -321,7 +321,7 @@ function OrgContent() {
         <div className="flex items-center gap-4">
           {user?.role === 'ADMIN' && <Link href="/admin" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Admin</Link>}
           <Link href="/organization/members" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Members</Link>
-          <Link href="/dashboard" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Dashboard</Link>
+          <Link href="/profile" className="text-sm text-paper-dim/70 transition hover:text-paper-dim">Profile</Link>
           <span className="text-sm text-paper-dim/50">{user?.email}</span>
         </div>
       </nav>
@@ -385,7 +385,7 @@ function OrgContent() {
             <h2 className="mb-4 font-display text-xl font-semibold text-ink">Quick Actions</h2>
             <div className="flex flex-col gap-3">
               <Link href="/organization/members" className="rounded-lg border border-paper-dim px-4 py-3 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Manage Members</Link>
-              <Link href="/events/new" className="rounded-lg border border-paper-dim px-4 py-3 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Create Event</Link>
+              <Link href="/my-organization/events/new" className="rounded-lg border border-paper-dim px-4 py-3 text-sm font-semibold text-ink transition hover:bg-paper-dim/10">Create Event</Link>
               <span className="rounded-lg border border-ink-line px-4 py-3 text-sm text-ink/30 cursor-not-allowed">Venue Booking — Coming Soon</span>
               {org.status === 'approved' && (
                 <button type="button" disabled={deleting} onClick={() => void handleDeleteOrg()} className="rounded-lg border border-red-300 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">

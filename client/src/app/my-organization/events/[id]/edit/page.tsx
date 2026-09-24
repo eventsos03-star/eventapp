@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { eventService, type UpdateEventPayload } from "@/lib/eventApi";
-
+import { api } from "@/lib/api";
 function toDateInputValue(value: string) {
   if (!value) return "";
   return new Date(value).toISOString().slice(0, 10);
@@ -18,7 +18,12 @@ export default function EditEventPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-
+  const [venueBookingId, setVenueBookingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelMessage, setCancelMessage] = useState<
+    { type: "success" | "error"; text: string } | null
+  >(null);
   const [form, setForm] = useState<UpdateEventPayload>({
     eventName: "",
     description: "",
@@ -58,6 +63,8 @@ export default function EditEventPage() {
           teamSize: event.teamSize,
         });
         setLoading(false);
+        const bookingId = (res.data as any).venueBookingId;
+        setVenueBookingId(typeof bookingId === "string" ? bookingId : null);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -115,6 +122,34 @@ export default function EditEventPage() {
       setSaving(false);
     }
   };
+   const handleCancelBooking = async () => {
+    if (!venueBookingId) return;
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel the venue booking for this event?"
+    );
+    if (!confirmed) return;
+
+    setCancelling(true);
+    setCancelMessage(null);
+    try {
+      await api.cancelVenueBooking(
+        venueBookingId,
+        cancelReason.trim() || undefined
+      );
+      setCancelMessage({
+        type: "success",
+        text: "Venue booking cancelled. The venue is now available to others.",
+      });
+    } catch (err: any) {
+      setCancelMessage({
+        type: "error",
+        text:
+          err?.response?.data?.message ?? "Could not cancel the booking",
+      });
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#090d16] text-white font-sans antialiased p-5 sm:p-10 lg:p-12">
@@ -160,6 +195,7 @@ export default function EditEventPage() {
         )}
 
         {!loading && !loadError && (
+          <>
           <form
             onSubmit={handleSubmit}
             className="space-y-5 rounded-2xl border border-white/10 bg-[#111726]/80 p-6 backdrop-blur-xl"
@@ -335,6 +371,47 @@ export default function EditEventPage() {
               </Link>
             </div>
           </form>
+          {venueBookingId && (
+            <section className="rounded-2xl border border-amber-500/20 bg-[#111726]/80 p-6 backdrop-blur-xl">
+              <h2 className="text-sm font-bold text-white">Venue booking</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                This event is linked to a venue booking. You can cancel it before
+                the event starts.
+              </p>
+
+              {cancelMessage && (
+                <div
+                  className={`mt-4 rounded-xl border p-3 text-sm ${
+                    cancelMessage.type === "success"
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                      : "border-red-500/30 bg-red-500/10 text-red-400"
+                  }`}
+                >
+                  {cancelMessage.text}
+                </div>
+              )}
+
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={2}
+                maxLength={500}
+                placeholder="Reason for cancellation (optional)"
+                className="mt-4 w-full resize-none rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
+              />
+
+              <button
+                type="button"
+                onClick={handleCancelBooking}
+                disabled={cancelling}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-xs font-bold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50"
+              >
+                {cancelling ? "Cancelling…" : "Cancel Venue Booking"}
+              </button>
+            </section>
+          )}
+          </>
+        
         )}
       </div>
     </div>

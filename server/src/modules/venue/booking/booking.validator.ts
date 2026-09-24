@@ -31,3 +31,16 @@ export const venueBookingsParamSchema = z.object({
     venueId: objectIdSchema,
   }),
 });
+
+export const cancelBookingSchema = z.object({
+  params: z.object({
+    id: objectIdSchema,
+  }),
+  body: z.object({
+    cancellationReason: z
+      .string()
+      .trim()
+      .max(500, 'cancellationReason is too long')
+      .optional(),
+  }),
+});

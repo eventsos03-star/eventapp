@@ -1,10 +1,33 @@
 import * as adminService from './admin.service.js';
+import * as bookingService from '../venue/booking/booking.service.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { success } from '../../utils/response.js';
 
 export const getAdminStats = asyncHandler(async (_req, res) => {
   const stats = await adminService.getAdminStats();
   success(res, 200, 'Admin stats fetched successfully', stats);
+});
+
+export const getAdminReportCounts = asyncHandler(async (_req, res) => {
+  const counts = await adminService.getAdminReportCounts();
+  success(res, 200, 'Admin report counts fetched successfully', counts);
+});
+
+export const listBookings = asyncHandler(async (req, res) => {
+  const bookings = await adminService.listBookings(
+    req.query.status as adminService.BookingStatus | undefined,
+  );
+  success(res, 200, 'Bookings fetched successfully', bookings);
+});
+
+export const cancelBooking = asyncHandler(async (req, res) => {
+  const booking = await bookingService.cancelBooking({
+    userId: req.user!.id,
+    userRole: req.user!.role,
+    bookingId: req.params.id,
+    cancellationReason: req.body.cancellationReason,
+  });
+  success(res, 200, 'Booking cancelled successfully', booking);
 });
 
 export const listOrganizations = asyncHandler(async (req, res) => {

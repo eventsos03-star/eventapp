@@ -102,6 +102,16 @@ const handleLogOut=async()=>{
         Profile Settings
       </Link>
 
+      {user.role === 'ADMIN' && (
+        <Link
+          href="/admin"
+          className="block rounded-lg px-3 py-2.5 text-sm text-paper-dim transition hover:bg-ink-line"
+          onClick={() => setProfileOpen(false)}
+        >
+          Admin
+        </Link>
+      )}
+
       <div className="my-1 border-t border-ink-line" />
 
       <button

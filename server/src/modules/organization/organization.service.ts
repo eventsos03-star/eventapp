@@ -2,7 +2,9 @@ import Organization, { type IOrganization } from './organization.model.js';
 import OrganizationMember from './organizationMember.model.js';
 import User from '../auth/user.model.js';
 import { AppError } from '../../utils/AppError.js';
-
+import Event from '../event/event.model.js';
+import Registration from '../event/registration.model.js';
+import VenueBooking from '../venue/venueBooking.model.js';
 type OrgResponse = Record<string, unknown> & { id: string };
 
 const NOT_DELETED = { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
@@ -59,10 +61,28 @@ export async function createOrganization(
   return serialize(org.toObject() as object);
 }
 
-export async function getOrganizationByOwner(ownerId: string): Promise<OrgResponse | null> {
-  const org = await Organization.findOne({ ownerId }).lean();
-  if (!org) return null;
-  return serialize(org as object);
+export async function getOrganizationByOwner(userId: string): Promise<OrgResponse | null> {
+  // 1. Check all memberships for this user
+  const members = await OrganizationMember.find({
+    userId,
+    ...NOT_DELETED,
+  }).sort({ updatedAt: -1, createdAt: -1 });
+
+  for (const m of members) {
+    if (!m.organizationId) continue;
+    const org = await Organization.findOne({
+      _id: m.organizationId,
+      ...NOT_DELETED,
+    }).lean();
+
+    if (org) return serialize(org as object);
+  }
+
+  // 2. Check if user is direct owner
+  const org = await Organization.findOne({ ownerId: userId, ...NOT_DELETED }).lean();
+  if (org) return serialize(org as object);
+
+  return null;
 }
 
 export async function deleteMyOrganization(ownerId: string): Promise<void> {
@@ -147,4 +167,43 @@ export async function removeMember(
 
   member.isDeleted = true;
   await member.save();
+}
+
+
+
+export async function getOrganizationFinance(organizationId: string) {
+  // 1. Get all events under this organization
+  const events = await Event.find({ organizationId, isDeleted: false });
+  const eventIds = events.map((e) => e._id);
+
+  // 2. Count registrations for each paid event to calculate revenue
+  let totalRevenue = 0;
+  const eventRevenueBreakdown = await Promise.all(
+    events.map(async (ev) => {
+      const count = await Registration.countDocuments({ eventId: ev._id });
+      const rev = ev.eventType === 'paid' ? (ev.ticketPrice || 0) * count : 0;
+      totalRevenue += rev;
+      return {
+        eventId: ev._id,
+        eventName: ev.eventName,
+        ticketPrice: ev.ticketPrice || 0,
+        soldTickets: count,
+        revenue: rev,
+      };
+    })
+  );
+
+  // 3. Calculate venue booking costs
+  const bookings = await VenueBooking.find({ organizationId, status: { $in: ['approved', 'completed'] } })
+    .populate('venueId', 'venueName');
+
+  const totalVenueExpense = bookings.reduce((sum, b) => sum + (b.bookingAmount || 0), 0);
+
+  return {
+    totalRevenue,
+    totalVenueExpense,
+    netProfit: totalRevenue - totalVenueExpense,
+    eventRevenueBreakdown,
+    venueBookings: bookings,
+  };
 }

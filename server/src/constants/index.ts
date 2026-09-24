@@ -14,6 +14,12 @@ export const USER_ROLE = {
   ADMIN: 'ADMIN',
 } as const;
 
+export const VENUE_OWNER_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+} as const;
+
 export const REFRESH_COOKIE_NAME = 'refreshToken';
 export const ACCESS_COOKIE_NAME = 'accessToken';
 

@@ -114,6 +114,32 @@ function  ProfileContent() {
   const [signingOutAll, setSigningOutAll] =
     useState(false)
 
+  const [hasVenues, setHasVenues] =
+    useState(false)
+
+  useEffect(() => {
+    if (!user) return
+
+    let active = true
+
+    api
+      .getMyVenues()
+      .then(({ data }) => {
+        if (active) {
+          setHasVenues((data ?? []).length > 0)
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setHasVenues(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [user])
+
   useEffect(() => {
     if (!user) return
 
@@ -687,12 +713,13 @@ function  ProfileContent() {
                   <div>
 
                     <h2 className="text-xs font-semibold text-[#ddd6c9]">
-                      Become an Organization
+                      {user?.organizationId ? 'Your Organization' : 'Become an Organization'}
                     </h2>
 
                     <p className="mt-1 max-w-xl text-[9px] leading-relaxed text-[#77746d]">
-                      Create an organization, organize events, build
-                      your team, and manage event operations.
+                      {user?.organizationId
+                        ? 'Manage your organization, members, and events.'
+                        : 'Create an organization, organize events, build your team, and manage event operations.'}
                     </p>
 
                   </div>
@@ -700,10 +727,10 @@ function  ProfileContent() {
                 </div>
 
                 <a
-                  href="/organization/create"
+                  href={user?.organizationId ? '/my-organization' : '/organization/create'}
                   className="shrink-0 rounded-lg bg-amber px-5 py-2.5 text-center text-[9px] font-bold text-[#11141c] transition hover:bg-[#ffc15a]"
                 >
-                  Become an Organization
+                  {user?.organizationId ? 'View Your Organization' : 'Become an Organization'}
                 </a>
 
               </div>
@@ -741,12 +768,32 @@ function  ProfileContent() {
 
                 </div>
 
-                <a
-                  href="/venues/create"
-                  className="shrink-0 rounded-lg border border-[#3a3e48] px-5 py-2 text-center text-[9px] font-semibold text-[#c9c2b5] transition hover:border-amber hover:text-amber"
-                >
-                  Become a Venue Owner
-                </a>
+                <div className="flex shrink-0 flex-col gap-2">
+
+                  <a
+                    href="/venues/new"
+                    className="shrink-0 rounded-lg border border-[#3a3e48] px-5 py-2 text-center text-[9px] font-semibold text-[#c9c2b5] transition hover:border-amber hover:text-amber"
+                  >
+                    Become a Venue Owner
+                  </a>
+
+                  <a
+                    href="/venues"
+                    className="shrink-0 rounded-lg border border-[#3a3e48] px-5 py-2 text-center text-[9px] font-semibold text-[#c9c2b5] transition hover:border-amber hover:text-amber"
+                  >
+                    Browse All Venues
+                  </a>
+
+                  {hasVenues && (
+                    <a
+                      href="/venue-owner"
+                      className="shrink-0 rounded-lg border border-amber px-5 py-2 text-center text-[9px] font-semibold text-amber transition hover:bg-amber/10"
+                    >
+                      View My Venues
+                    </a>
+                  )}
+
+                </div>
 
               </div>
 
@@ -1076,7 +1123,7 @@ function  ProfileContent() {
   )
 }
 
-export default function DashboardPage() {
+export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <ProfileContent />

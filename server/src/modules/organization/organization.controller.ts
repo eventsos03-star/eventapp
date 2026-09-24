@@ -40,3 +40,8 @@ export const removeMember = asyncHandler(async (req, res) => {
   await orgService.removeMember(req.user!.id, id, memberId);
   success(res, 200, 'Member removed successfully');
 });
+
+export const getFinance = asyncHandler(async (req, res) => {
+  const finance = await orgService.getOrganizationFinance(req.user!.organizationId!);
+  return success(res, 200, 'Finance overview fetched', finance);
+});

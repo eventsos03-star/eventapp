@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 const resourceStatuses = ['pending', 'approved', 'rejected', 'blocked', 'deleted'] as const;
 
+const bookingStatuses = ['pending', 'approved', 'rejected', 'cancelled', 'completed'] as const;
+
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid resource id');
 
 export const listOrganizationsSchema = z.object({
@@ -13,6 +15,21 @@ export const listOrganizationsSchema = z.object({
 export const listVenueOwnersSchema = z.object({
   query: z.object({
     status: z.enum(resourceStatuses).optional(),
+  }),
+});
+
+export const listBookingsSchema = z.object({
+  query: z.object({
+    status: z.enum(bookingStatuses).optional(),
+  }),
+});
+
+export const bookingActionSchema = z.object({
+  params: z.object({
+    id: objectIdSchema,
+  }),
+  body: z.object({
+    cancellationReason: z.string().trim().max(500).optional(),
   }),
 });
 

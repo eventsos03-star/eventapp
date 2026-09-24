@@ -11,7 +11,7 @@ export function GuestRoute({ children }: { children: ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    if (!initializing && user) router.replace('/dashboard')
+    if (!initializing && user) router.replace('/profile')
   }, [initializing, user, router])
 
   if (initializing) {
