@@ -35,7 +35,7 @@ const handleLogOut=async()=>{
 
 }
   return (
-    <nav className="flex items-center justify-between border-b border-ink-line px-5 py-6 sm:px-10 lg:px-16">
+    <nav className="flex items-center justify-between border-b border-ink-line bg-[#12151D] px-5 py-6 sm:px-10 lg:px-16">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2.5">
         <span className="grid h-8.5 w-8.5 place-items-center rounded-lg bg-amber font-display text-lg font-bold text-ink">
