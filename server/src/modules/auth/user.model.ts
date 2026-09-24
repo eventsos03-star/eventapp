@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import mongoose, { type HydratedDocument, type Model, Schema } from 'mongoose';
-import { USER_PROVIDER, USER_ROLE, USER_STATUS } from '../../constants/index.js';
-import type { UserProvider, UserRole, UserStatus } from '../../types/index.js';
+import { USER_PROVIDER, USER_ROLE, USER_STATUS, VENUE_OWNER_STATUS } from '../../constants/index.js';
+import type { UserProvider, UserRole, UserStatus, VenueOwnerStatus } from '../../types/index.js';
 
 export interface IUser {
   firstName: string;
@@ -14,6 +14,7 @@ export interface IUser {
   emailVerified: boolean;
   status: UserStatus;
   role: UserRole;
+  venueOwnerStatus?: VenueOwnerStatus;
   verificationToken?: string;
   verificationExpires?: Date;
   resetPasswordToken?: string;
@@ -35,6 +36,7 @@ export interface SafeUser {
   emailVerified: boolean;
   status: UserStatus;
   role: UserRole;
+  venueOwnerStatus?: VenueOwnerStatus;
   organizationId?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -68,6 +70,7 @@ const userSchema = new Schema<IUser, UserModel, UserMethods>(
     emailVerified: { type: Boolean, default: false },
     status: { type: String, enum: Object.values(USER_STATUS), default: USER_STATUS.PENDING },
     role: { type: String, enum: Object.values(USER_ROLE), default: USER_ROLE.USER },
+    venueOwnerStatus: { type: String, enum: Object.values(VENUE_OWNER_STATUS) },
     verificationToken: { type: String },
     verificationExpires: { type: Date },
     resetPasswordToken: { type: String },
@@ -108,6 +111,7 @@ userSchema.methods.toSafeObject = function (): SafeUser {
     emailVerified: this.emailVerified,
     status: this.status,
     role: this.role,
+    venueOwnerStatus: this.venueOwnerStatus,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };

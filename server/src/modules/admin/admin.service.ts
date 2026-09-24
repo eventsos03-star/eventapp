@@ -3,9 +3,10 @@ import Session from '../auth/session.model.js';
 import Organization from '../organization/organization.model.js';
 import OrganizationMember from '../organization/organizationMember.model.js';
 import Venue from '../venue/venue.model.js';
+import VenueBooking from '../venue/venueBooking.model.js';
 import Event from '../event/event.model.js';
 import { AppError } from '../../utils/AppError.js';
-import type { UserRole } from '../../types/index.js';
+import type { UserRole, VenueOwnerStatus } from '../../types/index.js';
 
 export type ResourceStatus = 'pending' | 'approved' | 'rejected' | 'blocked';
 
@@ -19,6 +20,23 @@ export interface AdminStats {
   totalVenueOwners: number;
   pendingVenueOwners: number;
   totalUsers: number;
+}
+
+export interface AdminReportCounts {
+  totalEvents: number;
+  publishedEvents: number;
+  totalVenues: number;
+  approvedVenues: number;
+  pendingVenues: number;
+  totalBookings: number;
+  pendingBookings: number;
+  approvedBookings: number;
+  cancelledBookings: number;
+  completedBookings: number;
+  totalOrganizations: number;
+  approvedOrganizations: number;
+  totalUsers: number;
+  totalAdmins: number;
 }
 
 export interface UserSummary {
@@ -39,6 +57,7 @@ export interface VenueOwnerSummary {
   email: string;
   venueCount: number;
   isOwnerDeleted: boolean;
+  venueOwnerStatus?: VenueOwnerStatus;
   venues: VenueResponse[];
 }
 
@@ -80,6 +99,78 @@ export async function getAdminStats(): Promise<AdminStats> {
     pendingVenueOwners: pendingVenueOwners.length,
     totalUsers,
   };
+}
+
+export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'completed';
+
+export async function getAdminReportCounts(): Promise<AdminReportCounts> {
+  const [
+    totalEvents,
+    publishedEvents,
+    totalVenues,
+    approvedVenues,
+    pendingVenues,
+    totalBookings,
+    pendingBookings,
+    approvedBookings,
+    cancelledBookings,
+    completedBookings,
+    totalOrganizations,
+    approvedOrganizations,
+    totalUsers,
+    totalAdmins,
+  ] = await Promise.all([
+    Event.countDocuments(NOT_DELETED),
+    Event.countDocuments({ status: 'published', ...NOT_DELETED }),
+    Venue.countDocuments(NOT_DELETED),
+    Venue.countDocuments({ status: 'approved', ...NOT_DELETED }),
+    Venue.countDocuments({ status: 'pending', ...NOT_DELETED }),
+    VenueBooking.countDocuments(),
+    VenueBooking.countDocuments({ status: 'pending' }),
+    VenueBooking.countDocuments({ status: 'approved' }),
+    VenueBooking.countDocuments({ status: 'cancelled' }),
+    VenueBooking.countDocuments({ status: 'completed' }),
+    Organization.countDocuments(NOT_DELETED),
+    Organization.countDocuments({ status: 'approved', ...NOT_DELETED }),
+    User.countDocuments(NOT_DELETED),
+    User.countDocuments({ role: 'ADMIN' }),
+  ]);
+
+  return {
+    totalEvents,
+    publishedEvents,
+    totalVenues,
+    approvedVenues,
+    pendingVenues,
+    totalBookings,
+    pendingBookings,
+    approvedBookings,
+    cancelledBookings,
+    completedBookings,
+    totalOrganizations,
+    approvedOrganizations,
+    totalUsers,
+    totalAdmins,
+  };
+}
+
+export async function listBookings(status?: BookingStatus) {
+  const filter: Record<string, unknown> = {};
+  if (status) {
+    filter.status = status;
+  }
+
+  const bookings = await VenueBooking.find(filter)
+    .populate('venueId', 'venueName location.formattedAddress location.city')
+    .populate('organizationId', 'organizationName')
+    .populate('requestedBy', 'firstName lastName email')
+    .sort({ createdAt: -1 })
+    .limit(200);
+
+  return bookings.map((booking) => {
+    const { _id, ...rest } = booking.toObject() as unknown as Record<string, unknown>;
+    return { id: String(_id), ...rest };
+  });
 }
 
 export async function listOrganizations(status: ResourceStatus | 'deleted' = DEFAULT_STATUS): Promise<OrganizationResponse[]> {
@@ -182,7 +273,7 @@ export async function listVenueOwners(status: ResourceStatus | 'deleted' = DEFAU
   const users = await User.find(
     status === 'deleted' ? { _id: { $in: ownerIds } } : { _id: { $in: ownerIds }, ...NOT_DELETED },
   )
-    .select('firstName lastName email isDeleted')
+    .select('firstName lastName email isDeleted venueOwnerStatus')
     .lean();
   const userById = new Map(users.map((user) => [String(user._id), user]));
 
@@ -198,6 +289,7 @@ export async function listVenueOwners(status: ResourceStatus | 'deleted' = DEFAU
       email: user.email,
       venueCount: ownerVenues.length,
       isOwnerDeleted: status === 'deleted' ? user.isDeleted === true : false,
+      venueOwnerStatus: user.venueOwnerStatus,
       venues: ownerVenues,
     });
   }
@@ -205,9 +297,16 @@ export async function listVenueOwners(status: ResourceStatus | 'deleted' = DEFAU
   return owners;
 }
 
-async function updateVenueOwnerStatus(ownerId: string, target: ResourceStatus): Promise<VenueOwnerSummary> {
+async function updateVenueOwnerStatus(ownerId: string, target: VenueOwnerStatus): Promise<VenueOwnerSummary> {
   const user = await User.findOne({ _id: ownerId, ...NOT_DELETED });
   if (!user) throw new AppError('Venue owner not found', 404);
+
+  // venueOwnerStatus is a one-time decision stored on the User. An approved
+  // owner stays approved even after adding new venues (they are not re-submitted
+  // as a "pending" owner); the per-venue approval flow handles individual venues.
+  if (user.venueOwnerStatus === target) {
+    throw new AppError(`Venue owner is already ${target}`, 400);
+  }
 
   const pendingVenues = await Venue.countDocuments({ ownerId: user._id, status: DEFAULT_STATUS, ...NOT_DELETED });
   if (pendingVenues === 0) {
@@ -216,7 +315,10 @@ async function updateVenueOwnerStatus(ownerId: string, target: ResourceStatus): 
 
   await Venue.updateMany({ ownerId: user._id, status: DEFAULT_STATUS, ...NOT_DELETED }, { status: target });
 
-  const venues = await Venue.find({ ownerId: user._id, status: target, ...NOT_DELETED }).sort({ createdAt: 1 }).lean();
+  user.venueOwnerStatus = target;
+  await user.save();
+
+  const venues = await Venue.find({ ownerId: user._id, ...NOT_DELETED }).sort({ createdAt: 1 }).lean();
 
   return {
     ownerId: user.id,
@@ -225,6 +327,7 @@ async function updateVenueOwnerStatus(ownerId: string, target: ResourceStatus): 
     email: user.email,
     venueCount: venues.length,
     isOwnerDeleted: false,
+    venueOwnerStatus: user.venueOwnerStatus,
     venues: venues.map(serializeVenue),
   };
 }
@@ -439,6 +542,7 @@ export async function restoreVenueOwner(ownerId: string): Promise<VenueOwnerSumm
     email: user.email,
     venueCount: venues.length,
     isOwnerDeleted: false,
+    venueOwnerStatus: user.venueOwnerStatus,
     venues: venues.map(serializeVenue),
   };
 }

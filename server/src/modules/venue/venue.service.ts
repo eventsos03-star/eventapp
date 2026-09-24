@@ -108,10 +108,13 @@ export const getNearbyVenues = async (params: {
   };
 };
 
-export const getAllVenuesForAdmin = async (city?: string) => {
+export const getAllVenuesForAdmin = async (city?: string, status?: string) => {
   const filter: Record<string, unknown> = { ...NOT_DELETED };
   if (city) {
     filter['location.city'] = city;
+  }
+  if (status) {
+    filter.status = status;
   }
   return await Venue.find(filter);
 };

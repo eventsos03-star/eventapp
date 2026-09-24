@@ -8,6 +8,7 @@ import {
   addMemberSchema,
   organizationIdParamSchema,
 } from './organization.validator.js';
+import { requireOrgRole } from '../../middleware/requireOrgRole.js';
 
 const router = Router();
 
@@ -20,5 +21,7 @@ router.delete('/me', orgController.deleteMyOrganization);
 router.get('/:id/members', validate(organizationIdParamSchema), orgController.getMembers);
 router.post('/:id/members', validate(organizationIdParamSchema), validate(addMemberSchema), orgController.addMember);
 router.delete('/:id/members/:memberId', orgController.removeMember);
+
+router.get('/finance', requireOrgRole('finance_manager'), orgController.getFinance);
 
 export default router;

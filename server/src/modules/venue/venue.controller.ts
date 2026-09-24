@@ -103,7 +103,8 @@ export const getAllVenuesForAdmin = asyncHandler(async (req, res) => {
     throw new AppError('Access denied. Admin privileges required.', 403);
   }
   const venues = await venueService.getAllVenuesForAdmin(
-    req.query.city as string | undefined
+    req.query.city as string | undefined,
+    req.query.status as string | undefined
   );
   success(res, 200, 'Venues fetched successfully', venues);
 });

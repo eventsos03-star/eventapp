@@ -207,6 +207,36 @@ const handleRegister = () => {
   router.push(`/events/${event._id}/register`);
 };
 
+const now = new Date();
+
+const registrationNotStarted =
+    now < new Date(event.registrationStartDate);
+
+const registrationClosed =
+    now > new Date(event.registrationEndDate);
+
+const eventStarted =
+    now >= new Date(event.eventDate);
+
+const registrationDisabled =
+    event.status !== "published" ||
+    registrationNotStarted ||
+    registrationClosed ||
+    eventStarted ||
+    event.isFull;
+
+ const registrationButtonLabel = event.isFull
+    ? "Event Full"
+    : registrationNotStarted
+      ? "Registration Not Started"
+      : registrationClosed
+        ? "Registration Closed"
+        : eventStarted
+          ? "Event Started"
+          : isPaid
+            ? "Buy Tickets"
+            : "Register for Event";
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#090d16] text-white font-sans antialiased">
 
@@ -337,6 +367,7 @@ const handleRegister = () => {
   label="Capacity"
   value={`${event.availableSeats} seats left (${event.maxParticipants} total)`}
 />
+
               </div>
 
               {/* Price */}
@@ -381,23 +412,26 @@ const handleRegister = () => {
 
               <div className="mt-6">
 
-                {event.status === "published" ? (
-                  <button
-  type="button"
-  onClick={handleRegister}
-  className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/10 transition hover:bg-amber-400 active:scale-[0.99]"
->
-  <Ticket className="h-4 w-4" />
+               {event.status === "published" ? (
+    <button
+        type="button"
+        disabled={registrationDisabled}
+        onClick={handleRegister}
+        className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold transition ${
+            registrationDisabled
+                ? "cursor-not-allowed bg-slate-800 text-slate-500"
+                : "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/10 hover:bg-amber-400 active:scale-[0.99]"
+        }`}
+    >
+        <Ticket className="h-4 w-4" />
 
-  {isPaid
-    ? "Buy Tickets"
-    : "Register for Event"}
-</button>
-                ) : (
-                  <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center text-xs text-slate-500">
-                    Registration opens once this event is published.
-                  </div>
-                )}
+        {registrationButtonLabel}
+    </button>
+) : (
+    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center text-xs text-slate-500">
+        Registration unavailable
+    </div>
+)}
 
               </div>
 
@@ -667,6 +701,18 @@ const handleRegister = () => {
     {event.availableSeats}
   </span>
 </div>
+{event.registrationType === "team" && (
+    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+        <span className="text-xs text-slate-500">
+            Team Size
+        </span>
+
+        <span className="text-xs font-bold text-slate-300">
+            {event.teamSize} members
+        </span>
+    </div>
+)}
+
                 <div className="flex items-center justify-between">
 
                   <span className="text-xs text-slate-500">
@@ -682,31 +728,25 @@ const handleRegister = () => {
               </div>
 
              {event.status === "published" ? (
-  event.availableSeats === 0 ? (
     <button
-      disabled
-      className="mt-6 w-full cursor-not-allowed rounded-xl bg-slate-800 py-3 text-xs font-bold text-slate-500"
+        type="button"
+        disabled={registrationDisabled}
+        onClick={handleRegister}
+        className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold transition ${
+            registrationDisabled
+                ? "cursor-not-allowed bg-slate-800 text-slate-500"
+                : "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/10 hover:bg-amber-400 active:scale-[0.99]"
+        }`}
     >
-      Event Full
-    </button>
-  ) : (
-  <button
-  type="button"
-  onClick={handleRegister}
-  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-bold text-slate-950 transition hover:bg-amber-400"
->
-  Register Now
-</button>
-  )
-) : (
-  <button
-    disabled
-    className="mt-6 w-full rounded-xl bg-slate-800 py-3 text-xs font-bold text-slate-500"
-  >
-    Registration Unavailable
-  </button>
-)}
+        <Ticket className="h-4 w-4" />
 
+        {registrationButtonLabel}
+    </button>
+) : (
+    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center text-xs text-slate-500">
+        Registration unavailable
+    </div>
+)}
               <p className="mt-3 text-center text-[9px] text-slate-600">
                 Registration closes on {registrationEnd}
               </p>

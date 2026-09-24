@@ -727,7 +727,7 @@ function  ProfileContent() {
                 </div>
 
                 <a
-                  href={user?.organizationId ? '/organization' : '/organization/create'}
+                  href={user?.organizationId ? '/my-organization' : '/organization/create'}
                   className="shrink-0 rounded-lg bg-amber px-5 py-2.5 text-center text-[9px] font-bold text-[#11141c] transition hover:bg-[#ffc15a]"
                 >
                   {user?.organizationId ? 'View Your Organization' : 'Become an Organization'}

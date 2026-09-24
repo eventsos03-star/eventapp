@@ -1,6 +1,7 @@
 export type UserStatus = 'ACTIVE' | 'PENDING' | 'BLOCKED';
 export type UserProvider = 'local' | 'google';
 export type UserRole = 'USER' | 'ADMIN';
+export type VenueOwnerStatus = 'pending' | 'approved' | 'rejected';
 
 export interface AuthUser {
   id: string;
@@ -8,6 +9,7 @@ export interface AuthUser {
   role: UserRole;
   status: UserStatus;
   organizationId: string | null;
+  orgRole?: string | null; 
 }
 
 export interface AccessTokenPayload {

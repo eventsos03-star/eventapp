@@ -10,7 +10,7 @@ export interface ITicket{
 }
 
 const ticketSchema=new Schema<ITicket>({
-    registrationId:{type:Schema.Types.ObjectId,ref:'Registration',required:true},
+    registrationId:{type:Schema.Types.ObjectId,ref:'Registration',required:true,},
     ticketNumber:{type:String,required:true,unique:true},
     status:{type:String,enum:['active','used'],default:'active',required:true},
     
