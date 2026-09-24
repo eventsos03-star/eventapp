@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { Providers } from "./providers";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export const metadata: Metadata = {
   title: "EventOS",
@@ -17,6 +19,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <Providers>{children}</Providers>
+        <ToastContainer />
       </body>
     </html>
   );

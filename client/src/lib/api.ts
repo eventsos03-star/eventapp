@@ -89,7 +89,7 @@ async function rawRequest<T>(
   return payload as ApiSuccess<T>
 }
 
-export async function request<T>(
+export async function   request<T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<ApiSuccess<T>> {
