@@ -33,7 +33,7 @@ export default function NewVenuePage() {
   const [pricePerDay, setPricePerDay] = useState('')
   const [bookingPaymentPolicy, setBookingPaymentPolicy] = useState<PaymentPolicy | ''>('')
   const [advancePercentage, setAdvancePercentage] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageFiles, setImageFiles] = useState<File[]>([])
   const [location, setLocation] = useState<VenueLocation | null>(null)
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -83,7 +83,19 @@ export default function NewVenuePage() {
       }
     }
 
+    const imageError = validateImages(imageFiles)
+    if (imageError) errs.images = imageError
+
     return errs
+  }
+
+  function validateImages(files: File[]): string | null {
+    if (files.length > 1) return 'You can upload at most 1 image.'
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) return `"${file.name}" is not an image file. Only JPEG, PNG, GIF, WebP and AVIF are allowed.`
+      if (file.size > 5 * 1024 * 1024) return `"${file.name}" exceeds the 5 MB per-image limit.`
+    }
+    return null
   }
 
   const handleLocationChange = useCallback((loc: VenueLocation) => {
@@ -107,20 +119,19 @@ export default function NewVenuePage() {
 
     setSubmitting(true)
     try {
-      await api.createVenue({
-        venueName: venueName.trim(),
-        description: description.trim(),
-        location,
-        capacity: Number(capacity),
-        pricePerDay: Number(pricePerDay),
-        bookingPaymentPolicy: bookingPaymentPolicy as PaymentPolicy,
-        ...(bookingPaymentPolicy === 'advanceAllowed'
-          ? { advancePercentage: Number(advancePercentage) }
-          : {}),
-        images: imageUrl.trim()
-          ? [{ url: imageUrl.trim(), publicId: imageUrl.trim() }]
-          : [],
-      })
+      const formData = new FormData()
+      formData.append('venueName', venueName.trim())
+      formData.append('description', description.trim())
+      formData.append('capacity', String(capacity))
+      formData.append('pricePerDay', String(pricePerDay))
+      formData.append('bookingPaymentPolicy', bookingPaymentPolicy as PaymentPolicy)
+      if (bookingPaymentPolicy === 'advanceAllowed' && advancePercentage) {
+        formData.append('advancePercentage', String(advancePercentage))
+      }
+      formData.append('location', JSON.stringify(location))
+      imageFiles.forEach((file) => formData.append('images', file))
+
+      await api.createVenue(formData)
       router.push('/venues')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not create venue.')
@@ -231,8 +242,17 @@ export default function NewVenuePage() {
           )}
 
           <div>
-            <label className={labelClass()}>Image URL (optional)</label>
-            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." className={inputClass()} />
+            <label className={labelClass()}>Image (optional — 1 image, 5 MB max)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 1))}
+              className={inputClass()}
+            />
+            {imageFiles.length > 0 && (
+              <p className="mt-1 text-xs text-slate-500">{imageFiles.length} image selected.</p>
+            )}
+            {fieldErrors.images && <p className={errorTextClass()}>{fieldErrors.images}</p>}
           </div>
 
           <div className="flex items-center gap-3 pt-2">

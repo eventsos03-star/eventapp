@@ -2,7 +2,7 @@ import mongoose, { Schema, type Types } from 'mongoose';
 
 export interface IVenueImage {
   url: string;
-  publicId: string;
+  key: string;
 }
 
 export interface IVenueLocation {
@@ -75,7 +75,7 @@ const venueSchema = new Schema<IVenue>(
     images: [
       {
         url: { type: String, required: true },
-        publicId: { type: String, required: true },
+        key: { type: String, required: true },
       },
     ],
     location: { type: venueLocationSchema, required: true },

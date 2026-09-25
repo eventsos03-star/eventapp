@@ -37,12 +37,13 @@ export default function EditVenuePage() {
   const [pricePerDay, setPricePerDay] = useState('')
   const [bookingPaymentPolicy, setBookingPaymentPolicy] = useState<PaymentPolicy | ''>('')
   const [advancePercentage, setAdvancePercentage] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageFiles, setImageFiles] = useState<File[]>([])
   const [location, setLocation] = useState<VenueLocation | null>(null)
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [removingImageKey, setRemovingImageKey] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -71,7 +72,6 @@ export default function EditVenuePage() {
       setPricePerDay(v.pricePerDay ? String(v.pricePerDay) : '')
       setBookingPaymentPolicy(v.bookingPaymentPolicy || '')
       setAdvancePercentage(v.advancePercentage ? String(v.advancePercentage) : '')
-      setImageUrl(v.images?.[0]?.url ?? '')
       setLocation(v.location ?? null)
       setLoading(false)
     }).catch((err) => {
@@ -100,7 +100,20 @@ export default function EditVenuePage() {
         errs.advancePercentage = 'Enter an advance percentage between 1 and 100.'
       }
     }
+
+    const imageError = validateImages(imageFiles)
+    if (imageError) errs.images = imageError
+
     return errs
+  }
+
+  function validateImages(files: File[]): string | null {
+    if (files.length > 1) return 'You can upload at most 1 image.'
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) return `"${file.name}" is not an image file. Only JPEG, PNG, GIF, WebP and AVIF are allowed.`
+      if (file.size > 5 * 1024 * 1024) return `"${file.name}" exceeds the 5 MB per-image limit.`
+    }
+    return null
   }
 
   const handleLocationChange = useCallback((loc: VenueLocation) => {
@@ -116,25 +129,40 @@ export default function EditVenuePage() {
 
     setSubmitting(true)
     try {
-      await api.updateVenue(id, {
-        venueName: venueName.trim(),
-        description: description.trim(),
-        capacity: capacity ? Number(capacity) : undefined,
-        pricePerDay: pricePerDay ? Number(pricePerDay) : undefined,
-        bookingPaymentPolicy: bookingPaymentPolicy as PaymentPolicy,
-        advancePercentage: bookingPaymentPolicy === 'advanceAllowed' && advancePercentage
-          ? Number(advancePercentage)
-          : undefined,
-        images: imageUrl.trim()
-          ? [{ url: imageUrl.trim(), publicId: imageUrl.trim() }]
-          : [],
-        location: location ?? undefined,
-      })
+      const formData = new FormData()
+      formData.append('venueName', venueName.trim())
+      formData.append('description', description.trim())
+      if (capacity) formData.append('capacity', String(capacity))
+      if (pricePerDay) formData.append('pricePerDay', String(pricePerDay))
+      formData.append('bookingPaymentPolicy', bookingPaymentPolicy as PaymentPolicy)
+      if (bookingPaymentPolicy === 'advanceAllowed' && advancePercentage) {
+        formData.append('advancePercentage', String(advancePercentage))
+      }
+      if (location) formData.append('location', JSON.stringify(location))
+      // New images are uploaded to S3; existing images are preserved by the backend.
+      imageFiles.forEach((file) => formData.append('images', file))
+
+      await api.updateVenue(id, formData)
       router.push(`/venues/${id}`)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not update venue.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleDeleteImage() {
+    if (!venue || !venue.images[0]?.key) return
+    const key = venue.images[0].key
+    setRemovingImageKey(key)
+    setError(null)
+    try {
+      const { data } = await api.deleteVenueImage(id, key)
+      if (data) setVenue(data)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not delete image.')
+    } finally {
+      setRemovingImageKey(null)
     }
   }
 
@@ -235,13 +263,33 @@ export default function EditVenuePage() {
           )}
 
           <div>
-            <label className={labelClass()}>Image URL (optional)</label>
+            <label className={labelClass()}>Image (optional — 1 image, 5 MB max)</label>
+            {venue?.images[0] ? (
+              <div className="relative mb-3 w-full max-w-xs overflow-hidden rounded-xl border border-slate-200">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={venue.images[0].url} alt={venue.venueName} className="h-44 w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={handleDeleteImage}
+                  disabled={removingImageKey !== null}
+                  className="absolute right-2 top-2 rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white shadow-md transition hover:bg-red-600 disabled:opacity-50"
+                >
+                  {removingImageKey === venue.images[0].key ? 'Removing...' : 'Remove image'}
+                </button>
+              </div>
+            ) : (
+              <p className="mb-1.5 text-xs text-slate-500">No image yet.</p>
+            )}
             <input
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..."
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 1))}
               className={inputClass()}
             />
+            {imageFiles.length > 0 && (
+              <p className="mt-1 text-xs text-slate-500">{imageFiles.length} new image selected.</p>
+            )}
+            {fieldErrors.images && <p className={errorTextClass()}>{fieldErrors.images}</p>}
           </div>
 
           <div className="flex items-center gap-3 pt-2">

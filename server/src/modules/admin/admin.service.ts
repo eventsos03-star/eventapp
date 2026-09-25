@@ -302,12 +302,9 @@ async function updateVenueOwnerStatus(ownerId: string, target: VenueOwnerStatus)
   if (!user) throw new AppError('Venue owner not found', 404);
 
   // venueOwnerStatus is a one-time decision stored on the User. An approved
-  // owner stays approved even after adding new venues (they are not re-submitted
-  // as a "pending" owner); the per-venue approval flow handles individual venues.
-  if (user.venueOwnerStatus === target) {
-    throw new AppError(`Venue owner is already ${target}`, 400);
-  }
-
+  // owner stays approved even after adding new venues; approving them again
+  // simply approves their currently pending venues (idempotent), so the
+  // admin's Approve action always succeeds for new venues.
   const pendingVenues = await Venue.countDocuments({ ownerId: user._id, status: DEFAULT_STATUS, ...NOT_DELETED });
   if (pendingVenues === 0) {
     throw new AppError('Venue owner has no pending venues', 400);
@@ -315,8 +312,10 @@ async function updateVenueOwnerStatus(ownerId: string, target: VenueOwnerStatus)
 
   await Venue.updateMany({ ownerId: user._id, status: DEFAULT_STATUS, ...NOT_DELETED }, { status: target });
 
-  user.venueOwnerStatus = target;
-  await user.save();
+  if (user.venueOwnerStatus !== target) {
+    user.venueOwnerStatus = target;
+    await user.save();
+  }
 
   const venues = await Venue.find({ ownerId: user._id, ...NOT_DELETED }).sort({ createdAt: 1 }).lean();
 

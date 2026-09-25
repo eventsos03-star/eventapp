@@ -15,16 +15,10 @@ const locationSchema = z.object({
   formattedAddress: z.string().max(1000).default(''),
 });
 
-const imageSchema = z.object({
-  url: z.string().url('Invalid image URL'),
-  publicId: z.string().min(1, 'Image publicId is required'),
-});
-
 export const createVenueSchema = z.object({
   body: z.object({
     venueName: z.string().min(1, 'Venue name is required').max(200),
     description: z.string().min(1, 'Description is required').max(5000),
-    images: z.array(imageSchema).max(10).default([]),
     location: locationSchema,
     capacity: z.number().int().min(1, 'Capacity must be at least 1'),
     pricePerDay: z.number().min(0, 'Price must be non-negative'),
@@ -38,7 +32,6 @@ export const updateVenueSchema = z.object({
   body: z.object({
     venueName: z.string().min(1).max(200).optional(),
     description: z.string().min(1).max(5000).optional(),
-    images: z.array(imageSchema).max(10).optional(),
     location: locationSchema.partial().optional(),
     capacity: z.number().int().min(1).optional(),
     pricePerDay: z.number().min(0).optional(),
@@ -49,6 +42,13 @@ export const updateVenueSchema = z.object({
 
 export const venueIdParamSchema = z.object({
   params: z.object({ id: objectIdSchema }),
+});
+
+export const deleteVenueImageSchema = z.object({
+  params: z.object({ id: objectIdSchema }),
+  body: z.object({
+    key: z.string().min(1, 'Image key is required'),
+  }),
 });
 
 export const listVenuesQuerySchema = z.object({
