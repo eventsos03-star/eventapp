@@ -26,7 +26,7 @@ const sessionSchema = new Schema<ISession>(
   { timestamps: true },
 );
 
-// TTL index: MongoDB automatically removes sessions after expiresAt.
+
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 sessionSchema.index({ refreshToken: 1 });
 

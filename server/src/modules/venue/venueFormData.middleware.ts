@@ -1,18 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../../utils/AppError.js';
 
-/**
- * Converts multipart/form-data text fields into the types the Zod schemas
- * expect, before the validation middleware runs:
- *
- * - `location` is sent as a JSON string, e.g.
- *   JSON.stringify({ type: 'Point', coordinates: [lng, lat], ... }) — parse it.
- * - numeric fields (`capacity`, `pricePerDay`, `advancePercentage`) arrive as
- *   strings ("500", "12.5") — coerce them to numbers.
- *
- * Passing a JSON request through is a no-op: multer leaves non-multipart
- * bodies untouched, so the values are already typed.
- */
+
 
 const NUMERIC_VENUE_FIELDS = ['capacity', 'pricePerDay', 'advancePercentage'] as const;
 

@@ -250,12 +250,7 @@ export async function getOrganizationDetail(id: string): Promise<OrganizationRes
   return serializeOrganization(organization as unknown as object);
 }
 
-/**
- * A venue owner is a user who owns at least one venue. "Pending" venue owners
- * are users with venues still awaiting review, so listing/approving/rejecting
- * an owner operates on their pending venues. This keeps the existing User +
- * Venue schema untouched (no extra VenueOwner model or status field).
- */
+
 export async function listVenueOwners(status: ResourceStatus | 'deleted' = DEFAULT_STATUS): Promise<VenueOwnerSummary[]> {
   const venues = await Venue.find(
     status === 'deleted' ? { isDeleted: true } : { status, ...NOT_DELETED },
@@ -301,10 +296,7 @@ async function updateVenueOwnerStatus(ownerId: string, target: VenueOwnerStatus)
   const user = await User.findOne({ _id: ownerId, ...NOT_DELETED });
   if (!user) throw new AppError('Venue owner not found', 404);
 
-  // venueOwnerStatus is a one-time decision stored on the User. An approved
-  // owner stays approved even after adding new venues; approving them again
-  // simply approves their currently pending venues (idempotent), so the
-  // admin's Approve action always succeeds for new venues.
+
   const pendingVenues = await Venue.countDocuments({ ownerId: user._id, status: DEFAULT_STATUS, ...NOT_DELETED });
   if (pendingVenues === 0) {
     throw new AppError('Venue owner has no pending venues', 400);
