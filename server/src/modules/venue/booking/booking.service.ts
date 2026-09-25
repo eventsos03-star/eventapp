@@ -47,9 +47,7 @@ async function isOrgEligible(
   return Boolean(member);
 }
 
-/* -------------------------------- */
-/* Check booking overlap */
-/* -------------------------------- */
+
 
 export async function hasOverlap(
   venueId: string,
@@ -117,8 +115,7 @@ export const createBooking = async (params: {
     venueId,
   } = params;
 
-  // params.startDate/endDate may arrive as ISO strings (e.g. from req.body),
-  // so coerce to real Date instances before using Date methods on them.
+
   const startDate = new Date(params.startDate);
   const endDate = new Date(params.endDate);
 
@@ -129,7 +126,7 @@ export const createBooking = async (params: {
     );
   }
 
-  /* Check organization */
+
 
   const eligible = await isOrgEligible(
     userId,
@@ -143,7 +140,7 @@ export const createBooking = async (params: {
     );
   }
 
-  /* Check venue */
+
 
   const venue = await Venue.findOne({
     _id: venueId,
@@ -164,7 +161,6 @@ export const createBooking = async (params: {
     );
   }
 
-  /* Check date overlap */
 
   const conflict = await hasOverlap(
     venueId,
@@ -181,13 +177,12 @@ export const createBooking = async (params: {
     );
   }
 
-  /* Calculate price */
 
   const bookingAmount =
     venue.pricePerDay *
     countDays(startDate, endDate);
 
-  /* Create pending booking */
+
 
   const booking = await VenueBooking.create({
     organizationId,
@@ -203,9 +198,7 @@ export const createBooking = async (params: {
   return booking;
 };
 
-/* -------------------------------- */
-/* Venue availability */
-/* -------------------------------- */
+
 
 export const getVenueAvailability = async (
   venueId: string
@@ -245,9 +238,7 @@ export const getVenueAvailability = async (
   }));
 };
 
-/* -------------------------------- */
-/* Get bookings for venue owner */
-/* -------------------------------- */
+
 
 export const getBookingsForVenue = async (params: {
   userId: string;
@@ -298,9 +289,7 @@ export const getBookingsForVenue = async (params: {
     });
 };
 
-/* -------------------------------- */
-/* Get booking by ID */
-/* -------------------------------- */
+
 
 export const getBookingById = async (params: {
   userId: string;
@@ -380,9 +369,7 @@ export const getBookingById = async (params: {
   );
 };
 
-/* -------------------------------- */
-/* Approve booking */
-/* -------------------------------- */
+
 
 export const approveBooking = async (params: {
   userId: string;
@@ -436,12 +423,7 @@ export const approveBooking = async (params: {
     );
   }
 
-  /*
-   * Recheck availability at approval time.
-   *
-   * This is important because another booking may have
-   * been approved since this request was created.
-   */
+
 
   const conflict = await hasOverlap(
     booking.venueId.toString(),
@@ -467,9 +449,7 @@ export const approveBooking = async (params: {
     }
   );
 
-  // Flip the linked event from draft -> published.
-  // Guarded on status: "draft" so this is a safe no-op if the event
-  // was already moved out of draft some other way.
+
   await Event.updateOne(
     { venueBookingId: bookingId, status: "draft", isDeleted: false },
     { $set: { status: "published" } }
@@ -478,9 +458,7 @@ export const approveBooking = async (params: {
   return updatedBooking;
 };
 
-/* -------------------------------- */
-/* Reject booking */
-/* -------------------------------- */
+
 
 export const rejectBooking = async (params: {
   userId: string;
@@ -544,9 +522,6 @@ export const rejectBooking = async (params: {
     }
   );
 
-  // Flip the linked event from draft -> cancelled.
-  // Guarded on status: "draft" so this is a safe no-op if the event
-  // was already moved out of draft some other way.
   await Event.updateOne(
     { venueBookingId: bookingId, status: "draft", isDeleted: false },
     { $set: { status: "cancelled" } }

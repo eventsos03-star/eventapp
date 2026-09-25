@@ -7,10 +7,7 @@ import type { IVenueImage } from './venue.model.js';
 import { uploadImageToS3, deleteImageFromS3 } from '../../services/s3.service.js';
 import { geocode, reverseGeocode } from '../location/index.js';
 
-/**
- * Normalizes req.files (multer .array('images') always produces an array; the
- * union form is handled defensively) into a plain array of Multer files.
- */
+
 function getUploadedFiles(req: { files?: unknown }): Express.Multer.File[] {
   if (Array.isArray(req.files)) return req.files as Express.Multer.File[];
   if (req.files && typeof req.files === 'object') {
@@ -19,12 +16,6 @@ function getUploadedFiles(req: { files?: unknown }): Express.Multer.File[] {
   return [];
 }
 
-/**
- * Best-effort rollback of already-uploaded S3 objects. Called when venue
- * creation/update fails after some images were uploaded, so the S3 objects
- * are not left orphaned. Individual cleanup failures are swallowed — the
- * original application error is the one reported to the client.
- */
 async function rollbackS3Uploads(keys: string[]): Promise<void> {
   if (keys.length === 0) return;
   await Promise.allSettled(keys.map((key) => deleteImageFromS3(key)));
@@ -32,8 +23,7 @@ async function rollbackS3Uploads(keys: string[]): Promise<void> {
 
 export const createVenue = asyncHandler(async (req, res) => {
   const files = getUploadedFiles(req);
-  // Generate the venue id up front so S3 keys are grouped by it:
-  // venue-images/{venueId}/{uuid}.{ext}
+
   const venueId = new mongoose.Types.ObjectId();
 
   const uploadedKeys: string[] = [];
@@ -131,8 +121,7 @@ export const updateVenue = asyncHandler(async (req, res) => {
   const newImages: IVenueImage[] = [];
 
   try {
-    // Capture the images currently on the venue so that, once the update
-    // replaces them, the old S3 objects can be cleaned up.
+   
     const existingVenue = await venueService.getVenueById(req.params.id);
     const existingKeys = (existingVenue?.images ?? []).map((image) => image.key);
 
@@ -152,9 +141,7 @@ export const updateVenue = asyncHandler(async (req, res) => {
       throw new AppError('Venue not found or you are not authorized to update this venue', 404);
     }
 
-    // A venue holds a single image: once the update succeeded with new
-    // uploads, the replaced images are no longer referenced and their S3
-    // objects are deleted best-effort (cleanup failures are swallowed).
+  
     if (newImages.length > 0) {
       await Promise.allSettled(existingKeys.map((key) => deleteImageFromS3(key)));
     }
@@ -197,7 +184,6 @@ export const deleteVenueImage = asyncHandler(async (req, res) => {
     throw new AppError('You do not have permission to delete images for this venue', 403);
   }
 
-  // Never delete an arbitrary S3 object: the key must belong to this venue.
   const imageBelongsToVenue = venue.images.some((image) => image.key === key);
   if (!imageBelongsToVenue) {
     throw new AppError('Image not found on this venue', 404);

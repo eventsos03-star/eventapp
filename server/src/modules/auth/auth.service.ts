@@ -34,10 +34,7 @@ export interface AuthResult {
   user: SafeUser;
 }
 
-/**
- * Creates a session document for a refresh token. The session id is embedded
- * inside the token so we can look the session back up when it is presented.
- */
+
 async function createSession(
   userId: string,
   refreshToken: string,
@@ -160,10 +157,7 @@ export async function verifyEmail(token: string): Promise<SafeUser> {
 
   if (!user) throw new AppError('Invalid or expired verification link', 400);
 
-  // The link may be presented twice (React Strict Mode, email link scanners,
-  // page refresh). Replaying a used link on an already-verified account is
-  // a success, not an error. The token is intentionally kept so replays can
-  // find the account.
+
   if (user.emailVerified) return user.toSafeObject();
 
   if (user.verificationExpires && user.verificationExpires.getTime() < Date.now()) {
@@ -256,8 +250,7 @@ export async function refresh(refreshToken: string, client: ClientInfo): Promise
   const session = await Session.findById(payload.sessionId);
   if (!session) throw new AppError('Session expired. Please login again.', 401);
   if (session.refreshToken !== hashToken(refreshToken)) {
-    // A token that does not match the stored hash was likely stolen or
-    // replayed after rotation, so the whole session is revoked.
+  
     await session.deleteOne();
     throw new AppError('Session expired. Please login again.', 401);
   }
@@ -272,7 +265,7 @@ export async function refresh(refreshToken: string, client: ClientInfo): Promise
     throw new AppError('Account is not active. Please login again.', 401);
   }
 
-  // Rotate the refresh token: create a new session and remove the old one.
+
   const safe = user.toSafeObject();
   const issued = await issueTokens(safe, client);
   await session.deleteOne();
@@ -282,7 +275,7 @@ export async function refresh(refreshToken: string, client: ClientInfo): Promise
 
 export async function forgotPassword(email: string): Promise<void> {
   const user = await getUserByEmail(email);
-  if (!user) return; // Do not reveal whether the email exists.
+  if (!user) return; 
 
   const { raw, hashed } = generateEmailToken();
   user.resetPasswordToken = hashed;
@@ -308,7 +301,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
   user.resetPasswordExpires = undefined;
   await user.save();
 
-  // Resetting the password invalidates every existing session.
+
   await Session.deleteMany({ user: user._id });
 }
 
@@ -332,7 +325,7 @@ export async function changePassword(
   user.password = newPassword;
   await user.save();
 
-  // Log out every device except the current one.
+
   const query: Record<string, unknown> = { user: userId };
   if (currentSessionId) query._id = { $ne: currentSessionId };
   await Session.deleteMany(query);
@@ -353,7 +346,7 @@ export async function setPassword(
   user.password = newPassword;
   await user.save();
 
-  // Log out every device except the current one.
+  
   const query: Record<string, unknown> = { user: userId };
   if (currentSessionId) query._id = { $ne: currentSessionId };
   await Session.deleteMany(query);
@@ -386,11 +379,7 @@ interface GoogleProfile {
   picture?: string;
 }
 
-/**
- * Verifies a Google ID token locally (signature, issuer and expiry) using
- * google-auth-library. When GOOGLE_CLIENT_ID is configured the audience is
- * also checked, so tokens minted for other apps are rejected.
- */
+
 async function verifyGoogleToken(credential: string): Promise<GoogleProfile> {
   let payload: TokenPayload | undefined;
   try {
@@ -405,7 +394,7 @@ async function verifyGoogleToken(credential: string): Promise<GoogleProfile> {
 
   if (!payload || !payload.sub) throw new AppError('Invalid Google token', 401);
 
-  // If a client ID is configured, reject tokens issued for another app.
+ 
   if (env.GOOGLE_CLIENT_ID && payload.aud !== env.GOOGLE_CLIENT_ID) {
     throw new AppError('Invalid Google token', 401);
   }
@@ -443,7 +432,7 @@ export async function googleAuth(
     if (user.status === USER_STATUS.BLOCKED) {
       throw new AppError('Your account has been blocked. Please contact support.', 403);
     }
-    // Link Google to the existing account instead of creating a duplicate.
+   
     let changed = false;
     if (!user.googleId) {
       user.googleId = profile.sub;

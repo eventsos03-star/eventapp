@@ -22,7 +22,21 @@ export const STATUS_STYLES: Record<Tab | 'blocked', string> = {
   approved: 'bg-teal/15 text-teal',
   rejected: 'bg-red-100 text-red-700',
   blocked: 'bg-red-100 text-red-700',
-  deleted: 'bg-ink-soft text-ink/60',
+  deleted: 'bg-paper-dim text-ink/60',
+}
+
+export const PAYMENT_STYLES: Record<string, string> = {
+  pending: 'bg-amber/20 text-amber-deep',
+  advancePaid: 'bg-teal/15 text-teal',
+  fullyPaid: 'bg-teal/15 text-teal',
+}
+
+export const EVENT_STATUS_STYLES: Record<string, string> = {
+  draft: 'bg-paper-dim text-ink/70',
+  published: 'bg-teal/15 text-teal',
+  ongoing: 'bg-teal/15 text-teal',
+  completed: 'bg-amber/20 text-amber-deep',
+  cancelled: 'bg-red-100 text-red-700',
 }
 
 export function StatCard({ label, value }: { label: string; value: number | null }) {

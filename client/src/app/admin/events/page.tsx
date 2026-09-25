@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Spinner } from '../../../components/Spinner'
 import { adminApi } from '../../../lib/adminApi'
 import type { AdminEvent } from '../../../types'
-import { EventTabBar, type EventTab, type Message } from '../../../components/admin/ui'
+import { EventTabBar, EVENT_STATUS_STYLES, type EventTab, type Message } from '../../../components/admin/ui'
 
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<AdminEvent[]>([])
@@ -106,7 +106,7 @@ export default function AdminEventsPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-ink">{event.eventName}</span>
-                      <span className="inline-block rounded-full bg-ink-soft px-2.5 py-0.5 text-xs font-semibold text-ink/70">
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${EVENT_STATUS_STYLES[event.status] ?? 'bg-paper-dim text-ink/70'}`}>
                         {event.status}
                       </span>
                     </div>
