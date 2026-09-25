@@ -21,7 +21,7 @@ export default function CertificatesPage() {
     });
   }, []);
 
-  const loadEventData = async () => {
+   const loadEventData = async () => {
     if (!selectedEventId) return;
     setLoading(true);
     try {
@@ -31,6 +31,8 @@ export default function CertificatesPage() {
       ]);
       setParticipants(partRes.data.data ?? []);
       setIssuedCerts(certRes.data.data ?? []);
+    } catch (error) {
+      console.error("Failed to load attendees or certificates:", error);
     } finally {
       setLoading(false);
     }

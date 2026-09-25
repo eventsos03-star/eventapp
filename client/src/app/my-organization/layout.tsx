@@ -16,23 +16,40 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", href: "/my-organization", icon: LayoutDashboard },
-  { label: "Events", href: "/my-organization/events", icon: CalendarDays },
-  { label: "Tasks & Operations", href: "/my-organization/tasks", icon: CheckSquare },
-  { label: "Participants", href: "/my-organization/participants", icon: Users },
-  { label: "Certificates", href: "/my-organization/certificates", icon: Award },
-  { label: "Finance", href: "/my-organization/finance", icon: CircleDollarSign },
-  { label: "Members", href: "/my-organization/members", icon: UserPlus },
-  { label: "Venues", href: "/my-organization/venues", icon: MapPin },
-];
-
 export default function OrganizationLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const orgRole = (user as any)?.orgRole || "member";
 
   const isActive = (href: string) =>
     href === "/my-organization" ? pathname === href : pathname?.startsWith(href);
+
+  // Common items everyone can see
+  const navItems = [
+    { label: "Dashboard", href: "/my-organization", icon: LayoutDashboard },
+    { label: "Events", href: "/my-organization/events", icon: CalendarDays },
+    { label: "Tasks & Operations", href: "/my-organization/tasks", icon: CheckSquare },
+  ];
+
+  // Role-specific items
+  if (orgRole === "owner") {
+    // Owner sees everything
+    navItems.push(
+      { label: "Participants", href: "/my-organization/participants", icon: Users },
+      { label: "Certificates", href: "/my-organization/certificates", icon: Award },
+      { label: "Finance", href: "/my-organization/finance", icon: CircleDollarSign },
+      { label: "Members", href: "/my-organization/members", icon: UserPlus },
+      { label: "Venues", href: "/my-organization/venues", icon: MapPin }
+    );
+  } else if (orgRole === "finance_manager") {
+    navItems.push({ label: "Finance", href: "/my-organization/finance", icon: CircleDollarSign });
+  } else if (orgRole === "user_manager") {
+    navItems.push({ label: "Participants", href: "/my-organization/participants", icon: Users });
+  } else if (orgRole === "certificate_manager") {
+    navItems.push({ label: "Certificates", href: "/my-organization/certificates", icon: Award });
+  } else if (orgRole === "organizer") {
+    navItems.push({ label: "Venues", href: "/my-organization/venues", icon: MapPin });
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-[#090d16] text-white font-sans antialiased">
@@ -47,15 +64,15 @@ export default function OrganizationLayout({ children }: { children: React.React
             <p className="truncate text-sm font-bold text-white">
               {user?.firstName ?? "My Organization"}
             </p>
-            <p className="text-[11px] text-amber-400 font-medium">
-              {(user as any)?.orgRole ? (user as any).orgRole.replace("_", " ").toUpperCase() : "ORGANIZATION"}
+            <p className="text-[11px] text-amber-400 font-medium uppercase">
+              {orgRole.replace("_", " ")}
             </p>
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Dynamic Navigation */}
         <nav className="flex-1 space-y-1">
-          {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+          {navItems.map(({ label, href, icon: Icon }) => {
             const active = isActive(href);
             return (
               <Link
@@ -74,15 +91,17 @@ export default function OrganizationLayout({ children }: { children: React.React
           })}
         </nav>
 
-        {/* Quick Actions */}
+        {/* Actions */}
         <div className="mt-4 space-y-2 border-t border-white/10 pt-4">
-          <Link
-            href="/my-organization/events/new"
-            className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-400 transition"
-          >
-            <Plus className="h-4 w-4" />
-            Create Event
-          </Link>
+          {(orgRole === "owner" || orgRole === "organizer") && (
+            <Link
+              href="/my-organization/events/new"
+              className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-400 transition"
+            >
+              <Plus className="h-4 w-4" />
+              Create Event
+            </Link>
+          )}
           <Link
             href="/profile"
             className="flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition"
@@ -93,7 +112,6 @@ export default function OrganizationLayout({ children }: { children: React.React
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto p-8">{children}</main>
     </div>
   );

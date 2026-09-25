@@ -22,7 +22,21 @@ router.delete("/:id",authenticate,eventController.deleteEvent)
 
 
 // Add these two routes:
-router.get("/:id/participants", authenticate, requireOrgRole("user_manager"), eventController.getParticipants);
+// ✅ Change line 25 to allow certificate_manager as well:
+router.get(
+  "/:id/participants",
+  authenticate,
+  requireOrgRole("user_manager", "certificate_manager"),
+  eventController.getParticipants
+);
+
+// Keep check-in strictly for user_manager:
+router.patch(
+  "/:id/participants/:regId/check-in",
+  authenticate,
+  requireOrgRole("user_manager"),
+  eventController.toggleCheckIn
+);
 router.patch("/:id/participants/:regId/check-in", authenticate, requireOrgRole("user_manager"), eventController.toggleCheckIn);
 
 
