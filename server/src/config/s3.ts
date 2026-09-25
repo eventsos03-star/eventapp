@@ -2,15 +2,6 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { env } from './env.js';
 import { AppError } from '../utils/AppError.js';
 
-/**
- * Reusable AWS S3 client built from the project environment configuration.
- *
- * Credentials are never hard-coded — they come exclusively from
- * AWS_REGION / AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_S3_BUCKET_NAME.
- * The variables are optional at boot (so the app still starts without AWS),
- * and are validated lazily the first time an S3 operation is attempted.
- */
-
 let cachedClient: S3Client | null = null;
 
 function missingEnvVars(): string[] {

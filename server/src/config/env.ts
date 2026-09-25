@@ -21,13 +21,10 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional().default(''),
   SMTP_FROM: z.string().optional().default('EventOS <no-reply@eventos.app>'),
 
-  // Google OAuth client ID (from Google Cloud Console). Used to verify the
-  // audience of Google ID tokens. Optional: if empty, the audience is not checked.
+ 
   GOOGLE_CLIENT_ID: z.string().optional().default(''),
 
-  // AWS S3 — used for venue image uploads. Marked optional at boot so the
-  // server still starts without AWS configured; config/s3.ts validates them
-  // lazily at request time with a clear error when an upload is attempted.
+
   AWS_REGION: z.string().optional().default(''),
   AWS_ACCESS_KEY_ID: z.string().optional().default(''),
   AWS_SECRET_ACCESS_KEY: z.string().optional().default(''),

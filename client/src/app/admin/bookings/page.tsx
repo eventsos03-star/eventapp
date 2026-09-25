@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Spinner } from '../../../components/Spinner'
 import { adminApi } from '../../../lib/adminApi'
 import type { AdminBooking } from '../../../types'
-import type { Message } from '../../../components/admin/ui'
+import { PAYMENT_STYLES, type Message } from '../../../components/admin/ui'
 import { ConfirmDialog } from '../../../components/admin/modals'
 
 const STATUS_TABS: { value: AdminBooking['status'] | 'all'; label: string }[] = [
@@ -147,7 +147,7 @@ export default function AdminBookingsPage() {
                         <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[booking.status]}`}>
                           {booking.status}
                         </span>
-                        <span className="inline-block rounded-full bg-ink-soft px-2.5 py-0.5 text-xs font-semibold text-ink/60">
+                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${PAYMENT_STYLES[booking.paymentStatus] ?? 'bg-paper-dim text-ink/60'}`}>
                           {booking.paymentStatus}
                         </span>
                       </div>

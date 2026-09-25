@@ -229,7 +229,7 @@ export default function AdminUsersPage() {
                           <td className="py-2.5 pr-4 font-semibold text-ink">{u.firstName} {u.lastName}</td>
                           <td className="py-2.5 pr-4 text-ink/60">{u.email}</td>
                           <td className="py-2.5 pr-4">
-                            <span className="inline-block rounded-full bg-ink-soft px-2.5 py-0.5 text-xs font-semibold text-ink/70">
+                            <span className="inline-block rounded-full bg-paper-dim px-2.5 py-0.5 text-xs font-semibold text-ink/70">
                               {u.role}
                             </span>
                           </td>
@@ -310,7 +310,7 @@ export default function AdminUsersPage() {
                             <td className="py-2.5 pr-4 font-semibold text-ink">{u.firstName} {u.lastName}</td>
                             <td className="py-2.5 pr-4 text-ink/60">{u.email}</td>
                             <td className="py-2.5 pr-4">
-                              <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.role === 'ADMIN' ? 'bg-amber/20 text-amber-deep' : 'bg-ink-soft text-ink/70'}`}>
+                              <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.role === 'ADMIN' ? 'bg-amber/20 text-amber-deep' : 'bg-paper-dim text-ink/70'}`}>
                                 {u.role}
                               </span>
                             </td>
