@@ -11,6 +11,8 @@ import {
 import { useRouter } from "next/navigation";
 import { registrationService } from "@/lib/registrationApi";
 import Navbar from "@/components/navbar";
+import TicketModal from "@/components/registration/TicketModal";
+import { toast } from "react-toastify";
 
 interface MyRegistration {
     _id: string;
@@ -43,7 +45,12 @@ export default function MyRegistrationsPage() {
 
     const [registrations, setRegistrations] = useState<MyRegistration[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingRegistrationId, setLoadingRegistrationId] = useState<string | null>(null);
     const [error, setError] = useState("");
+    const [showTicketModal, setShowTicketModal] = useState(false);
+const [selectedRegistration, setSelectedRegistration] = useState<any>(null);
+const [selectedTicket, setSelectedTicket] = useState<any>(null);
+
 
     useEffect(() => {
         const fetchRegistrations = async () => {
@@ -72,6 +79,33 @@ export default function MyRegistrationsPage() {
             year: "numeric",
         });
     };
+
+    const handleViewTicket = async (registration: any) => {
+    try {
+         setLoadingRegistrationId(registration._id);
+
+        const response = await registrationService.getTicket(
+            registration._id
+        );
+
+        console.log("TICKET RESPONSE:", response);
+
+        setSelectedRegistration(response.data.registration);
+        setSelectedTicket(response.data.ticket);
+
+        setShowTicketModal(true);
+
+    } catch (error: any) {
+        console.error("Failed to fetch ticket:", error);
+
+        toast.error(
+            error?.response?.data?.message ||
+            "Failed to load ticket"
+        );
+    } finally {
+       setLoadingRegistrationId(null);
+    }
+};
 
     // Loading
     if (loading) {
@@ -193,7 +227,7 @@ export default function MyRegistrationsPage() {
                         </div>
 
                         {/* REGISTRATION CARDS */}
-                        <div className="grid grid-cols-1 md:grid-cols-[450px] gap-6">
+                       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                             {registrations.map((registration) => {
                                 const event = registration.eventId;
 
@@ -326,31 +360,39 @@ export default function MyRegistrationsPage() {
 
                                         {/* BUTTON */}
                                         <div className="p-6">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    console.log(
-                                                        "View ticket:",
-                                                        registration._id
-                                                    )
-                                                }
-                                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#F5A623] py-3 font-semibold text-[#11151D] transition hover:bg-[#FFB52E]"
-                                            >
-                                                <Ticket size={18} />
-                                                View Ticket
-                                                <ArrowRight
-                                                    size={17}
-                                                />
-                                            </button>
+                                           <button
+    type="button"
+    onClick={() => handleViewTicket(registration)}
+    disabled={loadingRegistrationId === registration._id}
+    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#F5A623] py-3 font-semibold text-[#11151D] transition hover:bg-[#FFB52E] disabled:cursor-not-allowed disabled:opacity-70"
+>
+    <Ticket size={18} />
+
+  {loadingRegistrationId === registration._id
+    ? "Loading..."
+    : "View Ticket"}
+    <ArrowRight size={17} />
+</button>
                                         </div>
-                                    </div>
+                                        </div>
                                 );
+                    
                             })}
                         </div>
                     </>
                 )}
             </div>
         </main>
+        <TicketModal
+    isOpen={showTicketModal}
+    onClose={() => {
+        setShowTicketModal(false);
+        setSelectedRegistration(null);
+        setSelectedTicket(null);
+    }}
+    registration={selectedRegistration}
+    ticket={selectedTicket}
+/>
     
     </>
     );

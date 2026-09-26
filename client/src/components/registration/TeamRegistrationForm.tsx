@@ -7,6 +7,8 @@ import { registrationService } from "@/lib/registrationApi";
 import {toast} from "react-toastify"
 import RegistrationSuccessModal from "./RegistrationSuccessModal";
 import { useRouter } from "next/navigation";
+import { paymentService } from "@/lib/paymentApi";
+
 
 interface TeamMember {
     name: string;
@@ -98,17 +100,10 @@ const [registrationId, setRegistrationId] = useState("");
         });
     };
 
-    /*
-     * ---------------------------------------------------------
-     * ADD / UPDATE MEMBER
-     * ---------------------------------------------------------
-     */
+   
 
     const handleSaveMember = () => {
-        /*
-         * Basic validation
-         */
-
+        
         if (!newMember.name.trim()) {
             alert("Please enter member name");
             return;
@@ -119,9 +114,7 @@ const [registrationId, setRegistrationId] = useState("");
             return;
         }
 
-        /*
-         * EDIT EXISTING MEMBER
-         */
+        
 
         if (editingMemberIndex !== null) {
             setMembers((currentMembers) =>
@@ -136,10 +129,7 @@ const [registrationId, setRegistrationId] = useState("");
             return;
         }
 
-        /*
-         * ADD NEW MEMBER
-         */
-
+        
         if (members.length >= additionalMemberCount) {
             alert("Maximum team members reached");
             return;
@@ -153,11 +143,7 @@ const [registrationId, setRegistrationId] = useState("");
         closeMemberModal();
     };
 
-    /*
-     * ---------------------------------------------------------
-     * EDIT MEMBER
-     * ---------------------------------------------------------
-     */
+   
 
     const handleEditMember = (index: number) => {
         setNewMember(members[index]);
@@ -167,11 +153,7 @@ const [registrationId, setRegistrationId] = useState("");
         setIsMemberModalOpen(true);
     };
 
-    /*
-     * ---------------------------------------------------------
-     * REMOVE MEMBER
-     * ---------------------------------------------------------
-     */
+  
 
     const handleRemoveMember = (index: number) => {
         setMembers((currentMembers) =>
@@ -181,11 +163,7 @@ const [registrationId, setRegistrationId] = useState("");
         );
     };
 
-    /*
-     * ---------------------------------------------------------
-     * SUBMIT
-     * ---------------------------------------------------------
-     */
+    
 
     const handleSubmit =async (e: React.FormEvent) => {
         e.preventDefault();
@@ -212,6 +190,8 @@ const [registrationId, setRegistrationId] = useState("");
         try{
             setSubmitting(true);
 
+            if(!isPaid){
+
            const response= await registrationService.team(eventId,{teamName,phoneNumber:captainPhoneNumber
                 , collegeOrOrganization:captainCollegeOrOrganization ||undefined,members,
             });
@@ -222,6 +202,105 @@ const [registrationId, setRegistrationId] = useState("");
     );
 
     setShowSuccessModal(true);
+
+    return 
+
+}
+
+
+    const response=await paymentService.createOrder(eventId);
+
+    const {orderId,amount,currency,paymentId}=response.data;
+
+    const options={
+        key:process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+        amount,
+        currency,
+        name:"EventOs",
+        description: event.eventName,
+         order_id: orderId,
+
+ 
+         prefill: {
+            name: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`,
+            email: user?.email ?? "",
+        },
+        handler: async function (razorpayResponse:{ razorpay_payment_id: string;
+            razorpay_order_id: string;
+            razorpay_signature: string;}) {
+                
+                console.log("FULL RAZORPAY RESPONSE:", razorpayResponse);
+                console.log("KEYS:", Object.keys(razorpayResponse));
+                
+                console.log("ORDER ID SENT TO RAZORPAY:", orderId);
+        console.log("RAZORPAY OPTIONS:", options);
+        try {
+            const verifyResponse =
+            await paymentService.verifyPayment({
+                razorpay_order_id:
+                    razorpayResponse.razorpay_order_id,
+
+                razorpay_payment_id:
+                    razorpayResponse.razorpay_payment_id,
+
+                razorpay_signature:
+                    razorpayResponse.razorpay_signature,
+
+                eventId,
+                registrationType: "team",
+                phoneNumber:captainPhoneNumber,
+              
+                collegeOrOrganization:
+                    captainCollegeOrOrganization || undefined,
+                teamName,
+                members,
+            });
+
+                console.log(
+                "Payment verification response:",
+                verifyResponse
+            );
+
+              const registration =
+                verifyResponse?.data?.registration;
+
+            setRegistrationId(
+                registration?._id ||
+                verifyResponse?.data?.registrationId ||
+                ""
+            );
+
+            setShowSuccessModal(true);
+
+
+       } catch (error: any) {
+            toast.error(
+                error?.response?.data?.message ||
+                "Payment verification failed"
+            );
+        } finally {
+            setSubmitting(false);
+        }
+    },
+
+     modal: {
+        ondismiss: function () {
+            console.log("Razorpay checkout closed");
+            setSubmitting(false);
+        },
+    },
+
+    theme: {
+        color: "#f59e0b",
+    },
+};
+
+const razorpay = new window.Razorpay(options);
+
+razorpay.open();
+
+
+
         }catch(error:any){
               toast.error(
         error?.response?.data?.message ??
@@ -692,6 +771,7 @@ const [registrationId, setRegistrationId] = useState("");
 
                         <button
                             type="submit"
+                            form="team-registration-form"
                             disabled={submitting}
                             className="mt-6 w-full rounded-lg bg-orange-500 px-5 py-3.5 font-semibold text-black transition hover:bg-orange-400"
                         >
@@ -818,18 +898,22 @@ const [registrationId, setRegistrationId] = useState("");
                                     Phone Number
                                 </label>
 
-                                <input
-                                    type="tel"
-                                    value={newMember.phoneNumber}
-                                    onChange={(e) =>
-                                        setNewMember({
-                                            ...newMember,
-                                            phoneNumber: e.target.value,
-                                        })
-                                    }
-                                    placeholder="Phone number"
-                                    className="w-full rounded-lg border border-slate-700 bg-[#111c2f] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none focus:border-blue-500"
-                                />
+                               <input
+  type="tel"
+  value={captainPhoneNumber}
+  onChange={(e) => {
+    const value = e.target.value.replace(/\D/g, "");
+
+    if (value.length <= 10) {
+      setCaptainPhoneNumber(value);
+    }
+  }}
+  placeholder="Enter 10-digit phone number"
+  maxLength={10}
+  pattern="[6-9][0-9]{9}"
+  className="w-full rounded-lg border border-slate-700 bg-[#111c2f] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+  required
+/>
 
                             </div>
 
@@ -890,6 +974,20 @@ const [registrationId, setRegistrationId] = useState("");
                 </div>
 
             )}
+            <RegistrationSuccessModal
+  isOpen={showSuccessModal}
+  eventName={event.eventName}
+  registrationId={registrationId}
+  registrationType="team"
+  teamName={teamName}
+  teamSize={members.length + 1}
+  onViewRegistration={() => {
+    router.push("/my-registrations");
+  }}
+  onBackToEvents={() => {
+    router.push("/events");
+  }}
+/>
 
         </div>
     );

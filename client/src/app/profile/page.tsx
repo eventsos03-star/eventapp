@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
 import type { SessionInfo } from '../../types'
 import { Layout } from '@/components/Layout'
+import Link from 'next/link'
 
 type Message = {
   type: 'success' | 'error'
@@ -646,12 +647,12 @@ function  ProfileContent() {
 
                   </div>
 
-                  <a
-                    href="/registrations"
+                  <Link
+                    href="/my-registrations"
                     className="mt-4 block rounded-lg border border-[#343943] py-2 text-center text-[9px] font-semibold text-[#bdb7ab] transition hover:border-amber hover:text-amber"
                   >
                     View Registrations
-                  </a>
+                  </Link>
 
                 </div>
 
