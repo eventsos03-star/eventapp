@@ -60,6 +60,7 @@ export default function IndividualRegistrationForm({
     const response=await paymentService.createOrder(eventId);
 
 const { orderId, amount, currency, paymentId } = response;
+
  const options = {
     key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
     amount,
