@@ -86,13 +86,7 @@ const handleLogOut=async()=>{
         My Registrations
       </Link>
 
-      <Link
-        href="/my-tickets"
-        className="block rounded-lg px-3 py-2.5 text-sm text-paper-dim transition hover:bg-ink-line"
-        onClick={() => setProfileOpen(false)}
-      >
-        My Tickets
-      </Link>
+     
 
       <Link
         href="/profile"

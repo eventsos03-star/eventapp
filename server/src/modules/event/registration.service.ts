@@ -2,11 +2,25 @@ import Registration from "./registration.model.js";
 import Event from "./event.model.js";
 import { AppError } from "../../utils/AppError.js";
 import Team,{type ITeamMember} from "./team.model.js";
+import Ticket from "./ticket.model.js";
 
 interface IndividualRegistrationInput {
     phoneNumber: string;
     collegeOrOrganization?: string;
 }
+
+interface CreateRegistrationAfterPaymentInput {
+    eventId: string;
+    userId: string;
+    registrationType: "individual" | "team";
+
+    phoneNumber: string;
+    collegeOrOrganization?: string;
+
+    teamName?: string;
+    members?: ITeamMember[];
+}
+
 
 interface TeamRegistrationInput {
     teamName: string;
@@ -15,6 +29,13 @@ interface TeamRegistrationInput {
     members: ITeamMember[];
 }
 
+const generateTicketNumber = () => {
+    return `EVT-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 8)
+        .toUpperCase()}`;
+};
+
 
 export const getMyRegistration=async(userId:string)=>{
     console.log("REGISTRATION SERVICE USER ID:", userId);
@@ -22,9 +43,7 @@ export const getMyRegistration=async(userId:string)=>{
     const registration=await Registration.find({participantId:userId}).populate("eventId")
         .populate("teamId");
 
-    if(!registration){
-        throw new AppError("not found registration",404)
-    }
+
 
        console.log("REGISTRATIONS:", registration);
 
@@ -61,12 +80,23 @@ export const individualRegistration=async(eventId:string,userId:string,data: Ind
         throw new AppError("already registerd to this event ",409)
     }
 
-    const registrationCount=await Registration.countDocuments({eventId:isEvent._id})
+   
 
 
-    if(registrationCount>=isEvent.maxParticipants){
-        throw new AppError("event is full",409)
-    }
+   const updateEvent=await Event.findOneAndUpdate({
+    _id:eventId,
+    isDeleted:false,
+    status:"published",
+    $expr:{
+        $lt:["$registeredParticipants","$maxParticipants"]
+    },
+   },{$inc:{registeredParticipants:1},},{new:true});
+
+   if(!updateEvent){
+    throw new AppError("event is full",409)
+   }
+
+
 
     const registration = await Registration.create({
     eventId,
@@ -75,7 +105,12 @@ export const individualRegistration=async(eventId:string,userId:string,data: Ind
     collegeOrOrganization: data.collegeOrOrganization
 });
 
-    return registration
+const ticket = await Ticket.create({
+    registrationId: registration._id,
+    ticketNumber: generateTicketNumber(),
+});
+
+    return {registration,ticket}
 
 
 }
@@ -131,27 +166,20 @@ export const teamRegistration=async(eventId:string,userId:string,data:TeamRegist
         );
     }
 
-     const teams = await Team.find({
-        eventID: isEvent._id,
-        isDeleted: false
-    }).select("members");
+    const eventUpdate=await Event.findOneAndUpdate({
+        _id:eventId,
+        isDeleted:false,
+        status:"published",
+        $expr:{
+            $lt:[
+                {$add:["$registeredParticipants",totalMembers]},"$maxParticipants"]
+        },
+    },
+{$inc:{registeredParticipants:totalMembers},},{new:true});
 
-     const registeredCount = teams.reduce(
-        (total, team) => total + team.members.length + 1,
-        0
-    );
-
-
-
-    if (
-        registeredCount + totalMembers >
-        isEvent.maxParticipants
-    ) {
-        throw new AppError(
-            "Not enough seats available for this team",
-            400
-        );
-    }
+ if(!eventUpdate){
+    throw new AppError("evnet is full",409)
+ }
 
       const teamCode =
         `TEAM-${Date.now()}-${Math.random()
@@ -159,7 +187,7 @@ export const teamRegistration=async(eventId:string,userId:string,data:TeamRegist
             .substring(2, 7)
             .toUpperCase()}`;
 
-
+  
      const team = await Team.create({
         eventID: eventId,
         teamName: data.teamName,
@@ -180,13 +208,60 @@ export const teamRegistration=async(eventId:string,userId:string,data:TeamRegist
 });
 
 
-       
+       const ticket = await Ticket.create({
+    registrationId: registration._id,
+    ticketNumber: generateTicketNumber(),
+});
 
     return {
         team,
-        registration
+        registration,
+        ticket
     };
 
 
 
+}
+
+
+export const createRegistrationAfterPayment=async( data: CreateRegistrationAfterPaymentInput)=>{
+
+    if (data.registrationType === "individual") {
+        const result = await individualRegistration(
+            data.eventId,
+            data.userId,
+            {
+                phoneNumber: data.phoneNumber,
+                collegeOrOrganization: data.collegeOrOrganization
+            }
+        );
+          return result;
+    }
+
+      if (data.registrationType === "team") {
+
+        if (!data.teamName || !data.members) {
+            throw new AppError(
+                "Team registration data is missing",
+                400
+            );
+        }
+
+           const result = await teamRegistration(
+            data.eventId,
+            data.userId,
+            {
+                teamName: data.teamName,
+                phoneNumber: data.phoneNumber,
+                collegeOrOrganization: data.collegeOrOrganization,
+                members: data.members
+            }
+        );
+
+        return result;
+    }
+     throw new AppError(
+        "Invalid registration type",
+        400
+    );
 }

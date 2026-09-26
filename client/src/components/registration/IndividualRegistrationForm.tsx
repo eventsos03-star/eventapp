@@ -7,6 +7,7 @@ import { registrationService } from "@/lib/registrationApi";
 import {toast} from "react-toastify"
 import RegistrationSuccessModal from "./RegistrationSuccessModal";
 import { useRouter } from "next/navigation";
+import { paymentService } from "@/lib/paymentApi";
 
 interface IndividualRegistrationFormProps {
     eventId:string;
@@ -40,6 +41,8 @@ export default function IndividualRegistrationForm({
 
         try{
             setSubmitting(true);
+
+            if(!isPaid){
            const response= await registrationService.individual(eventId,
                 {phoneNumber,collegeOrOrganization:collegeOrOrganization||undefined});
 
@@ -50,6 +53,93 @@ export default function IndividualRegistrationForm({
   );
 
   setShowSuccessModal(true);
+
+   return 
+}
+
+    const response=await paymentService.createOrder(eventId);
+
+const { orderId, amount, currency, paymentId } = response;
+ const options = {
+    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+    amount,
+    currency,
+    name: "EventOs",
+    description: event.eventName,
+    order_id: orderId,
+
+
+
+          prefill: {
+        name: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`,
+        email: user?.email ?? "",
+    },
+  handler: async function (razorpayResponse: {
+        razorpay_payment_id: string;
+        razorpay_order_id: string;
+        razorpay_signature: string;
+    }) {
+        try {
+            const verifyResponse =
+                await paymentService.verifyPayment({
+                    razorpay_order_id:
+                        razorpayResponse.razorpay_order_id,
+                    razorpay_payment_id:
+                        razorpayResponse.razorpay_payment_id,
+                    razorpay_signature:
+                        razorpayResponse.razorpay_signature,
+
+                    eventId,
+                    registrationType: "individual",
+                    phoneNumber,
+                    collegeOrOrganization:
+                        collegeOrOrganization || undefined,
+                });
+
+            console.log(
+                "Payment verification response:",
+                verifyResponse
+            );
+
+              const registration =
+                verifyResponse?.data?.registration;
+
+            setRegistrationId(
+                registration?._id ||
+                verifyResponse?.data?.registrationId ||
+                ""
+            );
+
+            setShowSuccessModal(true);
+
+
+       } catch (error: any) {
+            toast.error(
+                error?.response?.data?.message ||
+                "Payment verification failed"
+            );
+        } finally {
+            setSubmitting(false);
+        }
+    },
+
+     modal: {
+        ondismiss: function () {
+            console.log("Razorpay checkout closed");
+            setSubmitting(false);
+        },
+    },
+
+    theme: {
+        color: "#f59e0b",
+    },
+};
+
+const razorpay = new window.Razorpay(options);
+
+razorpay.open();
+
+
 
                 
         }catch(error:any){

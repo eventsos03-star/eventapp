@@ -16,6 +16,7 @@ export interface IEvent {
     eventType: 'free' | 'paid';
     registrationType: 'team' | 'individual';
     maxParticipants: number;
+    registeredParticipants:number;
     registrationStartDate: Date;
     registrationEndDate: Date;
     eventDate: Date;
@@ -42,6 +43,11 @@ const eventSchema = new Schema<IEvent>({
     eventType:{type:String,enum:[ 'free' , 'paid']},
     registrationType: {type:String,enum:['team' , 'individual']},
     maxParticipants:{type:Number,required:true},
+    registeredParticipants: {
+    type: Number,
+    default: 0,
+    min: 0,
+},
     registrationStartDate:{type:Date,required:true},
     registrationEndDate:{type:Date,required:true},
     eventDate:{type:Date,required:true},

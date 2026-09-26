@@ -8,6 +8,7 @@ import bookingRoutes from '../modules/venue/booking/index.js';
 import taskRoutes from '../modules/task/task.routes.js';
 import certificateRoutes from '../modules/certificate/certificate.routes.js';
 
+
 const router = Router();
 
 router.use('/auth', authRoutes);
@@ -18,5 +19,6 @@ router.use('/venue-bookings', bookingRoutes);
 router.use('/events', eventRouter);
 router.use('/tasks', taskRoutes);
 router.use('/certificates', certificateRoutes);
+
 
 export default router;

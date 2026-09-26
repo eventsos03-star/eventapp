@@ -6,7 +6,7 @@ import * as registrationService from "./registration.service.js";
 
 export const getAllMyRegistration=asyncHandler(async(req,res)=>{
 
-    console.log("MY REGISTRATION CONTROLLER");
+    
     const userId=req.user!.id;
 
       console.log("USER ID:", userId);

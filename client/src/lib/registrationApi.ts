@@ -25,18 +25,22 @@ export const registrationService={
         eventId:string,
         payload:IndividualRegistrationPayload
     )=>
-        eventApi.post(`events/registration/${eventId}/individual`,payload)
+        eventApi.post(`/events/registration/${eventId}/individual`,payload)
         .then((res)=>res.data),
 
         team:(eventId:string,payload:TeamRegistrationPayload
         )=>
-        eventApi.post(`events/registration/${eventId}/team`,payload)
+        eventApi.post(`/events/registration/${eventId}/team`,payload)
         .then((res)=>res.data),
         
         
         myRegistrations: () =>
         eventApi
-            .get("events/registration")
+            .get("/events/registration")
             .then((res) => res.data),
+
+            getTicket:(registrationId:string)=>
+                eventApi.get(`/events/registration/${registrationId}/ticket`)
+            .then((res)=>res.data)
         
 }
