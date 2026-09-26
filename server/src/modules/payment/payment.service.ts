@@ -69,8 +69,6 @@ export const verifyEventPayment=async(razorpay_order_id:string,razorpay_payment_
               .createHmac("sha256",process.env.RAZORPAY_KEY_SECRET!)
               .update(body)
               .digest("hex");
-   console.log("expectedSign:",expectedSign);
-   console.log("razorpays sign:",razorpay_signature)
 
               if(expectedSign !==razorpay_signature){
                 throw new AppError("Invalid signature",400)

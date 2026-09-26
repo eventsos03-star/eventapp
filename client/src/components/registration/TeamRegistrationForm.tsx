@@ -228,12 +228,6 @@ const [registrationId, setRegistrationId] = useState("");
         handler: async function (razorpayResponse:{ razorpay_payment_id: string;
             razorpay_order_id: string;
             razorpay_signature: string;}) {
-                
-                console.log("FULL RAZORPAY RESPONSE:", razorpayResponse);
-                console.log("KEYS:", Object.keys(razorpayResponse));
-                
-                console.log("ORDER ID SENT TO RAZORPAY:", orderId);
-        console.log("RAZORPAY OPTIONS:", options);
         try {
             const verifyResponse =
             await paymentService.verifyPayment({
