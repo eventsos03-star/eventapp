@@ -251,17 +251,22 @@ razorpay.open();
                                         </span>
                                     </label>
 
-                                    <input
-                                        type="tel"
-                                        value={phoneNumber}
-                                        onChange={(e) =>
-                                            setPhoneNumber(e.target.value)
-                                        }
-                                        placeholder="Enter phone number"
-                                        className="w-full rounded-lg border border-slate-700 bg-[#111c2f] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                        required
-                                    />
+                                   <input
+  type="tel"
+  value={phoneNumber}
+  onChange={(e) => {
+    const value = e.target.value.replace(/\D/g, "");
 
+    if (value.length <= 10) {
+      setPhoneNumber(value);
+    }
+  }}
+  placeholder="Enter 10-digit phone number"
+  maxLength={10}
+  pattern="[6-9][0-9]{9}"
+  className="w-full rounded-lg border border-slate-700 bg-[#111c2f] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+  required
+/>
                                 </div>
 
                             </div>
