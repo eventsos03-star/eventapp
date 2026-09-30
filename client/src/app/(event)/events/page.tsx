@@ -370,9 +370,10 @@ export default function EventsListPage() {
                          event.venueBookingId?.venueId?.location?.formattedAddress;
 
                   const image =
-                    event.imageUrl ||
-                    event.image ||
-                    event.bannerImage;
+  (event as any).bannerImage?.url ||
+  (typeof (event as any).bannerImage === "string" ? (event as any).bannerImage : undefined) ||
+  event.imageUrl ||
+  event.image;
 
                   return (
                     <div

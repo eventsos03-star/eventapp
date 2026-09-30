@@ -4,6 +4,7 @@ import type { CreateEventInput, UpdateEventInput } from "./event.model.js";
 import * as bookingService from "../venue/booking/booking.service.js";
 import VenueBooking from "../venue/venueBooking.model.js";
 import Registration from "./registration.model.js";
+
 export async function createEvent(
   data: CreateEventInput,
   userId: string
@@ -25,9 +26,10 @@ export async function createEvent(
     endDate: eventEndDate ?? eventDate,
   });
 
-  // Create event as draft
+  // Create event as draft with pre-generated _id if supplied
   const event = await Event.create({
     ...eventData,
+    ...(data._id ? { _id: data._id } : {}),
     organizationId,
     eventDate,
     eventEndDate,
@@ -150,7 +152,15 @@ export async function getEventByOrganizationID(organizationId: string) {
   const event = await Event.find({
     organizationId,
     isDeleted: false,
-  }).sort({ eventDate: 1 });
+  })
+    .populate({
+      path: "venueBookingId",
+      populate: {
+        path: "venueId",
+        select: "venueName location capacity images pricePerDay bookingPaymentPolicy",
+      },
+    })
+    .sort({ eventDate: 1 });
 
   return event;
 }
@@ -166,9 +176,16 @@ export async function getalleventsforadmin() {
 }
 
 export async function getEventById(eventId: string) {
-  const event = await Event.findOne({ _id: eventId, isDeleted: false }).sort({
-    eventDate: 1,
-  });
+  const event = await Event.findOne({ _id: eventId, isDeleted: false })
+    .populate({
+      path: "venueBookingId",
+      populate: {
+        path: "venueId",
+      },
+    })
+    .sort({
+      eventDate: 1,
+    });
 
   if (event && event.status !== "cancelled" && event.status !== "draft") {
     const { startOfToday, startOfTomorrow } = getTodayBoundsUTC();
@@ -279,14 +296,14 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
 
 export async function getEventParticipants(eventId: string) {
   return Registration.find({ eventId })
-    .populate('participantId', 'firstName lastName email')
-    .populate('teamId', 'teamName teamCode')
+    .populate("participantId", "firstName lastName email")
+    .populate("teamId", "teamName teamCode")
     .sort({ createdAt: -1 });
 }
 
 export async function toggleParticipantCheckIn(registrationId: string) {
   const reg: any = await Registration.findById(registrationId);
-  if (!reg) throw new AppError('Registration not found', 404);
+  if (!reg) throw new AppError("Registration not found", 404);
 
   reg.checkedIn = !reg.checkedIn;
   reg.checkedInAt = reg.checkedIn ? new Date() : null;
