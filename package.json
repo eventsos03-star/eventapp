@@ -9,10 +9,18 @@
     "dev:client": "npm --prefix client run dev",
     "build": "npm --prefix server run build && npm --prefix client run build",
     "typecheck": "npm --prefix server run typecheck && npm --prefix client run typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test:smoke": "npm --prefix server run test:smoke",
     "install:all": "npm install --prefix server && npm install --prefix client"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@next/eslint-plugin-next": "^16.3.6",
+    "concurrently": "^9.1.2",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "typescript-eslint": "^8.70.1"
   },
   "engines": {
     "node": ">=18"
