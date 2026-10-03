@@ -124,4 +124,9 @@ jobs:
           MONGO_URI: mongodb://127.0.0.1:27017/eventos_ci
           JWT_ACCESS_SECRET: ci_jwt_access_secret_for_smoke_test_01
           JWT_REFRESH_SECRET: ci_jwt_refresh_secret_for_smoke_test_02
+          # The server constructs the Razorpay client at bootstrap, so keys are
+          # required even though the smoke test never reaches an order/payment.
+          # Dummy values are enough — the client is only *used* at request time.
+          RAZORPAY_KEY_ID: ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: ci_dummy_key_secret
         run: npm run test:smoke --prefix server
