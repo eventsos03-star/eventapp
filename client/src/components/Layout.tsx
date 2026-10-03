@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import Navbar from './navbar'
 import Footer from './footer'
+import AIChatWidget from './ai/AIChatWidget'
 
 export function Layout({ children }: { children: ReactNode }) {
  
@@ -12,6 +13,7 @@ export function Layout({ children }: { children: ReactNode }) {
     
       <main >{children}</main>
       <Footer />
+      <AIChatWidget />
     </div>
   )
 }
