@@ -7,6 +7,7 @@ import venueRoutes from '../modules/venue/index.js';
 import bookingRoutes from '../modules/venue/booking/index.js';
 import taskRoutes from '../modules/task/task.routes.js';
 import certificateRoutes from '../modules/certificate/certificate.routes.js';
+import aiRoutes from '../modules/ai/index.js';
 
 
 const router = Router();
@@ -19,6 +20,7 @@ router.use('/venue-bookings', bookingRoutes);
 router.use('/events', eventRouter);
 router.use('/tasks', taskRoutes);
 router.use('/certificates', certificateRoutes);
+router.use('/ai', aiRoutes);
 
 
 export default router;
