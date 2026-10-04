@@ -12,6 +12,7 @@ export interface ITeam{
 }
 
 export interface ITeamMember {
+     _id: Types.ObjectId;
     name: string;
     email: string;
     phoneNumber?: string;
