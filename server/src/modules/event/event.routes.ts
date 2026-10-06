@@ -7,6 +7,7 @@ import { parseEventFormData } from "./eventFormData.middleware.js";
 import { createEventSchema, publishEventSchema, updateEventSchema } from "./event.validator.js";
 import * as eventController from "./event.controller.js";
 import * as publicEventController from "./public-event.controller.js";
+import * as ticketController from "./ticket.controller.js";
 
 const router = express.Router();
 
@@ -53,6 +54,21 @@ router.patch(
   authenticate,
   requireOrgRole("user_manager"),
   eventController.toggleCheckIn
+);
+
+// QR Scanner check-in endpoints
+router.post(
+  "/:id/scan-ticket",
+  authenticate,
+  requireOrgRole("user_manager","organizer"),
+  ticketController.scanTicket
+);
+
+router.post(
+  "/:id/check-in-team",
+  authenticate,
+  requireOrgRole("user_manager","organizer"),
+  ticketController.checkInTeamMembers
 );
 
 export default router;
