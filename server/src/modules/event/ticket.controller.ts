@@ -16,11 +16,15 @@ export const getMyTicket=asyncHandler(async(req,res)=>{
 
 
 export const verifieTicket=asyncHandler(async(req ,res)=>{
-    const userId=req.user!.id;
-    const {registerationId}=req.params;
-    const {ticketNumber}=req.body
+   const organizerId = req.user!.id;
+    const {registrationId}=req.params;
+    const { ticketNumber, teamMemberId } = req.body;
 
-    const result=await ticketService.ticketVerification(ticketNumber,registerationId,userId);
-
-    return success(res,200,"ticket confirum ",result)
+    const result = await ticketService.ticketVerification(
+    ticketNumber,
+    registrationId,
+    organizerId,
+    teamMemberId
+  );
+    return success(res,200,"Ticket verified successfully",result)
 })

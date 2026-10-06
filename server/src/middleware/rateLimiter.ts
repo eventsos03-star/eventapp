@@ -41,3 +41,13 @@ export const forgotPasswordLimiter = rateLimit({
   keyGenerator: keyByIpAndEmail,
   message: jsonMessage('Too many password reset requests, please try again later.'),
 });
+
+// Throttle the public AI assistant endpoint. Every hit triggers RAG + streaming,
+// so allow only a small number of requests per minute per IP.
+export const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: jsonMessage('Too many AI requests, please try again later.'),
+});
