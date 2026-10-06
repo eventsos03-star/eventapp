@@ -93,6 +93,8 @@ export interface EventRecord extends CreateEventPayload {
   registeredCount: number;
   availableSeats: number;
   isFull: boolean;
+  imageUrl?: string;
+  image?: string;
 }
 
 export const eventService = {
