@@ -1,17 +1,11 @@
 import axios, { AxiosError } from "axios";
 
-// const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
-const API_BASE = "/api"
+const API_BASE = "/api";
 
 export const eventApi = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
-
-// -- Silent refresh-and-retry on 401, same dedupe pattern as the main api.ts --
 
 let refreshPromise: Promise<void> | null = null;
 
@@ -40,7 +34,7 @@ eventApi.interceptors.response.use(
       originalRequest._retry = true;
       try {
         await refreshAccessToken();
-        return eventApi(originalRequest); // retry the original request once
+        return eventApi(originalRequest);
       } catch {
         return Promise.reject(error);
       }
@@ -50,7 +44,6 @@ eventApi.interceptors.response.use(
   }
 );
 
-// -- Typed helpers for your three event endpoints --
 export interface CreateEventPayload {
   organizationId: string;
   venueId?: string;
@@ -66,11 +59,13 @@ export interface CreateEventPayload {
   certificateEnabled?: boolean;
   ticketPrice?: number;
   teamSize?: number;
+  bannerImage?: { url: string; key?: string; publicId?: string };
 }
+
 export interface UpdateEventPayload {
   eventName?: string;
   description?: string;
-  bannerImage?: { url: string; publicId: string };
+  bannerImage?: { url: string; key?: string; publicId?: string };
   eventType?: "free" | "paid";
   registrationType?: "team" | "individual";
   maxParticipants?: number;
@@ -82,57 +77,75 @@ export interface UpdateEventPayload {
   ticketPrice?: number;
   teamSize?: number;
 }
+
 export interface VenueAvailability {
   startDate: string;
   endDate: string;
   status: "approved" | "pending";
 }
+
 export interface EventRecord extends CreateEventPayload {
   _id: string;
   status: "draft" | "published" | "ongoing" | "completed" | "cancelled";
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
-   registeredCount: number;
+  registeredCount: number;
   availableSeats: number;
   isFull: boolean;
+  imageUrl?: string;
+  image?: string;
 }
 
 export const eventService = {
-  create: (payload: CreateEventPayload) =>
-    eventApi.post("/events", payload).then((res) => res.data),
+  create: (payload: CreateEventPayload | FormData) => {
+    const isFormData = typeof FormData !== "undefined" && payload instanceof FormData;
+    return eventApi
+      .post("/events", payload, {
+        headers: isFormData ? { "Content-Type": "multipart/form-data" } : { "Content-Type": "application/json" },
+      })
+      .then((res) => res.data);
+  },
 
   publish: (id: string) =>
     eventApi.patch(`/events/${id}/publish`).then((res) => res.data),
 
   list: () =>
     eventApi.get("/events").then((res) => res.data),
-    getById: (id: string) =>
+
+  getById: (id: string) =>
     eventApi.get(`/events/${id}`).then((res) => res.data),
 
-  update: (id: string, payload: UpdateEventPayload) =>
-    eventApi.patch(`/events/${id}`, payload).then((res) => res.data),
+    update: (id: string, payload: UpdateEventPayload | FormData) => {
+    const isFormData = typeof FormData !== "undefined" && payload instanceof FormData;
+    return eventApi
+      .patch(`/events/${id}`, payload, {
+        headers: isFormData ? { "Content-Type": "multipart/form-data" } : undefined,
+      })
+      .then((res) => res.data);
+  },
 
   remove: (id: string) =>
     eventApi.delete(`/events/${id}`).then((res) => res.data),
 
-   byOrganization: () =>
+  byOrganization: () =>
     eventApi.get("/events/organization").then((res) => res.data),
 
-   publicList:(params?:{search?:string;page?:number;limit?:number; location?: string;eventType?: "free" | "paid"; sort?: "upcoming" | "latest" | "price-low" | "price-high";})=>
-    eventApi.get("/events/public",{params}).then((res)=>res.data),
-    
-   publicGetById:(id:string)=>
-    eventApi.get(`/events/public/${id}`).then((res)=>res.data),
+  publicList: (params?: {
+    search?: string;
+    page?: number;
+    limit?: number;
+    location?: string;
+    eventType?: "free" | "paid";
+    sort?: "upcoming" | "latest" | "price-low" | "price-high";
+  }) =>
+    eventApi.get("/events/public", { params }).then((res) => res.data),
 
-   
+  publicGetById: (id: string) =>
+    eventApi.get(`/events/public/${id}`).then((res) => res.data),
 
-   getVenueAvailability: (venueId: string) =>
-     eventApi
-    .get(`/venue-bookings/venue/${venueId}/availability`)
-    .then((res) => res.data),
-
-    
-  
+  getVenueAvailability: (venueId: string) =>
+    eventApi
+      .get(`/venue-bookings/venue/${venueId}/availability`)
+      .then((res) => res.data),
 };
-
