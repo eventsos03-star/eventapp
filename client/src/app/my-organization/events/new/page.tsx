@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { Suspense, useEffect, useMemo, useState, useRef } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import Link from "next/link";
-import { useRouter, notFound } from "next/navigation";
+import { useRouter, useSearchParams, notFound } from "next/navigation";
 import { eventService } from "@/lib/eventApi";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -16,15 +16,35 @@ interface VenueAvailability {
 }
 
 export default function CreateEventPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="flex items-center gap-3 text-slate-400">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+            <span className="text-sm">Loading event creator...</span>
+          </div>
+        </div>
+      }
+    >
+      <CreateEventPageInner />
+    </Suspense>
+  );
+}
+
+function CreateEventPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, initializing } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const venueIdParam = searchParams.get("venueId");
 
   const organizationId = (user as any)?.organizationId;
   const canCreateEvent = Boolean(organizationId);
 
   const [form, setForm] = useState({
-    venueId: "",
+    venueId: venueIdParam || "",
     eventName: "",
     description: "",
     eventType: "free" as "free" | "paid",
