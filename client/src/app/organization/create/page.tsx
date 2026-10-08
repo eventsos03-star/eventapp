@@ -114,7 +114,7 @@ function CreateContent() {
           country: form.country,
         },
       })
-      router.push('/organization')
+      router.push('/my-organization')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create organization')
     } finally {
