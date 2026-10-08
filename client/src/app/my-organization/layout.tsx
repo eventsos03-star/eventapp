@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import Navbar from "@/components/navbar";
+// import Navbar from "@/components/navbar";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -55,7 +55,7 @@ export default function OrganizationLayout({ children }: { children: React.React
   return (
     <div className="min-h-screen w-full bg-[#090d16] text-white font-sans antialiased flex flex-col">
       {/* 1. Global Top Navbar */}
-      <Navbar />
+      {/* <Navbar /> */}
 
       {/* 2. Main Body with Sidebar + Content */}
       <div className="flex flex-1">
