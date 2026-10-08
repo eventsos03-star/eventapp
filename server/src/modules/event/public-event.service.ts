@@ -37,7 +37,7 @@ export const getAllEvents=async({search,page,limit,location,eventType,sort,}:Pub
 
      const skip=(currentPage-1) *pageLimit;
       let sortQuery: Record<string, 1 | -1> = {
-    eventDate: 1,
+    eventDate: -1,
   };
 
    if (sort === "latest") {

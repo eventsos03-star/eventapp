@@ -149,6 +149,21 @@ export interface VenueOwner {
   venues: Venue[]
 }
 
+export interface VenueOwnerApplication {
+  _id: string
+  userId: string
+  ownerName: string
+  phone: string
+  alternativePhone: string
+  email: string
+  address: string
+  managerName: string
+  status: ResourceStatus
+  rejectionReason?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface GeocodingResult {
   latitude: number
   longitude: number
