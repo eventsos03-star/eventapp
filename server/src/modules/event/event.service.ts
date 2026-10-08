@@ -4,6 +4,7 @@ import type { CreateEventInput, UpdateEventInput } from "./event.model.js";
 import * as bookingService from "../venue/booking/booking.service.js";
 import VenueBooking from "../venue/venueBooking.model.js";
 import Registration from "./registration.model.js";
+import { withVenueLock } from "../../utils/mongoLock.js";
 export async function createEvent(
   data: CreateEventInput,
   userId: string
@@ -200,10 +201,26 @@ export async function deleteEvent(eventId: string) {
 
   // Free up the venue for the event's date by cancelling the linked booking.
   if (event.venueBookingId) {
-    await VenueBooking.updateOne(
-      { _id: event.venueBookingId, status: { $in: ["pending", "approved"] } },
-      { $set: { status: "cancelled" } }
-    );
+    const venueBookingId = event.venueBookingId;
+    const setCancelled = () =>
+      VenueBooking.updateOne(
+        { _id: venueBookingId, status: { $in: ["pending", "approved"] } },
+        { $set: { status: "cancelled" } }
+      );
+
+    const booking = await VenueBooking.findById(
+      venueBookingId
+    ).select("venueId startDate endDate status");
+
+    if (
+      booking &&
+      (booking.status === "pending" || booking.status === "approved")
+    ) {
+      await withVenueLock(booking.venueId.toString(), setCancelled);
+    } else {
+      // No active booking — nothing to lock, run the filter as-is.
+      await setCancelled();
+    }
   }
 
   return event;
@@ -239,27 +256,43 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
     !isSameCalendarDay(event.eventEndDate ?? event.eventDate, nextEnd);
 
   if (rangeChanged && event.venueBookingId) {
-    const booking = await VenueBooking.findById(event.venueBookingId).select(
-      "venueId status"
+    const venueBookingId = event.venueBookingId;
+    const booking = await VenueBooking.findById(venueBookingId).select(
+      "venueId status startDate endDate"
     );
     if (
       booking &&
       booking.status !== "cancelled" &&
       booking.status !== "rejected"
     ) {
-      const conflict = await bookingService.hasOverlap(
-        booking.venueId.toString(),
-        nextStart,
-        nextEnd,
-        event.venueBookingId.toString(),
-        ["approved", "pending"]
-      );
-      if (conflict) {
-        throw new AppError(
-          "This venue is already booked for the selected date",
-          409
+      // Lock the venue so a concurrent move/booking cannot observe a stale
+      // overlap while the range changes.
+      await withVenueLock(booking.venueId.toString(), async () => {
+        const conflict = await bookingService.hasOverlap(
+          booking.venueId.toString(),
+          nextStart,
+          nextEnd,
+          venueBookingId.toString(),
+          ["approved", "pending"]
         );
-      }
+        if (conflict) {
+          throw new AppError(
+            "This venue is already booked for the selected date",
+            409
+          );
+        }
+
+        Object.assign(event, data);
+        await event.save();
+
+        // Keep the linked booking's dates in sync with the event.
+        await VenueBooking.updateOne(
+          { _id: venueBookingId, status: { $in: ["pending", "approved"] } },
+          { $set: { startDate: nextStart, endDate: nextEnd } }
+        );
+      });
+
+      return event;
     }
   }
 

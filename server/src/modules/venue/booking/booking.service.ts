@@ -1,9 +1,12 @@
 import Venue from "../venue.model.js";
 import VenueBooking from "../venueBooking.model.js";
+import VenueDateHold from "../venueDateHold.model.js";
 import Organization from "../../organization/organization.model.js";
 import OrganizationMember from "../../organization/organizationMember.model.js";
 import Event from "../../event/event.model.js";
 import { AppError } from "../../../utils/AppError.js";
+import { withVenueLock } from "../../../utils/mongoLock.js";
+import { hasActiveHoldOverlap } from "./dateHold.service.js";
 
 const dayMs = 24 * 60 * 60 * 1000;
 
@@ -182,18 +185,57 @@ export const createBooking = async (params: {
     venue.pricePerDay *
     countDays(startDate, endDate);
 
-
-
-  const booking = await VenueBooking.create({
-    organizationId,
+  // The overlap check and the insert must be atomic: without a lock two
+  // concurrent requests can both pass `hasOverlap` and both be inserted.
+  const booking = await withVenueLock(
     venueId,
-    requestedBy: userId,
-    startDate,
-    endDate,
-    bookingAmount,
-    status: "pending",
-    paymentStatus: "pending",
-  });
+    async () => {
+      const conflict = await hasOverlap(
+        venueId,
+        startDate,
+        endDate,
+        undefined,
+        ["approved", "pending"]
+      );
+
+      if (conflict) {
+        throw new AppError(
+          "This venue is already booked for part or all of the selected date range",
+          409
+        );
+      }
+
+      const heldByOther = await hasActiveHoldOverlap(
+        venueId,
+        startDate,
+        endDate,
+        userId
+      );
+
+      if (heldByOther) {
+        throw new AppError(
+          "This date range is temporarily held by another user. Please try again shortly.",
+          409
+        );
+      }
+
+      const booking = await VenueBooking.create({
+        organizationId,
+        venueId,
+        requestedBy: userId,
+        startDate,
+        endDate,
+        bookingAmount,
+        status: "pending",
+        paymentStatus: "pending",
+      });
+
+      // The booking consumes this user's holds on the venue.
+      await VenueDateHold.deleteMany({ venueId, userId });
+
+      return booking;
+    }
+  );
 
   return booking;
 };
@@ -231,11 +273,27 @@ export const getVenueAvailability = async (
       startDate: 1,
     });
 
-  return bookings.map((booking) => ({
-    startDate: booking.startDate,
-    endDate: booking.endDate,
-    status: booking.status,
-  }));
+  const holds = await VenueDateHold.find({
+    venueId,
+    expiresAt: { $gt: new Date() },
+  })
+    .select("startDate endDate")
+    .sort({
+      startDate: 1,
+    });
+
+  return [
+    ...bookings.map((booking) => ({
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      status: booking.status,
+    })),
+    ...holds.map((hold) => ({
+      startDate: hold.startDate,
+      endDate: hold.endDate,
+      status: "held",
+    })),
+  ];
 };
 
 
@@ -425,34 +483,40 @@ export const approveBooking = async (params: {
 
 
 
-  const conflict = await hasOverlap(
+  const updatedBooking = await withVenueLock(
     booking.venueId.toString(),
-    booking.startDate,
-    booking.endDate,
-    bookingId
-  );
+    async () => {
+      const conflict = await hasOverlap(
+        booking.venueId.toString(),
+        booking.startDate,
+        booking.endDate,
+        bookingId
+      );
 
-  if (conflict) {
-    throw new AppError(
-      "Approval would create a scheduling conflict for this venue",
-      409
-    );
-  }
+      if (conflict) {
+        throw new AppError(
+          "Approval would create a scheduling conflict for this venue",
+          409
+        );
+      }
 
-  const updatedBooking = await VenueBooking.findByIdAndUpdate(
-    bookingId,
-    {
-      status: "approved",
-    },
-    {
-      new: true,
+      const updated = await VenueBooking.findByIdAndUpdate(
+        bookingId,
+        {
+          status: "approved",
+        },
+        {
+          new: true,
+        }
+      );
+
+      await Event.updateOne(
+        { venueBookingId: bookingId, status: "draft", isDeleted: false },
+        { $set: { status: "published" } }
+      );
+
+      return updated;
     }
-  );
-
-
-  await Event.updateOne(
-    { venueBookingId: bookingId, status: "draft", isDeleted: false },
-    { $set: { status: "published" } }
   );
 
   return updatedBooking;
@@ -473,7 +537,7 @@ export const rejectBooking = async (params: {
     await VenueBooking.findById(
       bookingId
     ).select(
-      "venueId status"
+      "venueId startDate endDate status"
     );
 
   if (!booking) {
@@ -512,19 +576,26 @@ export const rejectBooking = async (params: {
     );
   }
 
-  const updatedBooking = await VenueBooking.findByIdAndUpdate(
-    bookingId,
-    {
-      status: "rejected",
-    },
-    {
-      new: true,
-    }
-  );
+  const updatedBooking = await withVenueLock(
+    booking.venueId.toString(),
+    async () => {
+      const updated = await VenueBooking.findByIdAndUpdate(
+        bookingId,
+        {
+          status: "rejected",
+        },
+        {
+          new: true,
+        }
+      );
 
-  await Event.updateOne(
-    { venueBookingId: bookingId, status: "draft", isDeleted: false },
-    { $set: { status: "cancelled" } }
+      await Event.updateOne(
+        { venueBookingId: bookingId, status: "draft", isDeleted: false },
+        { $set: { status: "cancelled" } }
+      );
+
+      return updated;
+    }
   );
 
   return updatedBooking;
@@ -544,7 +615,7 @@ export const cancelBooking = async (params: {
 
   const booking =
     await VenueBooking.findById(bookingId).select(
-      "requestedBy startDate status"
+      "requestedBy venueId startDate endDate status"
     );
 
   if (!booking) {
@@ -581,29 +652,36 @@ export const cancelBooking = async (params: {
     );
   }
 
-  const updatedBooking = await VenueBooking.findByIdAndUpdate(
-    bookingId,
-    {
-      status: "cancelled",
-      cancellationReason:
-        cancellationReason?.trim()
-          ? cancellationReason.trim()
-          : null,
-      cancelledBy: userId,
-      cancelledAt: new Date(),
-    },
-    {
-      new: true,
-    }
-  );
+  const updatedBooking = await withVenueLock(
+    booking.venueId.toString(),
+    async () => {
+      const updated = await VenueBooking.findByIdAndUpdate(
+        bookingId,
+        {
+          status: "cancelled",
+          cancellationReason:
+            cancellationReason?.trim()
+              ? cancellationReason.trim()
+              : null,
+          cancelledBy: userId,
+          cancelledAt: new Date(),
+        },
+        {
+          new: true,
+        }
+      );
 
-  await Event.updateOne(
-    {
-      venueBookingId: bookingId,
-      status: { $in: ["draft", "published"] },
-      isDeleted: false,
-    },
-    { $set: { status: "cancelled" } }
+      await Event.updateOne(
+        {
+          venueBookingId: bookingId,
+          status: { $in: ["draft", "published"] },
+          isDeleted: false,
+        },
+        { $set: { status: "cancelled" } }
+      );
+
+      return updated;
+    }
   );
 
   return updatedBooking;

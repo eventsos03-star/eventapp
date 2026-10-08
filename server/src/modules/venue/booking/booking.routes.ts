@@ -12,6 +12,13 @@ import {
 } from "./booking.validator.js";
 
 import {
+  createDateHoldSchema,
+  refreshDateHoldSchema,
+  holdIdParamSchema,
+  checkDateHoldSchema,
+} from "./dateHold.validator.js";
+
+import {
   createBooking,
   getVenueAvailability,
   getBookingsForVenue,
@@ -21,9 +28,20 @@ import {
   cancelBooking,
 } from "./booking.controller.js";
 
+import {
+  createDateHold,
+  refreshDateHold,
+  releaseDateHold,
+  checkDateHold,
+} from "./dateHold.controller.js";
+
 const router = Router();
 
 router.get("/venue/:venueId/availability", authenticate, validate(venueBookingsParamSchema), getVenueAvailability);
+router.post("/venue/:venueId/date-hold", authenticate, validate(createDateHoldSchema), createDateHold);
+router.patch("/venue/:venueId/date-hold/:holdId", authenticate, validate(refreshDateHoldSchema), refreshDateHold);
+router.delete("/venue/:venueId/date-hold/:holdId", authenticate, validate(holdIdParamSchema), releaseDateHold);
+router.get("/venue/:venueId/date-hold/check", authenticate, validate(checkDateHoldSchema), checkDateHold);
 router.get("/venue/:venueId", authenticate, validate(venueBookingsParamSchema), getBookingsForVenue);
 router.get("/:id", authenticate, validate(bookingIdParamSchema), getBookingById);
 router.post("/", authenticate, validate(createBookingSchema), createBooking);
