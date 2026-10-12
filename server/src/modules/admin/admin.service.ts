@@ -509,28 +509,30 @@ export async function restoreOrganization(id: string): Promise<OrganizationRespo
 }
 
 export async function restoreVenueOwner(ownerId: string): Promise<VenueOwnerSummary> {
-  const user = await User.findOne({ _id: ownerId, ...NOT_DELETED });
-  if (!user) {
-    throw new AppError('Venue owner is deleted. Restore the owner first.', 400);
+  const owner = await VenueOwner.findById(ownerId);
+  if (!owner) {
+    throw new AppError('Venue owner not found', 404);
   }
 
-  const deletedVenues = await Venue.countDocuments({ ownerId: user._id, isDeleted: true });
-  if (deletedVenues === 0) {
-    throw new AppError('No deleted venues found for this venue owner', 400);
-  }
+  owner.isOwnerDeleted = false;
+  await owner.save();
 
-  await Venue.updateMany({ ownerId: user._id, isDeleted: true }, { isDeleted: false });
+  await Venue.updateMany({ ownerId: owner._id, isDeleted: true }, { isDeleted: false });
 
-  const venues = await Venue.find({ ownerId: user._id, ...NOT_DELETED }).sort({ createdAt: 1 }).lean();
+  const venues = await Venue.find({ ownerId: owner._id }).sort({ createdAt: 1 }).lean();
 
   return {
-    ownerId: user.id,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
+    ownerId: owner.id,
+    ownerName: owner.ownerName,
+    phone: owner.phone,
+    alternativePhone: owner.alternativePhone,
+    email: owner.email,
+    address: owner.address,
+    managerName: owner.managerName,
+    status: owner.status,
+    rejectionReason: owner.rejectionReason,
     venueCount: venues.length,
     isOwnerDeleted: false,
-    venueOwnerStatus: user.venueOwnerStatus,
     venues: venues.map(serializeVenue),
   };
 }
