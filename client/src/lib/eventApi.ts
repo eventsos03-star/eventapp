@@ -81,7 +81,7 @@ export interface UpdateEventPayload {
 export interface VenueAvailability {
   startDate: string;
   endDate: string;
-  status: "approved" | "pending";
+  status: "approved" | "pending" | "held";
 }
 
 export interface EventRecord extends CreateEventPayload {
@@ -141,11 +141,26 @@ export const eventService = {
   }) =>
     eventApi.get("/events/public", { params }).then((res) => res.data),
 
-  publicGetById: (id: string) =>
+publicGetById: (id: string) =>
     eventApi.get(`/events/public/${id}`).then((res) => res.data),
 
   getVenueAvailability: (venueId: string) =>
     eventApi
       .get(`/venue-bookings/venue/${venueId}/availability`)
+      .then((res) => res.data),
+
+  createDateHold: (venueId: string, payload: { startDate: string; endDate: string }) =>
+    eventApi
+      .post(`/venue-bookings/venue/${venueId}/date-hold`, payload)
+      .then((res) => res.data),
+
+  refreshDateHold: (venueId: string, holdId: string, payload: { startDate: string; endDate: string }) =>
+    eventApi
+      .patch(`/venue-bookings/venue/${venueId}/date-hold/${holdId}`, payload)
+      .then((res) => res.data),
+
+  releaseDateHold: (venueId: string, holdId: string) =>
+    eventApi
+      .delete(`/venue-bookings/venue/${venueId}/date-hold/${holdId}`)
       .then((res) => res.data),
 };

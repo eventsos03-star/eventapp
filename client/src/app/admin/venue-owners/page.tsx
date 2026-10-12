@@ -106,7 +106,7 @@ export default function AdminVenueOwnersPage() {
     setPermVenueLoading(true)
     setMessage(null)
     try {
-      await adminApi.permanentDeleteVenueOwner(permVenueModal.owner.ownerId, `${permVenueModal.owner.firstName} ${permVenueModal.owner.lastName}`)
+      await adminApi.permanentDeleteVenueOwner(permVenueModal.owner.ownerId, permVenueModal.owner.ownerName)
       setMessage({ type: 'success', text: 'Venues permanently deleted' })
       setPermVenueModal({ open: false, owner: null })
       await load()
@@ -156,7 +156,7 @@ export default function AdminVenueOwnersPage() {
                 <li key={owner.ownerId} className="flex items-start justify-between gap-4 rounded-lg border border-paper-dim px-4 py-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-ink">{owner.firstName} {owner.lastName}</span>
+                      <span className="text-sm font-semibold text-ink">{owner.ownerName}</span>
                       <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[venueTab]}`}>{venueTab}</span>
                     </div>
                     <p className="mt-0.5 text-xs text-ink/45">{owner.email} · {owner.venueCount} venue{owner.venueCount === 1 ? '' : 's'}</p>
@@ -201,7 +201,7 @@ export default function AdminVenueOwnersPage() {
       <ConfirmDialog
         open={venueRestoreModal.open}
         title="Restore Venues"
-        message={`Restore all deleted venues of ${venueRestoreModal.owner ? `${venueRestoreModal.owner.firstName} ${venueRestoreModal.owner.lastName}` : 'this owner'}?`}
+        message={`Restore all deleted venues of ${venueRestoreModal.owner ? venueRestoreModal.owner.ownerName : 'this owner'}?`}
         confirmLabel="Restore"
         onConfirm={handleRestoreVenueOwner}
         onCancel={() => setVenueRestoreModal({ open: false, owner: null })}
@@ -211,8 +211,8 @@ export default function AdminVenueOwnersPage() {
       <PermanentDeleteModal
         open={permVenueModal.open}
         title="Permanently delete venues"
-        subject={permVenueModal.owner ? `${permVenueModal.owner.firstName} ${permVenueModal.owner.lastName}` : ''}
-        confirmName={permVenueModal.owner ? `${permVenueModal.owner.firstName} ${permVenueModal.owner.lastName}` : ''}
+        subject={permVenueModal.owner ? permVenueModal.owner.ownerName : ''}
+        confirmName={permVenueModal.owner ? permVenueModal.owner.ownerName : ''}
         loading={permVenueLoading}
         onConfirm={handlePermanentDeleteVenueOwner}
         onCancel={() => setPermVenueModal({ open: false, owner: null })}

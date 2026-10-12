@@ -13,6 +13,7 @@ import { Building2, MapPin, Users, DollarSign, CreditCard, AlertCircle, X } from
 interface VenueAvailability {
   startDate: string;
   endDate: string;
+  status?: string;
 }
 
 export default function CreateEventPage() {
@@ -70,6 +71,15 @@ function CreateEventPageInner() {
 
   const [bookedDates, setBookedDates] = useState<VenueAvailability[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityNonce, setAvailabilityNonce] = useState(0);
+
+  const [hold, setHold] = useState<{
+    holdId: string;
+    startDate: string;
+    endDate: string;
+    expiresAt: string;
+  } | null>(null);
+  const [holdNow, setHoldNow] = useState(() => Date.now());
 
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
@@ -178,7 +188,164 @@ function CreateEventPageInner() {
     }
 
     fetchAvailability();
-  }, [form.venueId]);
+  }, [form.venueId, availabilityNonce]);
+
+  /*
+   * Temporary date hold helpers.
+   *
+   * Selecting dates asks the backend to hold the range for this user;
+   * other users cannot book it until it expires. The hold mirrors the
+   * current selection (replaced on every change).
+   */
+  function holdPayload(startDate: string, endDate: string) {
+    return {
+      startDate: new Date(`${startDate}T00:00:00`).toISOString(),
+      endDate: new Date(`${endDate}T00:00:00`).toISOString(),
+    };
+  }
+
+  function requestHold(startDate: string, endDate: string) {
+    if (!form.venueId) {
+      return;
+    }
+
+    eventService
+      .createDateHold(form.venueId, holdPayload(startDate, endDate))
+      .then((res) => {
+        setHold(res?.data ?? res);
+        setHoldNow(Date.now());
+      })
+      .catch((err) => {
+        setHold(null);
+        setForm((f) => ({
+          ...f,
+          eventDate: "",
+          eventEndDate: "",
+        }));
+        setAvailabilityNonce((n) => n + 1);
+        setError(
+          err?.response?.data?.message ??
+            "These dates are temporarily unavailable. Please choose another range."
+        );
+      });
+  }
+
+  function releaseHold() {
+    if (!hold || !form.venueId) {
+      return;
+    }
+
+    const venueId = form.venueId;
+    const holdId = hold.holdId;
+    setHold(null);
+
+    eventService.releaseDateHold(venueId, holdId).catch(() => {});
+  }
+
+  /*
+   * Keep the hold countdown ticking while the user is on the page,
+   * and expire the hold locally when its server deadline passes.
+   */
+  useEffect(() => {
+    if (!hold) {
+      return;
+    }
+
+    const tick = setInterval(() => {
+      const now = Date.now();
+      setHoldNow(now);
+
+      if (new Date(hold.expiresAt).getTime() <= now) {
+        setHold(null);
+        setAvailabilityNonce((n) => n + 1);
+        setError(
+          "Your date hold has expired. Please select your dates again."
+        );
+      }
+    }, 1000);
+
+    return () => clearInterval(tick);
+  }, [hold]);
+
+  /*
+   * Refresh the hold every 2 minutes so it stays alive while the
+   * user fills in the form.
+   */
+  useEffect(() => {
+    if (!hold || !form.venueId) {
+      return;
+    }
+
+    const venueId = form.venueId;
+    const { holdId, startDate, endDate } = hold;
+
+    const timer = setInterval(() => {
+      eventService
+        .refreshDateHold(venueId, holdId, { startDate, endDate })
+        .then((res) => {
+          setHold(res?.data ?? res);
+          setHoldNow(Date.now());
+        })
+        .catch((err) => {
+          setHold(null);
+          setAvailabilityNonce((n) => n + 1);
+          setError(
+            err?.response?.data?.message ??
+              "Your date hold could not be refreshed. Please select your dates again."
+          );
+        });
+    }, 2 * 60 * 1000);
+
+    return () => clearInterval(timer);
+  }, [hold, form.venueId]);
+
+  /*
+   * Release the hold when the user leaves the page or switches venue.
+   *
+   * Depends on the hold id only, so refreshing the expiry does not
+   * tear the hold down.
+   */
+  const activeHoldId = hold?.holdId;
+
+  useEffect(() => {
+    if (!activeHoldId || !form.venueId) {
+      return;
+    }
+
+    const venueId = form.venueId;
+    const holdId = activeHoldId;
+
+    function deleteHold(keepalive: boolean) {
+      fetch(
+        `/api/venue-bookings/venue/${venueId}/date-hold/${holdId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+          keepalive,
+        }
+      ).catch(() => {});
+    }
+
+    function handleBeforeUnload() {
+      deleteHold(true);
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      deleteHold(false);
+    };
+  }, [activeHoldId, form.venueId]);
+
+  const holdSecondsLeft = hold
+    ? Math.max(
+        0,
+        Math.floor(
+          (new Date(hold.expiresAt).getTime() - holdNow) / 1000
+        )
+      )
+    : 0;
 
   function formatDateKey(date: Date) {
     const year = date.getFullYear();
@@ -194,11 +361,29 @@ function CreateEventPageInner() {
 
   function isDateBooked(date: Date) {
     const selectedKey = formatDateKey(date);
+const holdStartKey = hold
+      ? formatDateKey(toDateOnly(hold.startDate))
+      : "";
+    const holdEndKey = hold
+      ? formatDateKey(toDateOnly(hold.endDate))
+      : "";
     return bookedDates.some((booking) => {
       const start = toDateOnly(booking.startDate);
       const end = toDateOnly(booking.endDate);
       const startKey = formatDateKey(start);
       const endKey = formatDateKey(end);
+/*
+       * Your own active hold is not a blocked date — you need to be
+       * able to keep selecting it.
+       */
+      if (
+        booking.status === "held" &&
+        hold &&
+        startKey === holdStartKey &&
+        endKey === holdEndKey
+      ) {
+        return false;
+      }
       return selectedKey >= startKey && selectedKey <= endKey;
     });
   }
@@ -267,6 +452,9 @@ function CreateEventPageInner() {
 
     const dateKey = formatDateKey(date);
 
+    let holdStart = dateKey;
+    let holdEnd = dateKey;
+
     if (!form.eventDate) {
       setForm((f) => ({
         ...f,
@@ -287,6 +475,9 @@ function CreateEventPageInner() {
         return;
       }
 
+      holdStart = startKey;
+      holdEnd = endKey;
+
       setForm((f) => ({
         ...f,
         eventDate: startKey,
@@ -301,6 +492,7 @@ function CreateEventPageInner() {
     }
 
     setError(null);
+    requestHold(holdStart, holdEnd);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -528,11 +720,14 @@ function CreateEventPageInner() {
               <select
                 value={form.venueId}
                 onChange={(e) => {
+releaseHold();
                   const newVenueId = e.target.value;
                   const v = venues.find((item) => item._id === newVenueId);
                   setForm((prev) => ({
                     ...prev,
                     venueId: newVenueId,
+                    eventDate: "",
+                    eventEndDate: "",
                     maxParticipants: v?.capacity ? Math.min(prev.maxParticipants, v.capacity) : prev.maxParticipants,
                   }));
                 }}
@@ -724,6 +919,23 @@ function CreateEventPageInner() {
                         ? `${new Date(`${form.eventDate}T00:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })} – ${new Date(`${form.eventEndDate}T00:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}`
                         : new Date(`${form.eventDate}T00:00:00`).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
                     </p>
+{!form.eventEndDate && (
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        Pick one more date to set an end date
+                        (multi-day event).
+                      </p>
+                    )}
+
+                    {hold && (
+                      <p className="mt-1.5 text-[11px] font-semibold text-amber-300">
+                        Dates held for you —{" "}
+                        <span className="tabular-nums">
+                          {Math.floor(holdSecondsLeft / 60)}:
+                          {String(holdSecondsLeft % 60).padStart(2, "0")}
+                        </span>{" "}
+                        remaining
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

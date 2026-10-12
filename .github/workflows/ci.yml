@@ -130,3 +130,85 @@ jobs:
           RAZORPAY_KEY_ID: ci_dummy_key_id
           RAZORPAY_KEY_SECRET: ci_dummy_key_secret
         run: npm run test:smoke --prefix server
+
+  concurrency:
+    name: Booking concurrency tests
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix server
+
+      - name: Booking race-condition tests
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://127.0.0.1:27017/eventos_race_ci
+          JWT_ACCESS_SECRET: ci_jwt_access_secret_for_race_test_01
+          JWT_REFRESH_SECRET: ci_jwt_refresh_secret_for_race_test_02
+          RAZORPAY_KEY_ID: ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: ci_dummy_key_secret
+        run: npm run test:concurrency --prefix server
+
+  date-holds:
+    name: Date hold tests
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix server
+
+      - name: Date hold tests
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://127.0.0.1:27017/eventos_hold_ci
+          JWT_ACCESS_SECRET: ci_jwt_access_secret_for_hold_test_01
+          JWT_REFRESH_SECRET: ci_jwt_refresh_secret_for_hold_test_02
+          RAZORPAY_KEY_ID: ci_dummy_key_id
+          RAZORPAY_KEY_SECRET: ci_dummy_key_secret
+        run: npm run test:holds --prefix server

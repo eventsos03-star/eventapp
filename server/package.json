@@ -10,7 +10,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test:smoke": "npm run build && node scripts/smoke.mjs"
+    "test:smoke": "npm run build && node scripts/smoke.mjs",
+    "test:concurrency": "npm run build && node scripts/booking-race-test.mjs",
+    "test:holds": "npm run build && node scripts/date-hold-test.mjs"
   },
   "engines": {
     "node": ">=18"

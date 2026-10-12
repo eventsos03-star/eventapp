@@ -141,9 +141,14 @@ export interface Venue {
 
 export interface VenueOwner {
   ownerId: string
-  firstName: string
-  lastName: string
+  ownerName: string
+  phone: string
+  alternativePhone: string
   email: string
+  address: string
+  managerName: string
+  status: ResourceStatus
+  rejectionReason?: string
   venueCount: number
   isOwnerDeleted: boolean
   venues: Venue[]

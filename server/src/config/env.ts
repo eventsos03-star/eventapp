@@ -9,6 +9,9 @@ const envSchema = z.object({
 
   MONGO_URI: z.string().min(1, 'MONGO_URI is required'),
 
+  // How long a selected (but not yet booked) date range stays held for a user.
+  VENUE_HOLD_TTL_MINUTES: z.coerce.number().int().positive().default(5),
+
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
 
