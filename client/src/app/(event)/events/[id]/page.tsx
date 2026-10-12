@@ -133,10 +133,11 @@ export default function EventDetailPage() {
    * Supports common image field names.
    * If your backend has one specific field, keep that field here.
    */
-  const eventImage =
-    (event as any).imageUrl ||
-    (event as any).image ||
-    (event as any).bannerImage;
+const eventImage =
+  (event as any).bannerImage?.url ||
+  (typeof (event as any).bannerImage === "string" ? (event as any).bannerImage : undefined) ||
+  event.imageUrl ||
+  event.image;
 
 
   const eventDate = new Date(event.eventDate);

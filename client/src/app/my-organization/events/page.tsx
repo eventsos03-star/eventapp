@@ -153,10 +153,12 @@ export default function MyOrganizationPage() {
         {!loading && !error && events.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {events.map((event) => {
+              // Extract string URL correctly from bannerImage object
               const image =
+                (event as any).bannerImage?.url ||
+                (typeof (event as any).bannerImage === "string" ? (event as any).bannerImage : undefined) ||
                 (event as any).imageUrl ||
-                (event as any).image ||
-                (event as any).bannerImage;
+                (event as any).image;
 
               return (
                 <div
