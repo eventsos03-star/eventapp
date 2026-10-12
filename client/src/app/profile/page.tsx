@@ -6,7 +6,7 @@ import type { FormEvent } from 'react'
 import { ProtectedRoute } from '../../components/ProtectedRoute'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
-import type { SessionInfo } from '../../types'
+import type { SessionInfo,VenueOwnerApplication} from '../../types'
 import { Layout } from '@/components/Layout'
 import Link from 'next/link'
 
@@ -115,31 +115,38 @@ function  ProfileContent() {
   const [signingOutAll, setSigningOutAll] =
     useState(false)
 
-  const [hasVenues, setHasVenues] =
-    useState(false)
+  const [venueOwner, setVenueOwner] =
+  useState<VenueOwnerApplication | null>(null)
 
-  useEffect(() => {
-    if (!user) return
+const [venueOwnerLoading, setVenueOwnerLoading] =
+  useState(true)
+ useEffect(() => {
+  if (!user) return
 
-    let active = true
+  let active = true
 
-    api
-      .getMyVenues()
-      .then(({ data }) => {
-        if (active) {
-          setHasVenues((data ?? []).length > 0)
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setHasVenues(false)
-        }
-      })
+  api
+    .getMyVenueOwner()
+    .then(({ data }) => {
+      if (active) {
+        setVenueOwner(data ?? null)
+      }
+    })
+    .catch(() => {
+      if (active) {
+        setVenueOwner(null)
+      }
+    })
+    .finally(() => {
+      if (active) {
+        setVenueOwnerLoading(false)
+      }
+    })
 
-    return () => {
-      active = false
-    }
-  }, [user])
+  return () => {
+    active = false
+  }
+}, [user])
 
   useEffect(() => {
     if (!user) return
@@ -738,68 +745,123 @@ function  ProfileContent() {
 
             </section>
 
-            {/* =================================================
-                VENUE OWNER
-            ================================================== */}
+           {/* =================================================
+    VENUE OWNER
+================================================== */}
 
-            <section className="rounded-xl border border-[#30343e] bg-[#171a22] p-5">
+<section className="rounded-xl border border-[#30343e] bg-[#171a22] p-5">
 
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+  <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
-                <div className="flex items-start gap-3">
+    <div className="flex items-start gap-3">
 
-                  <Icon>
-                    <span className="text-sm">
-                      ⌖
-                    </span>
-                  </Icon>
+      <Icon>
+        <span className="text-sm">
+          ⌖
+        </span>
+      </Icon>
 
-                  <div>
+      <div>
 
-                    <h2 className="text-xs font-semibold text-[#ddd6c9]">
-                      Become a Venue Owner
-                    </h2>
+        <h2 className="text-xs font-semibold text-[#ddd6c9]">
+          {venueOwner?.status === 'approved'
+            ? 'Venue Owner'
+            : venueOwner?.status === 'pending'
+              ? 'Venue Owner Application'
+              : venueOwner?.status === 'rejected'
+                ? 'Venue Owner Application'
+                : 'Become a Venue Owner'}
+        </h2>
 
-                    <p className="mt-1 text-[9px] leading-relaxed text-[#77746d]">
-                      List and manage venues and make them available
-                      for event organizers.
-                    </p>
+        <p className="mt-1 max-w-xl text-[9px] leading-relaxed text-[#77746d]">
 
-                  </div>
+          {venueOwner?.status === 'approved'
+            ? 'Manage your venues, availability and booking requests.'
+            : venueOwner?.status === 'pending'
+              ? 'Your venue owner application is currently waiting for admin approval.'
+              : venueOwner?.status === 'rejected'
+                ? 'Your venue owner application was rejected. You can submit a new application.'
+                : 'List and manage venues and make them available for event organizers.'}
 
-                </div>
+        </p>
 
-                <div className="flex shrink-0 flex-col gap-2">
+      </div>
 
-                  <a
-                    href="/venues/new"
-                    className="shrink-0 rounded-lg border border-[#3a3e48] px-5 py-2 text-center text-[9px] font-semibold text-[#c9c2b5] transition hover:border-amber hover:text-amber"
-                  >
-                    Become a Venue Owner
-                  </a>
+    </div>
 
-                  <a
-                    href="/venues"
-                    className="shrink-0 rounded-lg border border-[#3a3e48] px-5 py-2 text-center text-[9px] font-semibold text-[#c9c2b5] transition hover:border-amber hover:text-amber"
-                  >
-                    Browse All Venues
-                  </a>
+    <div className="flex shrink-0 flex-col gap-2">
 
-                  {hasVenues && (
-                    <a
-                      href="/venue-owner"
-                      className="shrink-0 rounded-lg border border-amber px-5 py-2 text-center text-[9px] font-semibold text-amber transition hover:bg-amber/10"
-                    >
-                      View My Venues
-                    </a>
-                  )}
+      {/* Loading */}
+      {venueOwnerLoading ? (
+        <div className="rounded-lg border border-[#3a3e48] px-5 py-2 text-center text-[9px] text-[#77746d]">
+          Checking application...
+        </div>
+      ) : !venueOwner ? (
 
-                </div>
+        /* No application */
+        <Link
+          href="/venue-owner/register"
+          className="rounded-lg bg-amber px-5 py-2.5 text-center text-[9px] font-bold text-[#11141c] transition hover:bg-[#ffc15a]"
+        >
+          Become a Venue Owner
+        </Link>
 
-              </div>
+      ) : venueOwner.status === 'pending' ? (
 
-            </section>
+        /* Pending */
+        <div className="rounded-lg border border-amber/30 bg-amber/5 px-5 py-2.5 text-center text-[9px] font-semibold text-amber">
+          Application Pending
+        </div>
 
+      ) : venueOwner.status === 'approved' ? (
+
+        /* Approved */
+        <Link
+          href="/venue-owner"
+          className="rounded-lg bg-amber px-5 py-2.5 text-center text-[9px] font-bold text-[#11141c] transition hover:bg-[#ffc15a]"
+        >
+          Go to Venue Owner Dashboard
+        </Link>
+
+      ) : venueOwner.status === 'rejected' ? (
+
+        /* Rejected */
+        <Link
+          href="/venue-owner/register"
+          className="rounded-lg border border-red-400/30 px-5 py-2 text-center text-[9px] font-semibold text-red-300 transition hover:bg-red-400/5"
+        >
+          Apply Again
+        </Link>
+
+      ) : null}
+
+      {/* Always available */}
+      <Link
+        href="/venues"
+        className="rounded-lg border border-[#3a3e48] px-5 py-2 text-center text-[9px] font-semibold text-[#c9c2b5] transition hover:border-amber hover:text-amber"
+      >
+        Browse All Venues
+      </Link>
+
+    </div>
+
+  </div>
+
+  {/* Rejection reason */}
+  {venueOwner?.status === 'rejected' &&
+    venueOwner.rejectionReason && (
+      <div className="mt-4 rounded-lg border border-red-400/20 bg-red-400/5 px-4 py-3">
+        <p className="text-[9px] font-semibold text-red-300">
+          Rejection Reason
+        </p>
+
+        <p className="mt-1 text-[9px] leading-relaxed text-red-300/70">
+          {venueOwner.rejectionReason}
+        </p>
+      </div>
+    )}
+
+</section>
             {/* =================================================
                 EDIT PROFILE
             ================================================== */}
