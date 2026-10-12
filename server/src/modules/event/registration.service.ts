@@ -3,6 +3,8 @@ import Event from "./event.model.js";
 import { AppError } from "../../utils/AppError.js";
 import Team,{type ITeamMember} from "./team.model.js";
 import Ticket from "./ticket.model.js";
+import User from "../auth/user.model.js";
+import { sendRegistrationConfirmationEmail } from "../../emails/index.js";
 
 interface IndividualRegistrationInput {
     phoneNumber: string;
@@ -110,6 +112,18 @@ const ticket = await Ticket.create({
     ticketNumber: generateTicketNumber(),
 });
 
+const user = await User.findById(userId);
+
+if (user) {
+  await sendRegistrationConfirmationEmail(user.email, {
+    firstName: user.firstName,
+    eventName: isEvent.eventName,
+    eventDate: isEvent.eventDate.toLocaleDateString("en-IN"),
+    registrationId: registration._id.toString(),
+    registrationType: "individual",
+  });
+}
+
     return {registration,ticket}
 
 
@@ -212,6 +226,20 @@ export const teamRegistration=async(eventId:string,userId:string,data:TeamRegist
     registrationId: registration._id,
     ticketNumber: generateTicketNumber(),
 });
+
+const user = await User.findById(userId);
+
+if (user) {
+  await sendRegistrationConfirmationEmail(user.email, {
+    firstName: user.firstName,
+    eventName: isEvent.eventName,
+    eventDate: isEvent.eventDate.toLocaleDateString("en-IN"),
+    registrationId: registration._id.toString(),
+    registrationType: "team",
+    teamName: team.teamName,
+    teamSize: totalMembers,
+  });
+}
 
     return {
         team,

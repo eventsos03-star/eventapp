@@ -1,9 +1,9 @@
 import mongoose, { Schema, type Types } from "mongoose";
 
-
 export interface IBannerImage {
     url: string;
-    publicId: string;
+    key?: string;
+    publicId?: string;
 }
 
 export interface IEvent {
@@ -12,11 +12,11 @@ export interface IEvent {
     createdBy: Types.ObjectId;
     eventName: string;
     description: string;
-    bannerImage: IBannerImage;
+    bannerImage?: IBannerImage;
     eventType: 'free' | 'paid';
     registrationType: 'team' | 'individual';
     maxParticipants: number;
-    registeredParticipants:number;
+    registeredParticipants: number;
     registrationStartDate: Date;
     registrationEndDate: Date;
     eventDate: Date;
@@ -25,9 +25,9 @@ export interface IEvent {
     status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
     ticketPrice?: number;
     teamSize?: number;
-    isDeleted:boolean;
-    createdAt:Date;
-    updatedAt:Date;
+    isDeleted: boolean;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 const eventSchema = new Schema<IEvent>({
@@ -38,29 +38,27 @@ const eventSchema = new Schema<IEvent>({
     description: { type: String, required: true },
     bannerImage: {
         url: { type: String },
+        key: { type: String },
         publicId: { type: String }
     },
-    eventType:{type:String,enum:[ 'free' , 'paid']},
-    registrationType: {type:String,enum:['team' , 'individual']},
-    maxParticipants:{type:Number,required:true},
+    eventType: { type: String, enum: ['free', 'paid'] },
+    registrationType: { type: String, enum: ['team', 'individual'] },
+    maxParticipants: { type: Number, required: true },
     registeredParticipants: {
-    type: Number,
-    default: 0,
-    min: 0,
-},
-    registrationStartDate:{type:Date,required:true},
-    registrationEndDate:{type:Date,required:true},
-    eventDate:{type:Date,required:true},
-    eventEndDate:{type:Date},
-    certificateEnabled:{type:Boolean,default:false},
-    status:{type:String,enum:['draft' , 'published' , 'ongoing' , 'completed' , 'cancelled'],default:'draft'},
-    ticketPrice:{type:Number},
-    teamSize: {type:Number},
-    isDeleted:{type:Boolean,default:false}
-   
-
+        type: Number,
+        default: 0,
+        min: 0,
+    },
+    registrationStartDate: { type: Date, required: true },
+    registrationEndDate: { type: Date, required: true },
+    eventDate: { type: Date, required: true },
+    eventEndDate: { type: Date },
+    certificateEnabled: { type: Boolean, default: false },
+    status: { type: String, enum: ['draft', 'published', 'ongoing', 'completed', 'cancelled'], default: 'draft' },
+    ticketPrice: { type: Number },
+    teamSize: { type: Number },
+    isDeleted: { type: Boolean, default: false }
 }, { timestamps: true });
-
 
 const Event = mongoose.models.Event as mongoose.Model<IEvent>
     ?? mongoose.model<IEvent>('Event', eventSchema);
@@ -69,8 +67,8 @@ export default Event;
 
 export type CreateEventInput = Omit<IEvent,
  'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted' | 'createdBy'> 
- & { organizationId: string; venueBookingId?: string; venueId: string; };
+ & { _id?: Types.ObjectId; organizationId: string; venueBookingId?: string; venueId: string; };
 
- export type UpdateEventInput = Partial<
+export type UpdateEventInput = Partial<
   Omit<IEvent, 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted' | 'createdBy'>
->
+>;
