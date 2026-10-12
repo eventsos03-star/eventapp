@@ -5,6 +5,8 @@ import * as bookingService from "../venue/booking/booking.service.js";
 import VenueBooking from "../venue/venueBooking.model.js";
 import Registration from "./registration.model.js";
 import { withVenueLock } from "../../utils/mongoLock.js";
+import Attendance from "./attendance.model.js";
+import Ticket from "./ticket.model.js";
 export async function createEvent(
   data: CreateEventInput,
   userId: string
@@ -26,9 +28,10 @@ export async function createEvent(
     endDate: eventEndDate ?? eventDate,
   });
 
-  // Create event as draft
+  // Create event as draft with pre-generated _id if supplied
   const event = await Event.create({
     ...eventData,
+    ...(data._id ? { _id: data._id } : {}),
     organizationId,
     eventDate,
     eventEndDate,
@@ -50,9 +53,7 @@ export async function publishEvent(eventId: string) {
     throw new AppError("Event already published", 409);
   }
 
-  // Publish gate: an event can only go live once its venue booking has been
-  // approved by the venue owner. Without this the event would be publicly
-  // visible on a venue that was never actually confirmed for the date.
+  // Publish gate: an event can only go live once its venue booking has been approved
   if (event.venueBookingId) {
     const booking = await VenueBooking.findById(event.venueBookingId).select("status");
     if (!booking || booking.status !== "approved") {
@@ -84,16 +85,17 @@ function getTodayBoundsUTC() {
 
 /**
  * Flips event statuses based on eventDate:
- * - published events happening today -> ongoing
- * - published/ongoing events whose date has passed -> completed
- * Drafts and cancelled events are left untouched.
+ * - future dates -> published
+ * - happening today -> ongoing
+ * - past dates -> completed
+ * Drafts and cancelled events are untouched.
  */
 export async function syncEventStatuses(organizationId?: string) {
   const { startOfToday, startOfTomorrow } = getTodayBoundsUTC();
   const scope = organizationId ? { organizationId } : {};
 
-  const [ongoingResult, correctedResult, completedResult] = await Promise.all([
-    // published events happening today -> ongoing
+  const [ongoingResult, correctedResult, completedResult, revertedResult] = await Promise.all([
+    // 1. Published events happening today -> ongoing
     Event.updateMany(
       {
         ...scope,
@@ -104,7 +106,7 @@ export async function syncEventStatuses(organizationId?: string) {
       { $set: { status: "ongoing" } }
     ),
 
-    // self-heal: anything wrongly marked completed whose date is actually today -> ongoing
+    // 2. Self-heal: anything wrongly marked completed whose date is actually today -> ongoing
     Event.updateMany(
       {
         ...scope,
@@ -115,7 +117,7 @@ export async function syncEventStatuses(organizationId?: string) {
       { $set: { status: "ongoing" } }
     ),
 
-    // published/ongoing events whose date has genuinely passed -> completed
+    // 3. Published/ongoing events whose date has genuinely passed -> completed
     Event.updateMany(
       {
         ...scope,
@@ -125,11 +127,23 @@ export async function syncEventStatuses(organizationId?: string) {
       },
       { $set: { status: "completed" } }
     ),
+
+    // 4. FIX: If event date was edited to a future date -> revert ongoing/completed back to published!
+    Event.updateMany(
+      {
+        ...scope,
+        eventDate: { $gte: startOfTomorrow },
+        status: { $in: ["ongoing", "completed"] },
+        isDeleted: false,
+      },
+      { $set: { status: "published" } }
+    ),
   ]);
 
   return {
     ongoingCount: ongoingResult.modifiedCount + correctedResult.modifiedCount,
     completedCount: completedResult.modifiedCount,
+    revertedCount: revertedResult.modifiedCount,
   };
 }
 
@@ -146,12 +160,21 @@ export async function getEventByOrganizationID(organizationId: string) {
     throw new AppError("organizationId is required", 400);
   }
 
+  // Syncs statuses before returning the dashboard list
   await syncEventStatuses(organizationId);
 
   const event = await Event.find({
     organizationId,
     isDeleted: false,
-  }).sort({ eventDate: 1 });
+  })
+    .populate({
+      path: "venueBookingId",
+      populate: {
+        path: "venueId",
+        select: "venueName location capacity images pricePerDay bookingPaymentPolicy",
+      },
+    })
+    .sort({ eventDate: 1 });
 
   return event;
 }
@@ -167,21 +190,32 @@ export async function getalleventsforadmin() {
 }
 
 export async function getEventById(eventId: string) {
-  const event = await Event.findOne({ _id: eventId, isDeleted: false }).sort({
-    eventDate: 1,
-  });
+  const event = await Event.findOne({ _id: eventId, isDeleted: false })
+    .populate({
+      path: "venueBookingId",
+      populate: {
+        path: "venueId",
+      },
+    })
+    .sort({
+      eventDate: 1,
+    });
 
   if (event && event.status !== "cancelled" && event.status !== "draft") {
     const { startOfToday, startOfTomorrow } = getTodayBoundsUTC();
     const eventDate = new Date(event.eventDate);
 
-    if (eventDate < startOfToday && event.status !== "completed") {
+    // If rescheduled to future -> published
+    if (eventDate >= startOfTomorrow && event.status !== "published") {
+      event.status = "published";
+      await event.save();
+    } else if (eventDate < startOfToday && event.status !== "completed") {
       event.status = "completed";
       await event.save();
     } else if (
       eventDate >= startOfToday &&
       eventDate < startOfTomorrow &&
-      event.status === "published"
+      event.status !== "ongoing"
     ) {
       event.status = "ongoing";
       await event.save();
@@ -199,7 +233,6 @@ export async function deleteEvent(eventId: string) {
   event.isDeleted = true;
   await event.save();
 
-  // Free up the venue for the event's date by cancelling the linked booking.
   if (event.venueBookingId) {
     const venueBookingId = event.venueBookingId;
     const setCancelled = () =>
@@ -240,7 +273,6 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
     throw new AppError("Event not found", 404);
   }
 
-  // Effective date range: pending change or existing value.
   const nextStart = data.eventDate ? new Date(data.eventDate) : event.eventDate;
   const nextEnd = data.eventEndDate
     ? new Date(data.eventEndDate)
@@ -250,7 +282,6 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
     throw new AppError("eventEndDate must be on or after eventDate", 400);
   }
 
-  // Moving the event to another date/range must respect venue availability.
   const rangeChanged =
     !isSameCalendarDay(event.eventDate, nextStart) ||
     !isSameCalendarDay(event.eventEndDate ?? event.eventDate, nextEnd);
@@ -297,9 +328,21 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
   }
 
   Object.assign(event, data);
+
+  // Automatically recalculate status based on the new date
+  if (event.status !== "draft" && event.status !== "cancelled") {
+    const { startOfToday, startOfTomorrow } = getTodayBoundsUTC();
+    if (nextStart >= startOfTomorrow) {
+      event.status = "published";
+    } else if (nextStart >= startOfToday && nextStart < startOfTomorrow) {
+      event.status = "ongoing";
+    } else if (nextStart < startOfToday) {
+      event.status = "completed";
+    }
+  }
+
   await event.save();
 
-  // Keep the linked booking's dates in sync with the event.
   if (rangeChanged && event.venueBookingId) {
     await VenueBooking.updateOne(
       { _id: event.venueBookingId, status: { $in: ["pending", "approved"] } },
@@ -311,18 +354,63 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
 }
 
 export async function getEventParticipants(eventId: string) {
-  return Registration.find({ eventId })
-    .populate('participantId', 'firstName lastName email')
-    .populate('teamId', 'teamName teamCode')
+  const registrations = await Registration.find({ eventId })
+    .populate("participantId", "firstName lastName email")
+    .populate("teamId", "teamName teamCode members")
     .sort({ createdAt: -1 });
+
+  const attendances = await Attendance.find({ eventId });
+
+  const attendanceByRegId = new Map<string, any[]>();
+  for (const att of attendances) {
+    const regKey = att.registrationId.toString();
+    if (!attendanceByRegId.has(regKey)) {
+      attendanceByRegId.set(regKey, []);
+    }
+    attendanceByRegId.get(regKey)!.push(att);
+  }
+
+  return registrations.map((reg: any) => {
+    const regObj = reg.toObject();
+    const regAttendances = attendanceByRegId.get(reg._id.toString()) || [];
+
+    const isCheckedIn = Boolean(reg.checkedIn || regAttendances.length > 0);
+    const checkedInAt = reg.checkedInAt || regAttendances[0]?.checkedInAt || null;
+
+    return {
+      ...regObj,
+      checkedIn: isCheckedIn,
+      checkedInAt,
+      attendedCount: regAttendances.length,
+      totalTeamMembers: regObj.teamId?.members?.length || 1,
+    };
+  });
 }
 
 export async function toggleParticipantCheckIn(registrationId: string) {
   const reg: any = await Registration.findById(registrationId);
-  if (!reg) throw new AppError('Registration not found', 404);
+  if (!reg) throw new AppError("Registration not found", 404);
 
   reg.checkedIn = !reg.checkedIn;
   reg.checkedInAt = reg.checkedIn ? new Date() : null;
   await reg.save();
+
+  if (reg.checkedIn) {
+    const existing = await Attendance.findOne({ registrationId: reg._id });
+    if (!existing) {
+      const ticket = await Ticket.findOne({ registrationId: reg._id });
+      await Attendance.create({
+        eventId: reg.eventId,
+        registrationId: reg._id,
+        ticketId: ticket?._id ?? reg._id,
+        userId: reg.participantId,
+        checkedInAt: new Date(),
+        checkedInBy: reg.participantId,
+      });
+    }
+  } else {
+    await Attendance.deleteMany({ registrationId: reg._id });
+  }
+
   return reg;
 }
