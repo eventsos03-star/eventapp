@@ -39,4 +39,19 @@ export const orgRoleApi = {
   // Finance (Finance Manager)
   getFinance: () =>
     axios.get(`${API_BASE}/organizations/finance`, { withCredentials: true }),
+
+    // QR Ticket Scanning
+  scanTicket: (eventId: string, ticketNumber: string) =>
+    axios.post(
+      `${API_BASE}/events/${eventId}/scan-ticket`,
+      { ticketNumber },
+      { withCredentials: true }
+    ),
+
+  checkInTeamMembers: (eventId: string, registrationId: string, memberIds: string[]) =>
+    axios.post(
+      `${API_BASE}/events/${eventId}/check-in-team`,
+      { registrationId, memberIds },
+      { withCredentials: true }
+    ),
 };
