@@ -18,8 +18,7 @@ export const paymentOrder=asyncHandler(async(req ,res)=>{
 export const verifiesEventPayment=asyncHandler(async(req ,res)=>{
     const userId = req.user!.id;
 
-    console.log("requrest come from the req.body:",req.body)
-    
+  
     const {razorpay_order_id,razorpay_payment_id,razorpay_signature, eventId,registrationType, phoneNumber,collegeOrOrganization,
          teamName,   members
     }=req.body;
