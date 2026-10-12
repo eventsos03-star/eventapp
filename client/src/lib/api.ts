@@ -11,6 +11,7 @@ import type {
   VenueBooking,
   VenueSearchResult,
   GeocodingResult,
+  VenueOwnerApplication,
 } from '../types'
 
 const API_BASE = '/api'
@@ -277,6 +278,36 @@ export const api = {
         auth: true,
       }
     ),
+    
+
+    // -------------------------
+// VENUE OWNER
+// -------------------------
+
+applyVenueOwner: (input: {
+  ownerName: string
+  phone: string
+  alternativePhone: string
+  email: string
+  address: string
+  managerName: string
+}) =>
+  request<VenueOwnerApplication>(
+    '/venue-owner/apply',
+    {
+      method: 'POST',
+      body: input,
+      auth: true,
+    }
+  ),
+
+getMyVenueOwner: () =>
+  request<VenueOwnerApplication>(
+    '/venue-owner/me',
+    {
+      auth: true,
+    }
+  ),
 
   // -------------------------
   // VENUES
