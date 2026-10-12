@@ -15,7 +15,8 @@ const createEventBody = z
     bannerImage: z
       .object({
         url: z.string().url(),
-        publicId: z.string(),
+        publicId: z.string().optional(),
+        key: z.string().optional(),
       })
       .optional(),
     eventType: z.enum(["free", "paid"]),
@@ -44,7 +45,8 @@ const createEventBody = z
   .refine(
     (data) => data.registrationEndDate <= data.eventDate,
     { message: "registrationEndDate must be before or on eventDate", path: ["registrationEndDate"] }
-  ).refine(
+  )
+  .refine(
     (data) => data.eventDate >= new Date(new Date().toDateString()),
     { message: "eventDate cannot be in the past", path: ["eventDate"] }
   )
@@ -71,7 +73,6 @@ export const publishEventSchema = z.object({
   }),
 });
 
-
 const updateEventBody = z
   .object({
     eventName: z.string().trim().min(3).max(120).optional(),
@@ -79,7 +80,8 @@ const updateEventBody = z
     bannerImage: z
       .object({
         url: z.string().url(),
-        publicId: z.string(),
+        publicId: z.string().optional(),
+        key: z.string().optional(),
       })
       .optional(),
     eventType: z.enum(["free", "paid"]).optional(),
@@ -93,7 +95,7 @@ const updateEventBody = z
     ticketPrice: z.number().positive().optional(),
     teamSize: z.number().int().positive().optional(),
   })
-  .strict() // rejects unknown keys outright — status/organizationId/isDeleted included
+  .strict()
   .refine(
     (data) => !data.registrationStartDate || !data.registrationEndDate ||
       data.registrationStartDate < data.registrationEndDate,
@@ -121,16 +123,8 @@ export const updateEventSchema = z.object({
 export const publicEventQueryValidator = z.object({
   search: z.string().optional(),
   location: z.string().optional(),
-
-  eventType: z
-    .enum(["free", "paid"])
-    .optional(),
-
-  sort: z
-    .enum(["upcoming", "latest", "price-low", "price-high"])
-    .optional(),
-
+  eventType: z.enum(["free", "paid"]).optional(),
+  sort: z.enum(["upcoming", "latest", "price-low", "price-high"]).optional(),
   page: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().positive().optional(),
 });
-
