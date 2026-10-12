@@ -3,6 +3,7 @@ import Session from '../auth/session.model.js';
 import Organization from '../organization/organization.model.js';
 import OrganizationMember from '../organization/organizationMember.model.js';
 import Venue from '../venue/venue.model.js';
+import VenueOwner from '../venue_owner/venueOwner.mode.js';
 import VenueBooking from '../venue/venueBooking.model.js';
 import Event from '../event/event.model.js';
 import { AppError } from '../../utils/AppError.js';
@@ -52,12 +53,16 @@ export interface UserSummary {
 
 export interface VenueOwnerSummary {
   ownerId: string;
-  firstName: string;
-  lastName: string;
+  ownerName: string;
+  phone: string;
+  alternativePhone: string;
   email: string;
+  address: string;
+  managerName: string;
+  status: VenueOwnerStatus | 'blocked';
+  rejectionReason?: string;
   venueCount: number;
   isOwnerDeleted: boolean;
-  venueOwnerStatus?: VenueOwnerStatus;
   venues: VenueResponse[];
 }
 
@@ -252,9 +257,15 @@ export async function getOrganizationDetail(id: string): Promise<OrganizationRes
 
 
 export async function listVenueOwners(status: ResourceStatus | 'deleted' = DEFAULT_STATUS): Promise<VenueOwnerSummary[]> {
-  const venues = await Venue.find(
-    status === 'deleted' ? { isDeleted: true } : { status, ...NOT_DELETED },
-  ).sort({ createdAt: 1 }).lean();
+  const isDeletedStatus = status === 'deleted';
+  const ownerFilter: Record<string, unknown> = isDeletedStatus
+    ? { isOwnerDeleted: true }
+    : { status, $or: [{ isOwnerDeleted: false }, { isOwnerDeleted: { $exists: false } }] };
+
+  const owners = await VenueOwner.find(ownerFilter).sort({ createdAt: 1 }).lean();
+
+  const ownerIds = owners.map((owner) => owner._id);
+  const venues = await Venue.find({ ownerId: { $in: ownerIds } }).sort({ createdAt: 1 }).lean();
 
   const venuesByOwner = new Map<string, VenueResponse[]>();
   for (const venue of venues) {
@@ -264,61 +275,47 @@ export async function listVenueOwners(status: ResourceStatus | 'deleted' = DEFAU
     venuesByOwner.set(ownerId, list);
   }
 
-  const ownerIds = [...venuesByOwner.keys()];
-  const users = await User.find(
-    status === 'deleted' ? { _id: { $in: ownerIds } } : { _id: { $in: ownerIds }, ...NOT_DELETED },
-  )
-    .select('firstName lastName email isDeleted venueOwnerStatus')
-    .lean();
-  const userById = new Map(users.map((user) => [String(user._id), user]));
+  return owners.map((owner) => {
+    const ownerVenues = venuesByOwner.get(String(owner._id)) ?? [];
 
-  const owners: VenueOwnerSummary[] = [];
-  for (const [ownerId, ownerVenues] of venuesByOwner) {
-    const user = userById.get(ownerId);
-    if (!user) continue;
-
-    owners.push({
-      ownerId,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
+    return {
+      ownerId: String(owner._id),
+      ownerName: owner.ownerName,
+      phone: owner.phone,
+      alternativePhone: owner.alternativePhone,
+      email: owner.email,
+      address: owner.address,
+      managerName: owner.managerName,
+      status: owner.status,
+      rejectionReason: owner.rejectionReason,
       venueCount: ownerVenues.length,
-      isOwnerDeleted: status === 'deleted' ? user.isDeleted === true : false,
-      venueOwnerStatus: user.venueOwnerStatus,
+      isOwnerDeleted: owner.isOwnerDeleted === true,
       venues: ownerVenues,
-    });
-  }
-
-  return owners;
+    };
+  });
 }
 
 async function updateVenueOwnerStatus(ownerId: string, target: VenueOwnerStatus): Promise<VenueOwnerSummary> {
-  const user = await User.findOne({ _id: ownerId, ...NOT_DELETED });
-  if (!user) throw new AppError('Venue owner not found', 404);
+  const owner = await VenueOwner.findById(ownerId);
+  if (!owner) throw new AppError('Venue owner not found', 404);
 
+  owner.status = target;
+  await owner.save();
 
-  const pendingVenues = await Venue.countDocuments({ ownerId: user._id, status: DEFAULT_STATUS, ...NOT_DELETED });
-  if (pendingVenues === 0) {
-    throw new AppError('Venue owner has no pending venues', 400);
-  }
-
-  await Venue.updateMany({ ownerId: user._id, status: DEFAULT_STATUS, ...NOT_DELETED }, { status: target });
-
-  if (user.venueOwnerStatus !== target) {
-    user.venueOwnerStatus = target;
-    await user.save();
-  }
-
-  const venues = await Venue.find({ ownerId: user._id, ...NOT_DELETED }).sort({ createdAt: 1 }).lean();
+  const venues = await Venue.find({ ownerId: owner._id }).sort({ createdAt: 1 }).lean();
 
   return {
-    ownerId: user.id,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
+    ownerId: owner.id,
+    ownerName: owner.ownerName,
+    phone: owner.phone,
+    alternativePhone: owner.alternativePhone,
+    email: owner.email,
+    address: owner.address,
+    managerName: owner.managerName,
+    status: owner.status,
+    rejectionReason: owner.rejectionReason,
     venueCount: venues.length,
-    isOwnerDeleted: false,
-    venueOwnerStatus: user.venueOwnerStatus,
+    isOwnerDeleted: owner.isOwnerDeleted === true,
     venues: venues.map(serializeVenue),
   };
 }
