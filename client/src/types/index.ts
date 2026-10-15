@@ -349,20 +349,53 @@ export interface IssuedCertificate {
 }
 
 export interface FinanceSummary {
-  totalRevenue: number;
-  totalVenueExpense: number;
-  netProfit: number;
+  totalRevenue: number
+  totalVenueExpense: number
+  netProfit: number
   eventRevenueBreakdown: Array<{
-    eventId: string;
-    eventName: string;
-    ticketPrice: number;
-    soldTickets: number;
-    revenue: number;
-  }>;
+    eventId: string
+    eventName: string
+    ticketPrice: number
+    soldTickets: number
+    revenue: number
+  }>
   venueBookings: Array<{
-    _id: string;
-    bookingAmount: number;
-    status: string;
-    venueId: { venueName: string };
-  }>;
+    _id: string
+    bookingAmount: number
+    status: string
+    venueId: { venueName: string }
+  }>
+}
+
+export type NotificationType =
+  | 'venueBooking'
+  | 'venueOwner'
+  | 'venue'
+  | 'organization'
+  | 'task'
+  | 'team'
+  | 'general'
+
+export interface Notification {
+  _id: string
+  userId: string
+  title: string
+  message: string
+  type: NotificationType
+  referenceId?: string
+  link?: string
+  meta?: Record<string, unknown>
+  isRead: boolean
+  readAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NotificationListResult {
+  items: Notification[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+  unreadCount: number
 }

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useAuth } from '../context/AuthContext'
 import { useEffect, useRef, useState } from 'react'
+import NotificationBell from './NotificationBell'
 
 export default function Navbar() {
   const { user ,logout} = useAuth()
@@ -65,6 +66,8 @@ const handleLogOut=async()=>{
   </Link>
 
         {user ? (
+         <>
+         <NotificationBell />
          <div ref={profileRef} className="relative">
     <button
       type="button"
@@ -121,6 +124,7 @@ const handleLogOut=async()=>{
     </div>
   )}
 </div>
+         </>
         ) : (
           <>
             <Link

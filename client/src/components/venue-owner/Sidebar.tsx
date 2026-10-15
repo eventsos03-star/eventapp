@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import NotificationBell from '../NotificationBell'
 
 export type OwnerTab = 'dashboard' | 'venues' | 'availability' | 'bookings' | 'settings'
 
@@ -67,6 +68,11 @@ export function Sidebar({
           )
         })}
       </nav>
+
+      <div className="flex items-center justify-between rounded-xl border border-slate-800 px-3 py-2">
+        <span className="text-xs font-semibold text-slate-300">Notifications</span>
+        <NotificationBell />
+      </div>
 
       <div className="mt-auto rounded-xl border border-slate-800 p-4 text-xs text-slate-400">
         <p className="font-semibold text-slate-200">Owner Dashboard</p>
