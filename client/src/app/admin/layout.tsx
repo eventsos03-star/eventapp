@@ -14,6 +14,7 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { AdminRoute } from '../../components/AdminRoute'
+import NotificationBell from '../../components/NotificationBell'
 import { useAuth } from '../../context/AuthContext'
 
 const NAV_ITEMS = [
@@ -74,6 +75,10 @@ function AdminShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="mt-4 space-y-2 border-t border-ink-line pt-4">
+          <div className="flex items-center justify-between rounded-xl px-3 py-2">
+            <span className="text-xs font-semibold text-paper-dim/60">Notifications</span>
+            <NotificationBell />
+          </div>
           <Link
             href="/profile"
             className="flex items-center justify-center gap-2 rounded-xl border border-ink-line px-4 py-2.5 text-xs font-semibold text-paper-dim/60 transition hover:bg-white/5 hover:text-paper-dim"

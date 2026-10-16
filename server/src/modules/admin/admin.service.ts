@@ -6,6 +6,7 @@ import Venue from '../venue/venue.model.js';
 import VenueOwner from '../venue_owner/venueOwner.mode.js';
 import VenueBooking from '../venue/venueBooking.model.js';
 import Event from '../event/event.model.js';
+import { notify } from '../notification/notification.service.js';
 import { AppError } from '../../utils/AppError.js';
 import type { UserRole, VenueOwnerStatus } from '../../types/index.js';
 
@@ -227,6 +228,15 @@ export async function approveOrganization(id: string): Promise<OrganizationRespo
   organization.rejectionReason = undefined;
   await organization.save();
 
+  await notify({
+    userId: organization.ownerId.toString(),
+    title: 'Organization approved',
+    message: `Your organization "${organization.organizationName}" has been approved.`,
+    type: 'organization',
+    referenceId: organization._id.toString(),
+    link: '/my-organization',
+  });
+
   return serializeOrganization(organization.toObject());
 }
 
@@ -242,6 +252,15 @@ export async function rejectOrganization(id: string, reason: string): Promise<Or
   organization.approvedAt = undefined;
   organization.approvedBy = undefined;
   await organization.save();
+
+  await notify({
+    userId: organization.ownerId.toString(),
+    title: 'Organization rejected',
+    message: `Your organization "${organization.organizationName}" was rejected. Reason: ${reason}`,
+    type: 'organization',
+    referenceId: organization._id.toString(),
+    link: '/my-organization',
+  });
 
   return serializeOrganization(organization.toObject());
 }

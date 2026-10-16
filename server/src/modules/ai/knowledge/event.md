@@ -26,7 +26,7 @@ An Event is the core published unit of the platform. An organization books a ven
 ## Lifecycle
 
 1. **Created as `draft`** — `createEvent` first creates a `VenueBooking` (start = `eventDate`, end = `eventEndDate ?? eventDate`) via `bookingService.createBooking`, then creates the Event in `draft` status. If event creation fails after booking creation, the booking is left behind (no transaction/rollback observed).
-2. **`draft → published`** — only via `publishEvent` (`PATCH /events/:id/publish`), which requires the linked venue booking to have `status === 'approved'` (throws 400 otherwise), or implicitly by `bookingService.approveBooking`, which auto-publishes a linked draft event on booking approval.
+2. **`draft → published`** — only via `publishEvent` (`PATCH /events/:id/publish`), which requires the linked venue booking to have `status === 'approved'` (throws 400 otherwise). Venue-owner booking approval does **not** auto-publish the event; an admin must publish it explicitly.
 3. **`rejected booking → cancelled event`** — `bookingService.rejectBooking` auto-cancels the linked event. `cancelBooking` also sets the linked event to `cancelled`.
 4. **`ongoing` / `completed`** — computed automatically by `syncEventStatuses` (no manual transitions). Uses `eventDate`/`eventEndDate` vs today (UTC day granularity). Auto-runs inside list/get flows (`getPublishedEventLists`, `getEventByOrganizationID`, `getAlleventsforadmin`, `getEventById`). Draft/cancelled events are skipped by sync.
 5. **Deletion** — soft delete (`isDeleted: true`); also cancels a linked pending/approved booking.

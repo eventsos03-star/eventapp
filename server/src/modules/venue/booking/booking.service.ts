@@ -7,6 +7,7 @@ import Event from "../../event/event.model.js";
 import { AppError } from "../../../utils/AppError.js";
 import { withVenueLock } from "../../../utils/mongoLock.js";
 import { hasActiveHoldOverlap } from "./dateHold.service.js";
+import { notify, notifyAdmins } from "../../notification/notification.service.js";
 
 const dayMs = 24 * 60 * 60 * 1000;
 
@@ -237,6 +238,15 @@ export const createBooking = async (params: {
     }
   );
 
+  await notify({
+    userId: venue.ownerId.toString(),
+    title: "New venue booking request",
+    message: `A new event requested "${venue.venueName}" for ${startDate.toDateString()}–${endDate.toDateString()}.`,
+    type: "venueBooking",
+    referenceId: booking._id.toString(),
+    link: "/venue-owner",
+  });
+
   return booking;
 };
 
@@ -442,7 +452,7 @@ export const approveBooking = async (params: {
     await VenueBooking.findById(
       bookingId
     ).select(
-      "venueId startDate endDate status"
+      "venueId startDate endDate status requestedBy"
     );
 
   if (!booking) {
@@ -510,14 +520,26 @@ export const approveBooking = async (params: {
         }
       );
 
-      await Event.updateOne(
-        { venueBookingId: bookingId, status: "draft", isDeleted: false },
-        { $set: { status: "published" } }
-      );
-
       return updated;
     }
   );
+
+  await notifyAdmins({
+    title: "Venue booking approved",
+    message: "The venue owner approved a booking — the event is awaiting your review before publishing.",
+    type: "venueBooking",
+    referenceId: bookingId,
+    link: "/admin/events",
+  });
+
+  await notify({
+    userId: booking.requestedBy.toString(),
+    title: "Booking approved",
+    message: "Your venue booking was approved — your event will be published once it is reviewed by an admin.",
+    type: "venueBooking",
+    referenceId: bookingId,
+    link: "/my-organization/events",
+  });
 
   return updatedBooking;
 };
@@ -537,7 +559,7 @@ export const rejectBooking = async (params: {
     await VenueBooking.findById(
       bookingId
     ).select(
-      "venueId startDate endDate status"
+      "venueId startDate endDate status requestedBy"
     );
 
   if (!booking) {
@@ -597,6 +619,23 @@ export const rejectBooking = async (params: {
       return updated;
     }
   );
+
+  await notifyAdmins({
+    title: "Venue booking rejected",
+    message: "The venue owner rejected a booking request.",
+    type: "venueBooking",
+    referenceId: bookingId,
+    link: "/admin/bookings",
+  });
+
+  await notify({
+    userId: booking.requestedBy.toString(),
+    title: "Booking rejected",
+    message: "Your venue booking request was rejected.",
+    type: "venueBooking",
+    referenceId: bookingId,
+    link: "/my-organization/events",
+  });
 
   return updatedBooking;
 };
@@ -683,6 +722,22 @@ export const cancelBooking = async (params: {
       return updated;
     }
   );
+
+  const venue = await Venue.findOne({
+    _id: booking.venueId,
+    ...NOT_DELETED,
+  }).select("ownerId");
+
+  if (venue?.ownerId) {
+    await notify({
+      userId: venue.ownerId.toString(),
+      title: "Booking cancelled",
+      message: "An event organiser cancelled their booking at your venue.",
+      type: "venueBooking",
+      referenceId: bookingId,
+      link: "/venue-owner",
+    });
+  }
 
   return updatedBooking;
 };

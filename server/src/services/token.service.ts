@@ -26,3 +26,22 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
 export function verifyRefreshToken(token: string): RefreshTokenPayload {
   return jwt.verify(token, env.JWT_REFRESH_SECRET) as RefreshTokenPayload;
 }
+
+export function signSocketTicket(userId: string): string {
+  return jwt.sign({ id: userId, purpose: 'socket' }, env.JWT_ACCESS_SECRET, {
+    expiresIn: '60s',
+  } as SignOptions);
+}
+
+export function verifySocketTicket(token: string): { id: string } {
+  const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as {
+    id?: string;
+    purpose?: string;
+  };
+
+  if (decoded.purpose !== 'socket' || !decoded.id) {
+    throw new Error('Invalid socket ticket');
+  }
+
+  return { id: decoded.id };
+}
