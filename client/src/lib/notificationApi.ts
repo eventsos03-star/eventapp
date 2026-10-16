@@ -34,4 +34,10 @@ export const notificationApi = {
       method: 'DELETE',
       auth: true,
     }),
+
+  clearAll: () =>
+    request<{ deleted: number }>('/notifications', {
+      method: 'DELETE',
+      auth: true,
+    }),
 }

@@ -16,6 +16,7 @@ router.get('/unread-count', notificationController.unreadCount);
 router.post('/socket-ticket', notificationController.issueSocketTicket);
 router.patch('/read-all', notificationController.markAllRead);
 router.patch('/:id/read', validate(notificationIdParamSchema), notificationController.markRead);
+router.delete('/', notificationController.clearAll);
 router.delete('/:id', validate(notificationIdParamSchema), notificationController.remove);
 
 export default router;

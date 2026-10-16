@@ -26,7 +26,7 @@ function NotificationBody({ item }: { item: Notification }) {
 }
 
 export default function NotificationBell() {
-  const { items, unreadCount, loading, markRead, markAllRead, remove } = useNotifications()
+  const { items, unreadCount, loading, markRead, markAllRead, remove, clearAll } = useNotifications()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -58,7 +58,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-80 rounded-xl border border-ink-line bg-ink-soft shadow-lg">
+        <div className="notif-panel absolute right-0 top-12 z-50 w-80 rounded-xl border border-ink-line bg-ink-soft shadow-lg">
           <div className="flex items-center justify-between border-b border-ink-line px-4 py-3">
             <span className="text-sm font-semibold text-paper-dim">Notifications</span>
             {unreadCount > 0 && (
@@ -72,7 +72,7 @@ export default function NotificationBell() {
             )}
           </div>
 
-          <div className="max-h-96 overflow-y-auto">
+          <div className="notif-scroll max-h-96 overflow-y-auto">
             {loading ? (
               <p className="px-4 py-6 text-center text-sm text-paper-dim/50">Loading…</p>
             ) : items.length === 0 ? (
@@ -117,6 +117,18 @@ export default function NotificationBell() {
               ))
             )}
           </div>
+
+          {items.length > 0 && (
+            <div className="border-t border-ink-line p-2">
+              <button
+                type="button"
+                onClick={() => void clearAll()}
+                className="w-full rounded-lg px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

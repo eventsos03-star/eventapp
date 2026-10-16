@@ -121,3 +121,8 @@ export async function removeNotification(userId: string, notificationId: string)
   const result = await Notification.deleteOne({ _id: notificationId, userId });
   if (result.deletedCount === 0) throw new AppError('Notification not found', 404);
 }
+
+export async function clearAllNotifications(userId: string): Promise<number> {
+  const result = await Notification.deleteMany({ userId });
+  return result.deletedCount;
+}

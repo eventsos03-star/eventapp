@@ -33,6 +33,11 @@ export const remove = asyncHandler(async (req, res) => {
   return success(res, 200, 'Notification removed successfully');
 });
 
+export const clearAll = asyncHandler(async (req, res) => {
+  const deleted = await notificationService.clearAllNotifications(req.user!.id);
+  return success(res, 200, 'Notifications cleared successfully', { deleted });
+});
+
 export const issueSocketTicket = asyncHandler(async (req, res) => {
   const ticket = signSocketTicket(req.user!.id);
   return success(res, 200, 'Socket ticket issued', { ticket, expiresIn: 60 });

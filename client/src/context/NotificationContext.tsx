@@ -18,6 +18,7 @@ interface NotificationContextValue {
   markRead: (id: string) => Promise<void>
   markAllRead: () => Promise<void>
   remove: (id: string) => Promise<void>
+  clearAll: () => Promise<void>
   refresh: () => Promise<void>
 }
 
@@ -171,9 +172,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     [items, refresh],
   )
 
+  const clearAll = useCallback(async () => {
+    setItems([])
+    setUnreadCount(0)
+    try {
+      await notificationApi.clearAll()
+    } catch (error) {
+      console.error('Failed to clear notifications:', error)
+      await refresh()
+    }
+  }, [refresh])
+
   const value = useMemo(
-    () => ({ items, unreadCount, loading, connected, markRead, markAllRead, remove, refresh }),
-    [items, unreadCount, loading, connected, markRead, markAllRead, remove, refresh],
+    () => ({ items, unreadCount, loading, connected, markRead, markAllRead, remove, clearAll, refresh }),
+    [items, unreadCount, loading, connected, markRead, markAllRead, remove, clearAll, refresh],
   )
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>
