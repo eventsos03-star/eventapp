@@ -5,6 +5,7 @@ import { AppError } from '../../utils/AppError.js';
 import Event from '../event/event.model.js';
 import Registration from '../event/registration.model.js';
 import VenueBooking from '../venue/venueBooking.model.js';
+import { createNotification, notifyAllAdmins } from '../notification/notification.service.js';
 type OrgResponse = Record<string, unknown> & { id: string };
 
 const NOT_DELETED = { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
@@ -57,6 +58,14 @@ export async function createOrganization(
     inviteStatus: 'accepted',
     invitedBy: ownerId,
   });
+
+  // Notify all admins about the new pending organization
+  await notifyAllAdmins(
+    'New Organization Pending Approval',
+    `"${data.organizationName}" has submitted a new organization for review.`,
+    'organization',
+    org._id,
+  );
 
   return serialize(org.toObject() as object);
 }
