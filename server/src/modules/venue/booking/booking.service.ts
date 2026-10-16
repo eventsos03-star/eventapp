@@ -7,6 +7,7 @@ import Event from "../../event/event.model.js";
 import { AppError } from "../../../utils/AppError.js";
 import { withVenueLock } from "../../../utils/mongoLock.js";
 import { hasActiveHoldOverlap } from "./dateHold.service.js";
+import { createNotification } from "../../notification/notification.service.js";
 
 const dayMs = 24 * 60 * 60 * 1000;
 
@@ -235,6 +236,15 @@ export const createBooking = async (params: {
 
       return booking;
     }
+  );
+
+  // Notify the venue owner about the new booking request
+  await createNotification(
+    venue.ownerId!,
+    'New Venue Booking Request',
+    `An organization has requested to book "${venue.venueName}" from ${startDate.toLocaleDateString('en-IN')} to ${endDate.toLocaleDateString('en-IN')}.`,
+    'venuBooking',
+    booking._id,
   );
 
   return booking;
@@ -518,6 +528,62 @@ export const approveBooking = async (params: {
       return updated;
     }
   );
+
+  return updatedBooking;
+};
+
+// After approveBooking resolves, notify the organizer
+export const approveBookingWithNotification = async (params: { userId: string; bookingId: string }) => {
+  const updatedBooking = await approveBooking(params);
+
+  if (updatedBooking) {
+    // Fetch org to get the owner
+    const fullBooking = await VenueBooking.findById(params.bookingId)
+      .populate('venueId', 'venueName')
+      .populate('organizationId', 'ownerId organizationName');
+
+    if (fullBooking) {
+      const org = fullBooking.organizationId as unknown as { ownerId: unknown; organizationName: string };
+      const venue = fullBooking.venueId as unknown as { venueName: string };
+
+      if (org?.ownerId) {
+        await createNotification(
+          org.ownerId as string,
+          'Venue Booking Approved ✅',
+          `Your booking for "${venue?.venueName ?? 'venue'}" has been approved by the venue owner.`,
+          'venuBooking',
+          fullBooking._id,
+        );
+      }
+    }
+  }
+
+  return updatedBooking;
+};
+
+export const rejectBookingWithNotification = async (params: { userId: string; bookingId: string }) => {
+  const updatedBooking = await rejectBooking(params);
+
+  if (updatedBooking) {
+    const fullBooking = await VenueBooking.findById(params.bookingId)
+      .populate('venueId', 'venueName')
+      .populate('organizationId', 'ownerId organizationName');
+
+    if (fullBooking) {
+      const org = fullBooking.organizationId as unknown as { ownerId: unknown; organizationName: string };
+      const venue = fullBooking.venueId as unknown as { venueName: string };
+
+      if (org?.ownerId) {
+        await createNotification(
+          org.ownerId as string,
+          'Venue Booking Rejected',
+          `Your booking for "${venue?.venueName ?? 'venue'}" was declined by the venue owner.`,
+          'venuBooking',
+          fullBooking._id,
+        );
+      }
+    }
+  }
 
   return updatedBooking;
 };

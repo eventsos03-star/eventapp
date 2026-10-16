@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useAuth } from '../context/AuthContext'
 import { useEffect, useRef, useState } from 'react'
+import NotificationBell from './NotificationBell'
 
 export default function Navbar() {
   const { user ,logout} = useAuth()
@@ -65,7 +66,9 @@ const handleLogOut=async()=>{
   </Link>
 
         {user ? (
-         <div ref={profileRef} className="relative">
+         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <NotificationBell />
+          <div ref={profileRef} className="relative">
     <button
       type="button"
       onClick={() => setProfileOpen((prev) => !prev)}
@@ -121,6 +124,9 @@ const handleLogOut=async()=>{
     </div>
   )}
 </div>
+
+</div>
+
         ) : (
           <>
             <Link

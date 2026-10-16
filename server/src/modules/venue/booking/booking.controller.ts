@@ -50,7 +50,7 @@ export const getBookingById = asyncHandler(async (req, res) => {
 });
 
 export const approveBooking = asyncHandler(async (req, res) => {
-  const booking = await bookingService.approveBooking({
+  const booking = await bookingService.approveBookingWithNotification({
     userId: req.user!.id,
     bookingId: req.params.id,
   });
@@ -59,7 +59,7 @@ export const approveBooking = asyncHandler(async (req, res) => {
 });
 
 export const rejectBooking = asyncHandler(async (req, res) => {
-  const booking = await bookingService.rejectBooking({
+  const booking = await bookingService.rejectBookingWithNotification({
     userId: req.user!.id,
     bookingId: req.params.id,
   });

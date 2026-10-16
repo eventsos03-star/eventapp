@@ -8,6 +8,7 @@ import VenueBooking from '../venue/venueBooking.model.js';
 import Event from '../event/event.model.js';
 import { AppError } from '../../utils/AppError.js';
 import type { UserRole, VenueOwnerStatus } from '../../types/index.js';
+import { createNotification, notifyAllAdmins } from '../notification/notification.service.js';
 
 export type ResourceStatus = 'pending' | 'approved' | 'rejected' | 'blocked';
 
@@ -227,6 +228,15 @@ export async function approveOrganization(id: string): Promise<OrganizationRespo
   organization.rejectionReason = undefined;
   await organization.save();
 
+  // Notify the organization owner
+  await createNotification(
+    organization.ownerId,
+    'Organization Approved 🎉',
+    `Your organization "${organization.organizationName}" has been approved by the admin.`,
+    'organization',
+    organization._id,
+  );
+
   return serializeOrganization(organization.toObject());
 }
 
@@ -242,6 +252,15 @@ export async function rejectOrganization(id: string, reason: string): Promise<Or
   organization.approvedAt = undefined;
   organization.approvedBy = undefined;
   await organization.save();
+
+  // Notify the organization owner
+  await createNotification(
+    organization.ownerId,
+    'Organization Rejected',
+    `Your organization "${organization.organizationName}" was rejected. Reason: ${reason}`,
+    'organization',
+    organization._id,
+  );
 
   return serializeOrganization(organization.toObject());
 }
@@ -301,6 +320,17 @@ async function updateVenueOwnerStatus(ownerId: string, target: VenueOwnerStatus)
 
   owner.status = target;
   await owner.save();
+
+  // Notify the venue owner's user account
+  await createNotification(
+    owner.userId,
+    target === 'approved' ? 'Venue Owner Application Approved 🎉' : 'Venue Owner Application Rejected',
+    target === 'approved'
+      ? 'Your venue owner application has been approved. You can now list venues.'
+      : `Your venue owner application was rejected.${ owner.rejectionReason ? ` Reason: ${owner.rejectionReason}` : '' }`,
+    'venuBooking',
+    owner._id,
+  );
 
   const venues = await Venue.find({ ownerId: owner._id }).sort({ createdAt: 1 }).lean();
 

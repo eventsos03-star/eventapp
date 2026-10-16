@@ -1,11 +1,22 @@
   import Venue from './venue.model.js';
   import type { IVenueImage } from './venue.model.js';
   import type { PipelineStage } from 'mongoose';
+  import { notifyAllAdmins } from '../notification/notification.service.js';
 
   const NOT_DELETED = { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
 
   export const createVenue = async (data: Record<string, unknown>) => {
-    return await Venue.create(data);
+    const venue = await Venue.create(data);
+
+    // Notify all admins about the new pending venue
+    await notifyAllAdmins(
+      'New Venue Pending Approval',
+      `A new venue "${String(data.venueName ?? 'Untitled')}" has been submitted for review.`,
+      'venuBooking',
+      venue._id,
+    );
+
+    return venue;
   };
 
   export const getVenues = async (
