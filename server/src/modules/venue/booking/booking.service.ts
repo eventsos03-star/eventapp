@@ -520,27 +520,22 @@ export const approveBooking = async (params: {
         }
       );
 
-      await Event.updateOne(
-        { venueBookingId: bookingId, status: "draft", isDeleted: false },
-        { $set: { status: "published" } }
-      );
-
       return updated;
     }
   );
 
   await notifyAdmins({
     title: "Venue booking approved",
-    message: "The venue owner approved a booking — the event is now published.",
+    message: "The venue owner approved a booking — the event is awaiting your review before publishing.",
     type: "venueBooking",
     referenceId: bookingId,
-    link: "/admin/bookings",
+    link: "/admin/events",
   });
 
   await notify({
     userId: booking.requestedBy.toString(),
     title: "Booking approved",
-    message: "Your venue booking was approved — your event is now published.",
+    message: "Your venue booking was approved — your event will be published once it is reviewed by an admin.",
     type: "venueBooking",
     referenceId: bookingId,
     link: "/my-organization/events",

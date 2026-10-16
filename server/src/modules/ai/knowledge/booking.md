@@ -22,7 +22,7 @@ Indexes (non-unique): `{ venueId, status, startDate, endDate }`; `{ venueId, sta
 ## Lifecycle
 
 1. **Created `pending`** — only via `createBooking`, called from `eventService.createEvent`. There is no standalone "book a venue" endpoint.
-2. **`pending → approved`** by venue owner (`PATCH /venue-bookings/:id/approve`). On approval: overlap re-checked (409 if the slot now conflicts with an approved booking), booking set `approved`, and the **linked draft event is auto-published**.
+2. **`pending → approved`** by venue owner (`PATCH /venue-bookings/:id/approve`). On approval: overlap re-checked (409 if the slot now conflicts with an approved booking), booking set `approved`. The **linked draft event is NOT auto-published** — it stays `draft` and must be published separately by an admin (`PATCH /events/:id/publish`).
 3. **`pending → rejected`** by venue owner (`PATCH /venue-bookings/:id/reject`). Linked draft event is set to `cancelled`.
 4. **Cancel** (`PATCH /venue-bookings/:id/cancel`) — by the requester (must match `requestedBy`) or an ADMIN. Only pending/approved can be cancelled; only when `startDate` is in the future. Sets cancelled + reason/metadata and sets linked event to `cancelled`. **No refund logic exists in code.**
 5. **`completed`** — the status enum exists; no server code path transitions a booking to `completed` (no confirmation/checkout endpoint).
@@ -47,7 +47,7 @@ Indexes (non-unique): `{ venueId, status, startDate, endDate }`; `{ venueId, sta
 - Visible to: venue owner, ADMIN, or an owner/member of the booking's organization.
 
 ### Approve / Reject / Cancel (all `authenticate`)
-- Approve: only venue owner. Pending only. Re-checks overlap against `['pending','approved']`; auto-publishes linked draft event.
+- Approve: only venue owner. Pending only. Re-checks overlap against `['pending','approved']`. Booking becomes `approved`; the linked event stays `draft` until an admin publishes it.
 - Reject: only venue owner. Pending only. Cancels linked event if `draft`.
 - Cancel: `requestedBy` or ADMIN; pending/approved only; future `startDate` only. Cancels linked event.
 
