@@ -183,7 +183,7 @@ export default function AdminUsersPage() {
           value={activeSearchInput}
           onChange={(e) => (userTab === 'deleted' ? handleDeletedUserSearchInput(e.target.value) : handleUserSearchInput(e.target.value))}
           placeholder="Search by name or email…"
-          className="w-56 rounded-lg border border-paper-dim bg-white px-3 py-1.5 text-xs text-ink placeholder:text-ink/35 outline-none transition focus:border-amber focus:ring-2 focus:ring-amber/30"
+          className="w-full rounded-lg border border-paper-dim bg-white px-3 py-1.5 text-xs text-ink placeholder:text-ink/35 outline-none transition focus:border-amber focus:ring-2 focus:ring-amber/30 sm:w-56"
         />
       </div>
 
