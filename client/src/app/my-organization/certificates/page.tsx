@@ -57,7 +57,7 @@ export default function CertificatesPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Certificate Management</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Certificate Management</h1>
         <p className="text-sm text-slate-400 mt-1">
           Issue verified completion/winner certificates to participants.
         </p>
@@ -94,12 +94,12 @@ export default function CertificatesPage() {
             {participants.map((p) => {
               const issued = isIssued(p._id);
               return (
-                <div key={p._id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-white text-sm">
+                <div key={p._id} className="p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-white text-sm truncate">
                       {p.participantId?.firstName} {p.participantId?.lastName}
                     </h4>
-                    <p className="text-xs text-slate-400">{p.participantId?.email}</p>
+                    <p className="text-xs text-slate-400 truncate">{p.participantId?.email}</p>
                   </div>
 
                   <div>
