@@ -72,7 +72,7 @@ export default function MembersPage() {
   return (
     <div className="space-y-8 max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Team Roles & Task Delegation</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Team Roles & Task Delegation</h1>
         <p className="text-sm text-slate-400 mt-1">
           Assign dedicated managers for Finance, Participants, and Certificates.
         </p>
@@ -150,23 +150,23 @@ export default function MembersPage() {
             {members.map((m) => {
               const u: any = m.userId;
               return (
-                <div key={m.id} className="p-5 flex items-center justify-between">
+                <div key={m.id} className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-slate-800 grid place-items-center font-bold text-amber-400">
+                    <div className="h-10 w-10 rounded-full bg-slate-800 grid place-items-center font-bold text-amber-400 shrink-0">
                       {u?.firstName?.[0] ?? "U"}
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-white">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-white truncate">
                         {u?.firstName} {u?.lastName}
                       </p>
                       <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-                        <Mail className="h-3 w-3" />
-                        {u?.email ?? m.inviteEmail}
+                        <Mail className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{u?.email ?? m.inviteEmail}</span>
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 capitalize flex items-center gap-1">
                       <ShieldCheck className="h-3 w-3" />
                       {m.role.replace("_", " ")}

@@ -73,14 +73,14 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Operations & Task Board</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Operations & Task Board</h1>
           <p className="text-sm text-slate-400 mt-1">Delegate specific tasks to your team members.</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-amber-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 hover:bg-amber-400 transition"
+          className="bg-amber-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 hover:bg-amber-400 transition shrink-0"
         >
           <Plus className="h-4 w-4" />
           Assign New Task
@@ -196,7 +196,7 @@ export default function TasksPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Assign To Member</label>
                 <select
@@ -228,7 +228,7 @@ export default function TasksPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Linked Event (Optional)</label>
                 <select

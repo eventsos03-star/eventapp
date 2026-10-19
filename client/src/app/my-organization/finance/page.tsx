@@ -23,7 +23,7 @@ export default function FinancePage() {
   return (
     <div className="space-y-8 max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Finance & Ticket Revenue</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Finance & Ticket Revenue</h1>
         <p className="text-sm text-slate-400 mt-1">
           Monitor your organization's event cash flows, ticket proceeds, and venue booking expenditures.
         </p>
