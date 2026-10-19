@@ -72,68 +72,92 @@ export async function publishEvent(eventId: string) {
 
 // --- Status auto-transition ---
 
-function getTodayBoundsUTC() {
-  const now = new Date();
-  const startOfToday = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-  );
-  const startOfTomorrow = new Date(startOfToday);
-  startOfTomorrow.setUTCDate(startOfTomorrow.getUTCDate() + 1);
+// Status windows are computed from the stored instants (the client sends each
+// day as local midnight), so one calendar day = 24h after the stored instant.
+// This avoids UTC-day comparisons misfiring for timezones ahead of UTC.
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-  return { startOfToday, startOfTomorrow };
+/** nextStatus: published = not started yet, ongoing = started, completed = window over. */
+function nextStatusFor(
+  now: Date,
+  eventDate: Date,
+  eventEndDate: Date | null | undefined
+): "published" | "ongoing" | "completed" {
+  const endAt = new Date((eventEndDate ?? eventDate).getTime() + DAY_MS);
+  if (now >= endAt) return "completed";
+  if (now >= eventDate) return "ongoing";
+  return "published";
 }
 
 /**
- * Flips event statuses based on eventDate:
- * - future dates -> published
- * - happening today -> ongoing
- * - past dates -> completed
+ * Flips event statuses based on eventDate/eventEndDate vs now:
+ * - not started yet -> published
+ * - started, window not over -> ongoing
+ * - window over -> completed
  * Drafts and cancelled events are untouched.
  */
 export async function syncEventStatuses(organizationId?: string) {
-  const { startOfToday, startOfTomorrow } = getTodayBoundsUTC();
+  const now = new Date();
+  const windowOverSince = new Date(now.getTime() - DAY_MS);
   const scope = organizationId ? { organizationId } : {};
 
+  // Window has started (eventDate passed) but is not over yet.
+  const windowOpen = {
+    eventDate: { $lte: now },
+    $or: [
+      { eventEndDate: { $in: [null] }, eventDate: { $gt: windowOverSince } },
+      { eventEndDate: { $gt: windowOverSince } },
+    ],
+  };
+
+  // Window has genuinely passed.
+  const windowOver = {
+    $or: [
+      { eventEndDate: { $in: [null] }, eventDate: { $lte: windowOverSince } },
+      { eventEndDate: { $lte: windowOverSince } },
+    ],
+  };
+
   const [ongoingResult, correctedResult, completedResult, revertedResult] = await Promise.all([
-    // 1. Published events happening today -> ongoing
+    // 1. Published events whose window has started (but is not over) -> ongoing
     Event.updateMany(
       {
         ...scope,
-        eventDate: { $gte: startOfToday, $lt: startOfTomorrow },
         status: "published",
+        ...windowOpen,
         isDeleted: false,
       },
       { $set: { status: "ongoing" } }
     ),
 
-    // 2. Self-heal: anything wrongly marked completed whose date is actually today -> ongoing
+    // 2. Self-heal: anything wrongly marked completed whose window is still open -> ongoing
     Event.updateMany(
       {
         ...scope,
-        eventDate: { $gte: startOfToday, $lt: startOfTomorrow },
         status: "completed",
+        ...windowOpen,
         isDeleted: false,
       },
       { $set: { status: "ongoing" } }
     ),
 
-    // 3. Published/ongoing events whose date has genuinely passed -> completed
+    // 3. Events whose window has genuinely passed -> completed
     Event.updateMany(
       {
         ...scope,
-        eventDate: { $lt: startOfToday },
         status: { $in: ["published", "ongoing"] },
+        ...windowOver,
         isDeleted: false,
       },
       { $set: { status: "completed" } }
     ),
 
-    // 4. FIX: If event date was edited to a future date -> revert ongoing/completed back to published!
+    // 4. If event date was edited to a future date -> revert ongoing/completed back to published!
     Event.updateMany(
       {
         ...scope,
-        eventDate: { $gte: startOfTomorrow },
         status: { $in: ["ongoing", "completed"] },
+        eventDate: { $gt: now },
         isDeleted: false,
       },
       { $set: { status: "published" } }
@@ -202,22 +226,13 @@ export async function getEventById(eventId: string) {
     });
 
   if (event && event.status !== "cancelled" && event.status !== "draft") {
-    const { startOfToday, startOfTomorrow } = getTodayBoundsUTC();
-    const eventDate = new Date(event.eventDate);
-
-    // If rescheduled to future -> published
-    if (eventDate >= startOfTomorrow && event.status !== "published") {
-      event.status = "published";
-      await event.save();
-    } else if (eventDate < startOfToday && event.status !== "completed") {
-      event.status = "completed";
-      await event.save();
-    } else if (
-      eventDate >= startOfToday &&
-      eventDate < startOfTomorrow &&
-      event.status !== "ongoing"
-    ) {
-      event.status = "ongoing";
+    const desired = nextStatusFor(
+      new Date(),
+      new Date(event.eventDate),
+      event.eventEndDate ? new Date(event.eventEndDate) : undefined
+    );
+    if (event.status !== desired) {
+      event.status = desired;
       await event.save();
     }
   }
@@ -329,16 +344,9 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
 
   Object.assign(event, data);
 
-  // Automatically recalculate status based on the new date
+  // Automatically recalculate status based on the new dates
   if (event.status !== "draft" && event.status !== "cancelled") {
-    const { startOfToday, startOfTomorrow } = getTodayBoundsUTC();
-    if (nextStart >= startOfTomorrow) {
-      event.status = "published";
-    } else if (nextStart >= startOfToday && nextStart < startOfTomorrow) {
-      event.status = "ongoing";
-    } else if (nextStart < startOfToday) {
-      event.status = "completed";
-    }
+    event.status = nextStatusFor(new Date(), nextStart, nextEnd);
   }
 
   await event.save();
