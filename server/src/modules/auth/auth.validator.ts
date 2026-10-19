@@ -48,10 +48,19 @@ export const updateProfileSchema = z.object({
     .object({
       firstName: z.string().trim().min(1, 'First name is required').max(50).optional(),
       lastName: z.string().trim().min(1, 'Last name is required').max(50).optional(),
+      phone: z.string().trim().max(20).optional(),
+      location: z.string().trim().max(100).optional(),
     })
-    .refine((data) => data.firstName !== undefined || data.lastName !== undefined, {
-      message: 'Provide at least one field to update',
-    }),
+    .refine(
+      (data) =>
+        data.firstName !== undefined ||
+        data.lastName !== undefined ||
+        data.phone !== undefined ||
+        data.location !== undefined,
+      {
+        message: 'Provide at least one field to update',
+      },
+    ),
 });
 
 export const googleSchema = z.object({

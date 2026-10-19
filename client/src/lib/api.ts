@@ -177,6 +177,8 @@ export const api = {
     body: {
       firstName?: string
       lastName?: string
+      phone?: string
+      location?: string
     }
   ) =>
     request<SafeUser>(

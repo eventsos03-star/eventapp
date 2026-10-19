@@ -14,7 +14,12 @@ interface AuthContextValue {
   logout: () => Promise<void>
   logoutAll: () => Promise<void>
   refreshUser: () => Promise<SafeUser>
-  updateProfile: (body: { firstName?: string; lastName?: string }) => Promise<SafeUser>
+  updateProfile: (body: {
+    firstName?: string
+    lastName?: string
+    phone?: string
+    location?: string
+  }) => Promise<SafeUser>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -98,7 +103,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateProfile = useCallback(
-    async (body: { firstName?: string; lastName?: string }) => {
+    async (body: {
+      firstName?: string
+      lastName?: string
+      phone?: string
+      location?: string
+    }) => {
       const { data } = await api.updateMe(body)
       if (!data) throw new Error('Could not update profile')
       setUser(data)
