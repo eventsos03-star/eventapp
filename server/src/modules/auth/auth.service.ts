@@ -358,16 +358,18 @@ export async function getCurrentUser(userId: string): Promise<SafeUser> {
 
 export async function updateProfile(
   userId: string,
-  input: { firstName?: string; lastName?: string },
+  input: { firstName?: string; lastName?: string; phone?: string; location?: string },
 ): Promise<SafeUser> {
   const user = await getUserById(userId);
   if (!user) throw new AppError('User not found', 404);
 
   if (input.firstName !== undefined) user.firstName = input.firstName;
   if (input.lastName !== undefined) user.lastName = input.lastName;
+  if (input.phone !== undefined) user.phone = input.phone;
+  if (input.location !== undefined) user.location = input.location;
   await user.save();
 
-  return user.toSafeObject();
+  return getSafeUserById(userId);
 }
 
 interface GoogleProfile {
