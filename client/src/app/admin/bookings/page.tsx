@@ -140,9 +140,9 @@ export default function AdminBookingsPage() {
                     ? booking.requestedBy
                     : null
                 return (
-                  <li key={booking.id} className="flex items-start justify-between gap-4 rounded-lg border border-paper-dim px-4 py-3">
+                  <li key={booking.id} className="flex flex-col gap-3 rounded-lg border border-paper-dim px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-semibold text-ink">{venue?.venueName ?? 'Unknown venue'}</span>
                         <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[booking.status]}`}>
                           {booking.status}
@@ -163,7 +163,7 @@ export default function AdminBookingsPage() {
                       <p className="mt-0.5 text-xs text-ink/35">Created {new Date(booking.createdAt).toLocaleDateString()}</p>
                     </div>
                     {canCancel(booking) && (
-                      <div className="flex shrink-0 gap-2">
+                        <div className="flex flex-wrap gap-2 sm:shrink-0">
                         <button
                           type="button"
                           disabled={cancelling}

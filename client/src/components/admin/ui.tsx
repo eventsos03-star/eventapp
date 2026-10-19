@@ -51,7 +51,7 @@ export function StatCard({ label, value }: { label: string; value: number | null
 
 export function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
-    <div className="flex gap-1 rounded-lg border border-paper-dim bg-ink-soft p-1">
+    <div className="flex flex-wrap gap-1 rounded-lg border border-paper-dim bg-ink-soft p-1">
       {STATUS_TABS.map((tab) => (
         <button
           key={tab.value}
@@ -72,7 +72,7 @@ export function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) =
 
 export function UserTabBar({ active, onChange }: { active: UserTab; onChange: (t: UserTab) => void }) {
   return (
-    <div className="flex gap-1 rounded-lg border border-paper-dim bg-ink-soft p-1">
+    <div className="flex flex-wrap gap-1 rounded-lg border border-paper-dim bg-ink-soft p-1">
       {(['all', 'deleted'] as UserTab[]).map((tab) => (
         <button
           key={tab}
