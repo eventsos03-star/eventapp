@@ -81,6 +81,8 @@ function  ProfileContent() {
 
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
+  const [phone, setPhone] = useState(user?.phone ?? '')
+  const [location, setLocation] = useState(user?.location ?? '')
 
   const [profileMessage, setProfileMessage] =
     useState<Message>(null)
@@ -195,6 +197,8 @@ const [venueOwnerLoading, setVenueOwnerLoading] =
       await updateProfile({
         firstName,
         lastName,
+        phone,
+        location,
       })
 
       setProfileMessage({
@@ -346,7 +350,11 @@ const [venueOwnerLoading, setVenueOwnerLoading] =
               </h2>
 
               <p className="mt-1 text-center text-[10px] text-[#77746d]">
-                Member since August 2026
+                Member since{' '}
+                {new Date(user.createdAt).toLocaleDateString('en-US', {
+                  month: 'long',
+                  year: 'numeric',
+                })}
               </p>
 
               <div className="mt-5 space-y-3">
@@ -374,7 +382,11 @@ const [venueOwnerLoading, setVenueOwnerLoading] =
                   </span>
 
                   <span>
-                    +91 9876543210
+                    {user.phone || (
+                      <span className="text-[#77746d]">
+                        Not set
+                      </span>
+                    )}
                   </span>
 
                 </div>
@@ -590,7 +602,11 @@ const [venueOwnerLoading, setVenueOwnerLoading] =
                   </p>
 
                   <p className="mt-1.5 text-xs font-medium text-[#ddd6c9]">
-                    +91 9876543210
+                    {user.phone || (
+                      <span className="text-[#77746d]">
+                        Not set
+                      </span>
+                    )}
                   </p>
                 </div>
 
@@ -600,7 +616,11 @@ const [venueOwnerLoading, setVenueOwnerLoading] =
                   </p>
 
                   <p className="mt-1.5 text-xs font-medium text-[#ddd6c9]">
-                    Bangalore, Karnataka
+                    {user.location || (
+                      <span className="text-[#77746d]">
+                        Not set
+                      </span>
+                    )}
                   </p>
                 </div>
 
@@ -921,6 +941,41 @@ const [venueOwnerLoading, setVenueOwnerLoading] =
                       onChange={(event) =>
                         setLastName(event.target.value)
                       }
+                      className={textInputClass()}
+                    />
+
+                  </label>
+
+                  <label>
+
+                    <span className="mb-1.5 block text-[9px] font-semibold uppercase tracking-wide text-[#88847a]">
+                      Phone Number
+                    </span>
+
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(event) =>
+                        setPhone(event.target.value)
+                      }
+                      placeholder="Enter phone number"
+                      className={textInputClass()}
+                    />
+
+                  </label>
+
+                  <label>
+
+                    <span className="mb-1.5 block text-[9px] font-semibold uppercase tracking-wide text-[#88847a]">
+                      Location
+                    </span>
+
+                    <input
+                      value={location}
+                      onChange={(event) =>
+                        setLocation(event.target.value)
+                      }
+                      placeholder="Enter city, state"
                       className={textInputClass()}
                     />
 

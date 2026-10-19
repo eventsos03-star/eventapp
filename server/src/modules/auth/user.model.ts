@@ -11,6 +11,8 @@ export interface IUser {
   provider: UserProvider;
   googleId?: string;
   avatar?: string;
+  phone?: string;
+  location?: string;
   emailVerified: boolean;
   status: UserStatus;
   role: UserRole;
@@ -33,6 +35,8 @@ export interface SafeUser {
   provider: UserProvider;
   googleId?: string;
   avatar?: string;
+  phone?: string;
+  location?: string;
   emailVerified: boolean;
   status: UserStatus;
   role: UserRole;
@@ -67,6 +71,8 @@ const userSchema = new Schema<IUser, UserModel, UserMethods>(
     provider: { type: String, enum: Object.values(USER_PROVIDER), default: USER_PROVIDER.LOCAL },
     googleId: { type: String },
     avatar: { type: String },
+    phone: { type: String, trim: true, maxlength: 20 },
+    location: { type: String, trim: true, maxlength: 100 },
     emailVerified: { type: Boolean, default: false },
     status: { type: String, enum: Object.values(USER_STATUS), default: USER_STATUS.PENDING },
     role: { type: String, enum: Object.values(USER_ROLE), default: USER_ROLE.USER },
@@ -108,6 +114,8 @@ userSchema.methods.toSafeObject = function (): SafeUser {
     provider: this.provider,
     googleId: this.googleId || undefined,
     avatar: this.avatar || undefined,
+    phone: this.phone || undefined,
+    location: this.location || undefined,
     emailVerified: this.emailVerified,
     status: this.status,
     role: this.role,

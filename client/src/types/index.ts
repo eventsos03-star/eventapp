@@ -10,6 +10,8 @@ export interface SafeUser {
   provider: UserProvider
   googleId?: string
   avatar?: string
+  phone?: string
+  location?: string
   emailVerified: boolean
   status: UserStatus
   role: UserRole
