@@ -21,6 +21,10 @@ export interface IEvent {
     registrationEndDate: Date;
     eventDate: Date;
     eventEndDate?: Date;
+    /** Optional wall-clock start time for the event, e.g. "14:30". When set,
+     *  registration windows can open and close on the same calendar day as the
+     *  event because there is a well-defined start time separating them. */
+    eventTime?: string;
     certificateEnabled: boolean;
     status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
     ticketPrice?: number;
@@ -53,6 +57,7 @@ const eventSchema = new Schema<IEvent>({
     registrationEndDate: { type: Date, required: true },
     eventDate: { type: Date, required: true },
     eventEndDate: { type: Date },
+    eventTime: { type: String, match: /^([01]\d|2[0-3]):[0-5]\d$/ },
     certificateEnabled: { type: Boolean, default: false },
     status: { type: String, enum: ['draft', 'published', 'ongoing', 'completed', 'cancelled'], default: 'draft' },
     ticketPrice: { type: Number },

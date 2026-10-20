@@ -55,6 +55,7 @@ function CreateEventPageInner() {
     registrationEndDate: "",
     eventDate: "",
     eventEndDate: "",
+    eventTime: "",
     certificateEnabled: false,
     ticketPrice: "",
     teamSize: "",
@@ -589,6 +590,10 @@ const holdStartKey = hold
 
       if (form.eventEndDate) {
         formData.append("eventEndDate", new Date(`${form.eventEndDate}T00:00:00`).toISOString());
+      }
+
+      if (form.eventTime) {
+        formData.append("eventTime", form.eventTime);
       }
 
       if (bannerFile) {

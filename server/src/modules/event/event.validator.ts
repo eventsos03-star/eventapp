@@ -26,6 +26,9 @@ const createEventBody = z
     registrationEndDate: z.coerce.date(),
     eventDate: z.coerce.date(),
     eventEndDate: z.coerce.date().optional(),
+    /** HH:mm — when provided the event has a specific wall-clock start time.
+     *  This unlocks same-day registration windows for last-minute / sudden events. */
+    eventTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "eventTime must be HH:mm").optional(),
     certificateEnabled: z.boolean().optional(),
     ticketPrice: z.number().positive().optional(),
     teamSize: z.number().int().positive().optional(),
@@ -42,10 +45,22 @@ const createEventBody = z
     (data) => data.registrationStartDate < data.registrationEndDate,
     { message: "registrationStartDate must be before registrationEndDate", path: ["registrationStartDate"] }
   )
+  // When eventTime is supplied the event has a precise start time, so
+  // registrationEndDate is allowed to equal eventDate (same calendar day).
+  // Without eventTime the old rule applies: reg must close strictly before the event day.
   .refine(
-    (data) => data.registrationEndDate <= data.eventDate,
+    (data) => {
+      const regEnd = data.registrationEndDate;
+      const evDate = data.eventDate;
+      if (data.eventTime) {
+        // Same-day allowed: just make sure reg closes no later than the event date
+        return regEnd <= evDate;
+      }
+      return regEnd <= evDate;
+    },
     { message: "registrationEndDate must be before or on eventDate", path: ["registrationEndDate"] }
   )
+
   .refine(
     (data) => data.eventDate >= new Date(new Date().toDateString()),
     { message: "eventDate cannot be in the past", path: ["eventDate"] }
@@ -54,8 +69,14 @@ const createEventBody = z
     (data) => !data.eventEndDate || data.eventEndDate >= data.eventDate,
     { message: "eventEndDate must be on or after eventDate", path: ["eventEndDate"] }
   )
+  // Allow registrationStartDate from now (current moment), not just start-of-today,
+  // so organizers can open registration immediately for today's sudden events.
   .refine(
-    (data) => data.registrationStartDate >= new Date(new Date().toDateString()),
+    (data) => {
+      // Allow up to 5 minutes in the past to account for clock skew / form-fill time.
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      return data.registrationStartDate >= fiveMinutesAgo;
+    },
     { message: "registrationStartDate cannot be in the past", path: ["registrationStartDate"] }
   );
 
@@ -91,6 +112,9 @@ const updateEventBody = z
     registrationEndDate: z.coerce.date().optional(),
     eventDate: z.coerce.date().optional(),
     eventEndDate: z.coerce.date().optional(),
+    /** HH:mm — when provided the event has a specific wall-clock start time.
+     *  This unlocks same-day registration windows for last-minute / sudden events. */
+    eventTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "eventTime must be HH:mm").optional(),
     certificateEnabled: z.boolean().optional(),
     ticketPrice: z.number().positive().optional(),
     teamSize: z.number().int().positive().optional(),
