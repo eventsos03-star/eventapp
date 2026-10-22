@@ -1,15 +1,33 @@
 "use client";
 
-import { useEffect, useState, useRef, type FormEvent, type ChangeEvent } from "react";
+import { useEffect, useState, useRef, useMemo, type FormEvent, type ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Building2, Users, MapPin, AlertCircle } from "lucide-react";
-import { eventService, type UpdateEventPayload } from "@/lib/eventApi";
+import { Building2, Users, MapPin, AlertCircle, X, DollarSign, CreditCard } from "lucide-react";
+import { eventService, type UpdateEventPayload, type VenueAvailability } from "@/lib/eventApi";
 import { api } from "@/lib/api";
+import type { Venue } from "@/types";
 
-function toDateInputValue(value: string) {
+function toDateTimeLocalValue(value: string | Date | undefined) {
   if (!value) return "";
-  return new Date(value).toISOString().slice(0, 10);
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function toDateOnlyValue(value: string | Date | undefined) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export default function EditEventPage() {
@@ -21,25 +39,41 @@ export default function EditEventPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Original event state for comparison
+  const [originalEvent, setOriginalEvent] = useState<any>(null);
+
   const [venueBookingId, setVenueBookingId] = useState<string | null>(null);
-  const [bookedVenue, setBookedVenue] = useState<any>(null);
+  const [bookedVenue, setBookedVenue] = useState<Venue | null>(null);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const [cancelMessage, setCancelMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Banner handling
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [removeBanner, setRemoveBanner] = useState(false);
 
-  const [form, setForm] = useState<UpdateEventPayload>({
+  // Availability calendar state
+  const [bookedDates, setBookedDates] = useState<VenueAvailability[]>([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+
+  const [form, setForm] = useState<UpdateEventPayload & { eventTime?: string }>({
     eventName: "",
     description: "",
     eventType: "free",
     registrationType: "individual",
-    maxParticipants: 0,
+    maxParticipants: 50,
     registrationStartDate: "",
     registrationEndDate: "",
     eventDate: "",
     eventEndDate: "",
+    eventTime: "",
     certificateEnabled: false,
     ticketPrice: 0,
     teamSize: undefined,
@@ -54,20 +88,31 @@ export default function EditEventPage() {
       .then((res) => {
         if (cancelled) return;
         const event = res.data;
+        setOriginalEvent(event);
+
+        const eventStartDateKey = toDateOnlyValue(event.eventDate);
+        const eventEndDateKey = event.eventEndDate ? toDateOnlyValue(event.eventEndDate) : "";
+
         setForm({
           eventName: event.eventName ?? "",
           description: event.description ?? "",
           eventType: event.eventType ?? "free",
           registrationType: event.registrationType ?? "individual",
-          maxParticipants: event.maxParticipants ?? 0,
-          registrationStartDate: toDateInputValue(event.registrationStartDate),
-          registrationEndDate: toDateInputValue(event.registrationEndDate),
-          eventDate: toDateInputValue(event.eventDate),
-          eventEndDate: toDateInputValue(event.eventEndDate),
+          maxParticipants: event.maxParticipants ?? 50,
+          registrationStartDate: toDateTimeLocalValue(event.registrationStartDate),
+          registrationEndDate: toDateTimeLocalValue(event.registrationEndDate),
+          eventDate: eventStartDateKey,
+          eventEndDate: eventEndDateKey,
+          eventTime: event.eventTime ?? "",
           certificateEnabled: event.certificateEnabled ?? false,
           ticketPrice: event.ticketPrice ?? 0,
           teamSize: event.teamSize,
         });
+
+        if (eventStartDateKey) {
+          const evDate = new Date(event.eventDate);
+          setCalendarMonth(new Date(evDate.getFullYear(), evDate.getMonth(), 1));
+        }
 
         // Set existing banner preview if available
         const existingUrl =
@@ -100,6 +145,46 @@ export default function EditEventPage() {
     };
   }, [id]);
 
+  // If venue booking is cancelled or missing, load available venues
+  useEffect(() => {
+    if (!venueBookingId) {
+      api
+        .listVenues()
+        .then((res: any) => setVenues(res.data ?? []))
+        .catch(() => setVenues([]));
+    }
+  }, [venueBookingId]);
+
+  // Fetch venue availability whenever bookedVenue is loaded
+  useEffect(() => {
+    const venueId = bookedVenue?._id;
+    if (!venueId) {
+      setBookedDates([]);
+      return;
+    }
+
+    let cancelled = false;
+    setAvailabilityLoading(true);
+    eventService
+      .getVenueAvailability(venueId)
+      .then((res: any) => {
+        if (cancelled) return;
+        setBookedDates(res?.data ?? res ?? []);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setBookedDates([]);
+      })
+      .finally(() => {
+        if (!cancelled) setAvailabilityLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bookedVenue?._id]);
+
+  // Banner handling
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -116,12 +201,14 @@ export default function EditEventPage() {
 
     setBannerFile(file);
     setBannerPreview(URL.createObjectURL(file));
+    setRemoveBanner(false);
     setSaveError(null);
   };
 
   const handleRemoveImage = () => {
     setBannerFile(null);
     setBannerPreview(null);
+    setRemoveBanner(true);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -144,20 +231,225 @@ export default function EditEventPage() {
     }));
   };
 
+  function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+    setForm((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
+  // Calendar helpers
+  function formatDateKey(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function toDateOnly(value: string | Date) {
+    const date = new Date(value);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function isDateBooked(date: Date) {
+    const selectedKey = formatDateKey(date);
+
+    // Event's own existing booking dates are not considered blocked
+    const origStartKey = originalEvent ? toDateOnlyValue(originalEvent.eventDate) : "";
+    const origEndKey = originalEvent?.eventEndDate
+      ? toDateOnlyValue(originalEvent.eventEndDate)
+      : origStartKey;
+
+    if (origStartKey && selectedKey >= origStartKey && selectedKey <= origEndKey) {
+      return false;
+    }
+
+    return bookedDates.some((booking) => {
+      const start = toDateOnly(booking.startDate);
+      const end = toDateOnly(booking.endDate);
+      const startKey = formatDateKey(start);
+      const endKey = formatDateKey(end);
+      return selectedKey >= startKey && selectedKey <= endKey;
+    });
+  }
+
+  function isDateInPast(date: Date) {
+    const today = new Date();
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return dateOnly < todayOnly;
+  }
+
+  const calendarDays = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const firstDayOfWeek = firstDay.getDay();
+    const numberOfDays = lastDay.getDate();
+
+    const days: (Date | null)[] = [];
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      days.push(null);
+    }
+    for (let day = 1; day <= numberOfDays; day++) {
+      days.push(new Date(year, month, day));
+    }
+    return days;
+  }, [calendarMonth]);
+
+  const monthLabel = calendarMonth.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  function previousMonth() {
+    setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1));
+  }
+
+  function nextMonth() {
+    setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1));
+  }
+
+  function isRangeClear(startKey: string, endKey: string) {
+    const start = toDateOnly(new Date(`${startKey}T00:00:00`));
+    const end = toDateOnly(new Date(`${endKey}T00:00:00`));
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      if (isDateInPast(cursor) || isDateBooked(cursor)) {
+        return false;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return true;
+  }
+
+  function selectEventDate(date: Date) {
+    if (isDateInPast(date) || isDateBooked(date)) {
+      return;
+    }
+
+    const dateKey = formatDateKey(date);
+
+    if (!form.eventDate) {
+      setForm((f) => ({
+        ...f,
+        eventDate: dateKey,
+        eventEndDate: "",
+      }));
+    } else if (!form.eventEndDate) {
+      let startKey = form.eventDate;
+      let endKey = dateKey;
+
+      if (dateKey < form.eventDate) {
+        startKey = dateKey;
+        endKey = form.eventDate;
+      }
+
+      if (!isRangeClear(startKey, endKey)) {
+        setSaveError("The selected range includes an unavailable date. Please choose a different end date.");
+        return;
+      }
+
+      setForm((f) => ({
+        ...f,
+        eventDate: startKey,
+        eventEndDate: endKey,
+      }));
+    } else {
+      setForm((f) => ({
+        ...f,
+        eventDate: dateKey,
+        eventEndDate: "",
+      }));
+    }
+
+    setSaveError(null);
+  }
+
+  const origStartKey = originalEvent ? toDateOnlyValue(originalEvent.eventDate) : "";
+  const origEndKey = originalEvent?.eventEndDate
+    ? toDateOnlyValue(originalEvent.eventEndDate)
+    : origStartKey;
+
+  const datesHaveChanged = Boolean(
+    origStartKey &&
+      (form.eventDate !== origStartKey || (form.eventEndDate || "") !== (originalEvent?.eventEndDate ? origEndKey : ""))
+  );
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!id) return;
+    setSaveError(null);
+
+    // Client-side validations
+    if (!form.eventName?.trim() || form.eventName.trim().length < 3) {
+      setSaveError("Event name must be at least 3 characters.");
+      return;
+    }
+
+    if (!form.description?.trim() || form.description.trim().length < 3) {
+      setSaveError("Description must be at least 3 characters.");
+      return;
+    }
+
+    if (!form.eventDate) {
+      setSaveError("Please select an event date.");
+      return;
+    }
+
+    if (form.eventType === "paid" && (!form.ticketPrice || Number(form.ticketPrice) <= 0)) {
+      setSaveError("Please enter a valid ticket price greater than 0.");
+      return;
+    }
+
+    if (form.registrationType === "team" && (!form.teamSize || Number(form.teamSize) < 2)) {
+      setSaveError("Team size must be at least 2.");
+      return;
+    }
+
+    if (!form.maxParticipants || Number(form.maxParticipants) < 1) {
+      setSaveError("Max capacity must be at least 1.");
+      return;
+    }
+
+    if (bookedVenue?.capacity && Number(form.maxParticipants) > bookedVenue.capacity) {
+      setSaveError(`Max capacity cannot exceed venue capacity (${bookedVenue.capacity} seats).`);
+      return;
+    }
+
+    if (!form.registrationStartDate || !form.registrationEndDate) {
+      setSaveError("Please set the registration open and close dates.");
+      return;
+    }
+
+    if (new Date(form.registrationEndDate) <= new Date(form.registrationStartDate)) {
+      setSaveError("Registration close date must be after the open date.");
+      return;
+    }
+
+    const regEndDate = new Date(form.registrationEndDate);
+    const evDateWithTime = new Date(`${form.eventDate}T${form.eventTime || "23:59"}:00`);
+    if (regEndDate > evDateWithTime) {
+      setSaveError("Registration must close before or at event start time.");
+      return;
+    }
+
+    if (form.eventEndDate && form.eventEndDate < form.eventDate) {
+      setSaveError("Event end date must be on or after the event start date.");
+      return;
+    }
 
     setSaving(true);
-    setSaveError(null);
 
     try {
       const formData = new FormData();
-      if (form.eventName) formData.append("eventName", form.eventName);
-      if (form.description) formData.append("description", form.description);
+      formData.append("eventName", form.eventName.trim());
+      formData.append("description", form.description.trim());
       if (form.eventType) formData.append("eventType", form.eventType);
       if (form.registrationType) formData.append("registrationType", form.registrationType);
-      if (form.maxParticipants) formData.append("maxParticipants", String(form.maxParticipants));
+      formData.append("maxParticipants", String(form.maxParticipants));
 
       if (form.eventType === "paid" && form.ticketPrice) {
         formData.append("ticketPrice", String(form.ticketPrice));
@@ -167,23 +459,29 @@ export default function EditEventPage() {
         formData.append("teamSize", String(form.teamSize));
       }
 
-      if (form.registrationStartDate) {
-        formData.append("registrationStartDate", new Date(form.registrationStartDate).toISOString());
-      }
-      if (form.registrationEndDate) {
-        formData.append("registrationEndDate", new Date(form.registrationEndDate).toISOString());
-      }
-      if (form.eventDate) {
-        formData.append("eventDate", new Date(`${form.eventDate}T00:00:00`).toISOString());
-      }
+      formData.append("registrationStartDate", new Date(form.registrationStartDate).toISOString());
+      formData.append("registrationEndDate", new Date(form.registrationEndDate).toISOString());
+      const eventDateIso = form.eventTime
+        ? new Date(`${form.eventDate}T${form.eventTime}:00`).toISOString()
+        : new Date(`${form.eventDate}T00:00:00`).toISOString();
+      formData.append("eventDate", eventDateIso);
+
       if (form.eventEndDate) {
         formData.append("eventEndDate", new Date(`${form.eventEndDate}T00:00:00`).toISOString());
+      } else {
+        formData.append("removeEventEndDate", "true");
       }
 
-      formData.append("certificateEnabled", String(form.certificateEnabled));
+      if (form.eventTime) {
+        formData.append("eventTime", form.eventTime);
+      }
+
+      formData.append("certificateEnabled", String(form.certificateEnabled ?? false));
 
       if (bannerFile) {
         formData.append("bannerImage", bannerFile);
+      } else if (removeBanner) {
+        formData.append("removeBannerImage", "true");
       }
 
       await eventService.update(id, formData);
@@ -208,6 +506,7 @@ export default function EditEventPage() {
         type: "success",
         text: "Venue booking cancelled. The venue is now available to others.",
       });
+      setVenueBookingId(null);
     } catch (err: any) {
       setCancelMessage({
         type: "error",
@@ -270,52 +569,91 @@ export default function EditEventPage() {
           <>
             {/* Booked Venue Summary Card */}
             {bookedVenue && (
-              <div className="flex items-center gap-4 rounded-2xl border border-amber-500/20 bg-[#111726]/80 p-4 backdrop-blur-xl">
-                <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-slate-800">
-                  {bookedVenue.images?.[0]?.url ? (
-                    <img
-                      src={bookedVenue.images[0].url}
-                      alt={bookedVenue.venueName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-slate-500">
-                      <Building2 className="h-6 w-6" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                      Booked Venue
-                    </span>
-                    <span className="text-[10px] text-slate-500">&bull;</span>
-                    <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                      <Users className="h-3 w-3 text-amber-400" /> Max {bookedVenue.capacity} guests
-                    </span>
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70 p-4 backdrop-blur-md transition-all duration-300 shadow-lg">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Venue Photo Thumbnail */}
+                  <div className="relative aspect-video sm:aspect-square w-full sm:w-28 shrink-0 overflow-hidden rounded-lg bg-slate-800 border border-white/5 flex items-center justify-center">
+                    {bookedVenue.images?.[0]?.url ? (
+                      <img
+                        src={bookedVenue.images[0].url}
+                        alt={bookedVenue.venueName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-500 gap-1 p-2 text-center">
+                        <Building2 className="h-6 w-6 text-slate-400" />
+                        <span className="text-[10px]">No image</span>
+                      </div>
+                    )}
                   </div>
 
-                  <h3 className="truncate text-sm font-bold text-white">
-                    {bookedVenue.venueName}
-                  </h3>
+                  {/* Venue Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                            Booked Venue
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-white truncate">
+                          {bookedVenue.venueName}
+                        </h4>
+                        {bookedVenue.location?.formattedAddress && (
+                          <p className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-400">
+                            <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                            <span className="truncate">{bookedVenue.location.formattedAddress}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                  <p className="truncate text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                    <MapPin className="h-3 w-3 text-slate-500 shrink-0" />
-                    {bookedVenue.location?.formattedAddress ||
-                      [bookedVenue.location?.city, bookedVenue.location?.state].filter(Boolean).join(", ")}
-                  </p>
+                    {/* Feature Badges */}
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                      <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-slate-950/60 px-2.5 py-1 text-slate-300">
+                        <Users className="h-3.5 w-3.5 text-amber-400" />
+                        <span>Max Capacity: <strong className="text-white font-semibold">{bookedVenue.capacity?.toLocaleString() ?? "N/A"}</strong></span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-slate-950/60 px-2.5 py-1 text-slate-300">
+                        <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>Price: <strong className="text-white font-semibold">${bookedVenue.pricePerDay?.toLocaleString() ?? 0}</strong>/day</span>
+                      </div>
+
+                      {bookedVenue.bookingPaymentPolicy && (
+                        <div className="flex items-center gap-1.5 rounded-lg border border-white/5 bg-slate-950/60 px-2.5 py-1 text-slate-300">
+                          <CreditCard className="h-3.5 w-3.5 text-sky-400" />
+                          <span>
+                            {bookedVenue.bookingPaymentPolicy === "advanceAllowed"
+                              ? `Advance (${bookedVenue.advancePercentage ?? 20}%)`
+                              : bookedVenue.bookingPaymentPolicy === "payAfterEvent"
+                              ? "Pay After Event"
+                              : "Full Payment"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             <form
               onSubmit={handleSubmit}
-              className="space-y-5 rounded-2xl border border-white/10 bg-[#111726]/80 p-6 backdrop-blur-xl"
+              noValidate
+              className="space-y-5 rounded-2xl border border-white/10 bg-[#111726]/80 p-6 backdrop-blur-xl shadow-2xl"
             >
               {saveError && (
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-center">
-                  <p className="text-sm font-medium text-red-400">{saveError}</p>
+                <div className="flex items-start gap-2.5 rounded-xl border border-red-500/40 bg-red-600/90 p-3.5 text-xs font-medium text-white shadow-lg">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span className="flex-1">{saveError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSaveError(null)}
+                    className="shrink-0 text-white/80 hover:text-white"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               )}
 
@@ -354,7 +692,7 @@ export default function EditEventPage() {
                     onClick={() => fileInputRef.current?.click()}
                     className="cursor-pointer border-2 border-dashed border-white/15 hover:border-amber-400/50 bg-slate-900/30 hover:bg-slate-900/60 rounded-xl p-6 text-center transition flex flex-col items-center justify-center gap-2 group"
                   >
-                    <div className="text-xs font-semibold text-slate-300">Click to upload new banner</div>
+                    <div className="text-xs font-semibold text-slate-300">Click to upload banner image</div>
                     <div className="text-[11px] text-slate-500">PNG, JPG, WebP, GIF or AVIF up to 5 MB</div>
                   </div>
                 )}
@@ -368,178 +706,330 @@ export default function EditEventPage() {
                 />
               </div>
 
+              {/* Event Name */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Event Name</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Event Name <span className="text-amber-400">*</span>
+                </label>
                 <input
                   name="eventName"
+                  type="text"
                   value={form.eventName ?? ""}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
+                  className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                 />
               </div>
 
+              {/* Description */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Description</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Description <span className="text-amber-400">*</span>
+                </label>
                 <textarea
                   name="description"
                   value={form.description ?? ""}
                   onChange={handleChange}
-                  rows={4}
+                  rows={3}
                   required
-                  className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50 resize-none"
+                  className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 resize-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Venue Availability Calendar for Date Picking */}
+              {bookedVenue && (
+                <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-200">
+                        Event Date & Venue Availability
+                      </span>
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        Select start date, then end date for multi-day events. Green indicates available dates.
+                      </p>
+                    </div>
+                    {availabilityLoading && (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-amber-400" />
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between mb-4">
+                    <button
+                      type="button"
+                      onClick={previousMonth}
+                      className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-slate-900 text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                    >
+                      ←
+                    </button>
+                    <h3 className="text-sm font-bold text-white">{monthLabel}</h3>
+                    <button
+                      type="button"
+                      onClick={nextMonth}
+                      className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-slate-900 text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                    >
+                      →
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5 mb-1.5">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                      <div key={day} className="text-center text-[10px] font-semibold text-slate-500 py-1.5">
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {calendarDays.map((date, index) => {
+                      if (!date) {
+                        return <div key={`empty-${index}`} className="aspect-square" />;
+                      }
+
+                      const dateKey = formatDateKey(date);
+                      const booked = isDateBooked(date);
+                      const past = isDateInPast(date);
+                      const rangeActive = form.eventDate && form.eventEndDate;
+                      const inRange = Boolean(form.eventDate && form.eventEndDate && dateKey >= form.eventDate && dateKey <= form.eventEndDate);
+                      const isEndpoint = form.eventDate === dateKey || (form.eventEndDate && form.eventEndDate === dateKey);
+                      const selected = form.eventDate === dateKey;
+                      const disabled = booked || past || availabilityLoading;
+
+                      return (
+                        <button
+                          key={dateKey}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => selectEventDate(date)}
+                          className={[
+                            "relative aspect-square rounded-lg text-xs font-semibold transition border",
+                            inRange && isEndpoint
+                              ? "border-amber-400 bg-amber-500 text-slate-950"
+                              : inRange
+                              ? "border-amber-500/40 bg-amber-500/20 text-amber-300"
+                              : selected
+                              ? "border-amber-400 bg-amber-500 text-slate-950"
+                              : booked
+                              ? "border-red-500/30 bg-red-500/20 text-red-400 cursor-not-allowed"
+                              : past
+                              ? "border-white/5 bg-slate-900/30 text-slate-700 cursor-not-allowed"
+                              : "border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:border-emerald-400 hover:bg-emerald-500/20",
+                            disabled && !selected ? "cursor-not-allowed" : "",
+                          ].join(" ")}
+                        >
+                          {date.getDate()}
+                          {booked && <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-red-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {form.eventDate && (
+                    <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3.5 py-3">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                          Selected Event Date{form.eventEndDate ? " Range" : ""}
+                        </p>
+                        <p className="mt-0.5 text-sm font-bold text-amber-400">
+                          {form.eventEndDate
+                            ? `${new Date(`${form.eventDate}T00:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" })} – ${new Date(`${form.eventEndDate}T00:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}`
+                            : new Date(`${form.eventDate}T00:00:00`).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                        </p>
+                      </div>
+
+                      {form.eventEndDate && (
+                        <button
+                          type="button"
+                          onClick={() => update("eventEndDate", "")}
+                          className="rounded-lg border border-white/10 bg-slate-900/80 px-2.5 py-1 text-xs font-medium text-slate-300 hover:text-white transition"
+                        >
+                          Make Single-Day Event
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {datesHaveChanged && originalEvent?.status === "published" && (
+                    <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+                      <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+                      <span>
+                        Notice: Changing the event date replaces the approved booking with a new request. Your event will return to <strong>draft</strong> status until the venue owner approves the new date.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Event Start Time */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Event Start Time <span className="text-slate-500">(Optional, e.g. 10:00 AM)</span>
+                </label>
+                <input
+                  type="time"
+                  name="eventTime"
+                  value={form.eventTime ?? ""}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 scheme-dark"
+                />
+              </div>
+
+              {/* Pricing Model & Registration Format */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Event Type</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Pricing Model</label>
                   <select
                     name="eventType"
                     value={form.eventType}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
+                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                   >
-                    <option value="free">Free</option>
-                    <option value="paid">Paid</option>
+                    <option value="free" className="bg-slate-900 text-white">Free Event</option>
+                    <option value="paid" className="bg-slate-900 text-white">Paid Pass</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Registration Type</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Registration Format</label>
                   <select
                     name="registrationType"
                     value={form.registrationType}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
+                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                   >
-                    <option value="individual">Individual</option>
-                    <option value="team">Team</option>
+                    <option value="individual" className="bg-slate-900 text-white">Individual Entry</option>
+                    <option value="team" className="bg-slate-900 text-white">Team Entry</option>
                   </select>
                 </div>
               </div>
 
-              {form.eventType === "paid" && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Ticket Price ($)</label>
-                  <input
-                    type="number"
-                    name="ticketPrice"
-                    min="0"
-                    value={form.ticketPrice ?? ""}
-                    onChange={handleChange}
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
-                  />
-                </div>
-              )}
-
-              {form.registrationType === "team" && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Team Size</label>
-                  <input
-                    type="number"
-                    name="teamSize"
-                    min="2"
-                    value={form.teamSize ?? ""}
-                    onChange={handleChange}
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Max Participants
-                  {bookedVenue?.capacity && (
-                    <span className="text-slate-500 ml-1.5">(Venue limit: {bookedVenue.capacity})</span>
-                  )}
-                </label>
-                <input
-                  type="number"
-                  name="maxParticipants"
-                  min="1"
-                  value={form.maxParticipants ?? ""}
-                  onChange={handleChange}
-                  required
-                  className={`w-full rounded-xl border bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none ${
-                    isOverCapacity ? "border-amber-500 focus:border-amber-400" : "border-white/10 focus:border-amber-500/50"
-                  }`}
-                />
-                {isOverCapacity && (
-                  <p className="mt-1.5 text-xs text-amber-400 flex items-center gap-1">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    Warning: Event capacity ({form.maxParticipants}) exceeds venue maximum capacity ({bookedVenue.capacity}).
-                  </p>
+              {/* Dynamic Pricing / Team Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {form.eventType === "paid" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Ticket Price ($) <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="ticketPrice"
+                      min="0.01"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={form.ticketPrice ?? ""}
+                      onChange={handleChange}
+                      required
+                      className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                    />
+                  </div>
                 )}
+
+                {form.registrationType === "team" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Team Size <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="teamSize"
+                      min="2"
+                      placeholder="e.g. 4"
+                      value={form.teamSize ?? ""}
+                      onChange={handleChange}
+                      required
+                      className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                    />
+                  </div>
+                )}
+
+                <div className={form.eventType === "free" && form.registrationType === "individual" ? "sm:col-span-2" : ""}>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Max Capacity <span className="text-amber-400">*</span>
+                    {bookedVenue && (
+                      <span className="text-slate-400 font-normal ml-2">
+                        (Venue limit: {bookedVenue.capacity} seats)
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="number"
+                    name="maxParticipants"
+                    min="1"
+                    max={bookedVenue?.capacity}
+                    value={form.maxParticipants ?? ""}
+                    onChange={handleChange}
+                    required
+                    className={`w-full rounded-xl border bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition ${
+                      isOverCapacity
+                        ? "border-red-500 focus:border-red-400 focus:ring-2 focus:ring-red-500/20"
+                        : "border-white/10 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                    }`}
+                  />
+                  {isOverCapacity && (
+                    <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      Event capacity ({form.maxParticipants}) cannot exceed venue maximum capacity ({bookedVenue.capacity}).
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Registration Dates */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Registration Start</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Reg. Opens <span className="text-amber-400">*</span>
+                  </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     name="registrationStartDate"
                     value={form.registrationStartDate ?? ""}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
+                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-xs text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 scheme-dark"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Registration End</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Reg. Closes <span className="text-amber-400">*</span>
+                  </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     name="registrationEndDate"
                     value={form.registrationEndDate ?? ""}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
+                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-xs text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 scheme-dark"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Event Start Date</label>
+              {/* Certificate Toggle */}
+              <div className="pt-2">
+                <label className="flex items-center gap-3 cursor-pointer group rounded-xl border border-white/5 bg-slate-900/40 p-3 hover:bg-slate-900/60 transition">
                   <input
-                    type="date"
-                    name="eventDate"
-                    value={form.eventDate ?? ""}
+                    type="checkbox"
+                    id="certificateEnabled"
+                    name="certificateEnabled"
+                    checked={form.certificateEnabled ?? false}
                     onChange={handleChange}
-                    required
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
+                    className="h-4 w-4 rounded border-white/20 bg-slate-900 text-amber-500 focus:ring-amber-500/20 focus:ring-offset-0"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Event End Date (Optional)</label>
-                  <input
-                    type="date"
-                    name="eventEndDate"
-                    value={form.eventEndDate ?? ""}
-                    onChange={handleChange}
-                    className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-4 py-2.5 text-sm text-white outline-none focus:border-amber-500/50"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="certificateEnabled"
-                  name="certificateEnabled"
-                  checked={form.certificateEnabled ?? false}
-                  onChange={handleChange}
-                  className="h-4 w-4 rounded accent-amber-500"
-                />
-                <label htmlFor="certificateEnabled" className="text-xs text-slate-300">
-                  Enable automated certificate issuance
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-slate-200 group-hover:text-white">
+                      Automated Certificate Issuance
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Auto-generate and email attendance certificates post-event
+                    </span>
+                  </div>
                 </label>
               </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
-                disabled={saving}
-                className="w-full rounded-xl bg-amber-500 py-3 text-xs font-bold text-slate-950 transition hover:bg-amber-400 disabled:opacity-50"
+                disabled={saving || Boolean(isOverCapacity)}
+                className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-slate-950 transition hover:bg-amber-400 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
               >
                 {saving ? "Saving Changes..." : "Save Changes"}
               </button>

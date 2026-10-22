@@ -8,6 +8,7 @@ import Registration from "./registration.model.js";
 import { withVenueLock } from "../../utils/mongoLock.js";
 import Attendance from "./attendance.model.js";
 import Ticket from "./ticket.model.js";
+
 export async function createEvent(
   data: CreateEventInput,
   userId: string
@@ -19,6 +20,15 @@ export async function createEvent(
     eventEndDate,
     ...eventData
   } = data;
+
+  // Validate maxParticipants against venue capacity
+  const venue = await Venue.findById(venueId).select("capacity");
+  if (venue && data.maxParticipants > venue.capacity) {
+    throw new AppError(
+      `Max participants cannot exceed venue capacity (${venue.capacity})`,
+      400
+    );
+  }
 
   // Create venue booking request (multi-day events reserve the whole range).
   const booking = await bookingService.createBooking({
@@ -294,10 +304,64 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
     throw new AppError("Completed events cannot be edited", 400);
   }
 
+  // 1. Capacity check against venue
+  if (data.maxParticipants && event.venueBookingId) {
+    const booking = await VenueBooking.findById(event.venueBookingId).populate<{ venueId: { capacity: number } }>("venueId");
+    if (booking?.venueId?.capacity && data.maxParticipants > booking.venueId.capacity) {
+      throw new AppError(
+        `Max participants cannot exceed venue capacity (${booking.venueId.capacity})`,
+        400
+      );
+    }
+  }
+
+  // 2. Banner image removal
+  if (data.removeBannerImage) {
+    event.bannerImage = undefined;
+    event.set("bannerImage", undefined);
+    delete data.removeBannerImage;
+    delete data.bannerImage;
+  }
+
+  // 3. Multi-day clearing
+  const isEndCleared = data.removeEventEndDate || data.eventEndDate === null;
+  if (isEndCleared) {
+    event.eventEndDate = undefined;
+    event.set("eventEndDate", undefined);
+    delete data.removeEventEndDate;
+    delete data.eventEndDate;
+  }
+
+  // 4. Pricing & Team size type switches
+  if (data.eventType === "free") {
+    event.ticketPrice = undefined;
+    event.set("ticketPrice", undefined);
+    delete data.ticketPrice;
+  } else if (data.eventType === "paid") {
+    const effectivePrice = data.ticketPrice ?? event.ticketPrice;
+    if (!effectivePrice || effectivePrice <= 0) {
+      throw new AppError("ticketPrice is required for paid events", 400);
+    }
+  }
+
+  if (data.registrationType === "individual") {
+    event.teamSize = undefined;
+    event.set("teamSize", undefined);
+    delete data.teamSize;
+  } else if (data.registrationType === "team") {
+    const effectiveTeamSize = data.teamSize ?? event.teamSize;
+    if (!effectiveTeamSize || effectiveTeamSize < 2) {
+      throw new AppError("teamSize must be at least 2 for team registration", 400);
+    }
+  }
+
+  // 5. Date calculation
   const nextStart = data.eventDate ? new Date(data.eventDate) : event.eventDate;
-  const nextEnd = data.eventEndDate
-    ? new Date(data.eventEndDate)
-    : event.eventEndDate ?? event.eventDate;
+  const nextEnd = isEndCleared
+    ? nextStart
+    : data.eventEndDate
+      ? new Date(data.eventEndDate)
+      : event.eventEndDate ?? nextStart;
 
   if (nextEnd < nextStart) {
     throw new AppError("eventEndDate must be on or after eventDate", 400);
@@ -373,9 +437,9 @@ export async function updateEvent(eventId: string, data: UpdateEventInput) {
       Object.assign(event, data);
       event.venueBookingId = newBooking._id;
 
-      // Automatically recalculate status based on the new dates
-      if (event.status !== "draft" && event.status !== "cancelled") {
-        event.status = nextStatusFor(new Date(), nextStart, nextEnd);
+      // Rescheduled event requires venue owner re-approval before it can be published!
+      if (event.status !== "cancelled") {
+        event.status = "draft";
       }
 
       await event.save();

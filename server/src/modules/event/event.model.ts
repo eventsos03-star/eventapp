@@ -76,4 +76,7 @@ export type CreateEventInput = Omit<IEvent,
 
 export type UpdateEventInput = Partial<
   Omit<IEvent, 'status' | 'createdAt' | 'updatedAt' | 'organizationId' | 'venueBookingId' | 'isDeleted' | 'createdBy'>
->;
+> & {
+  removeBannerImage?: boolean;
+  removeEventEndDate?: boolean;
+};

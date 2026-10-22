@@ -18,14 +18,25 @@ export function parseEventFormData(req: Request, _res: Response, next: NextFunct
     }
   }
 
-  // Convert boolean string
+  // Convert boolean strings
   if (typeof body.certificateEnabled === 'string') {
     body.certificateEnabled = body.certificateEnabled === 'true';
   }
+  if (typeof body.removeBannerImage === 'string') {
+    body.removeBannerImage = body.removeBannerImage === 'true';
+  }
+  if (typeof body.removeEventEndDate === 'string') {
+    body.removeEventEndDate = body.removeEventEndDate === 'true';
+  }
 
-  // If eventEndDate is an empty string, delete it so z.coerce.date().optional() doesn't fail
-  if (typeof body.eventEndDate === 'string' && body.eventEndDate.trim() === '') {
-    delete body.eventEndDate;
+  // If removeEventEndDate is true or eventEndDate is explicitly empty, set to null
+  if (body.removeEventEndDate === true || (typeof body.eventEndDate === 'string' && body.eventEndDate.trim() === '')) {
+    body.eventEndDate = null;
+  }
+
+  // If eventTime is empty string, delete it
+  if (typeof body.eventTime === 'string' && body.eventTime.trim() === '') {
+    delete body.eventTime;
   }
 
   next();

@@ -297,7 +297,7 @@ export default function OrgEventDetailPage() {
                       isPaid ? "text-amber-400" : "text-emerald-400"
                     }`}
                   >
-                    {isPaid ? `₹${event.ticketPrice ?? "0"}` : "Free"}
+                    {isPaid ? `${event.ticketPrice ?? "0"}` : "Free"}
                   </p>
                 </div>
 
