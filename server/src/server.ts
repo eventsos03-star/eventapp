@@ -9,6 +9,7 @@ async function start(): Promise<void> {
 
   const server = app.listen(env.PORT, () => {
     console.log(`EventOS API running on http://localhost:${env.PORT} (${env.NODE_ENV})`);
+    console.log("CD is working")
   });
 
 
