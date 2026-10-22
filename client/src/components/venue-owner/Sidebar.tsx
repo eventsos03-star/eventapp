@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 export type OwnerTab = 'dashboard' | 'venues' | 'availability' | 'bookings' | 'settings'
 
@@ -22,14 +23,14 @@ export function Sidebar({
   onClose?: () => void
 }) {
   return (
-    <div className="flex h-full flex-col gap-8 bg-slate-950 px-5 py-8">
+    <div className="flex h-full flex-col gap-6 bg-slate-950 px-5 py-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Link href="/profile" className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-slate-950 text-sm font-black text-amber-400">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-slate-900 text-sm font-black text-amber-400 border border-white/10">
               E
             </span>
-            <span className="text-base font-bold tracking-tight text-slate-900">
+            <span className="text-base font-bold tracking-tight text-white">
               Event<span className="text-amber-500">OS</span>
             </span>
           </Link>
@@ -46,6 +47,16 @@ export function Sidebar({
             </svg>
           </button>
         )}
+      </div>
+
+      <div>
+        <Link
+          href="/profile"
+          className="inline-flex w-full items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/60 px-3.5 py-2 text-xs font-semibold text-slate-300 transition hover:border-amber-500/40 hover:bg-slate-800 hover:text-amber-400"
+        >
+          <ArrowLeft className="h-3.5 w-3.5 text-amber-400" />
+          Back to Profile
+        </Link>
       </div>
 
       <nav className="flex flex-col gap-1">

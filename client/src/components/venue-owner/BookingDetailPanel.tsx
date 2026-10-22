@@ -71,10 +71,13 @@ export function BookingDetailPanel({
         </span>
 
         <dl className="mt-4 flex flex-col gap-3">
+          {(booking.eventName || booking.event?.eventName) && (
+            <Row label="Event Name">{booking.eventName || booking.event?.eventName}</Row>
+          )}
           <Row label="Requested by">{requesterName(booking)}</Row>
           <Row label="Start date">{format(parseISO(booking.startDate), 'EEE, MMM d yyyy')}</Row>
           <Row label="End date">{format(parseISO(booking.endDate), 'EEE, MMM d yyyy')}</Row>
-          <Row label="Amount">${booking.bookingAmount.toLocaleString()}</Row>
+          <Row label="Amount">₹{booking.bookingAmount.toLocaleString()}</Row>
           <Row label="Payment">{booking.paymentStatus.replace('Paid', ' Paid')}</Row>
         </dl>
 
