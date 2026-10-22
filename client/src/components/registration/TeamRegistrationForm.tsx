@@ -105,12 +105,22 @@ const [registrationId, setRegistrationId] = useState("");
     const handleSaveMember = () => {
         
         if (!newMember.name.trim()) {
-            alert("Please enter member name");
+            toast.error("Please enter the member name.");
             return;
         }
 
         if (!newMember.email.trim()) {
-            alert("Please enter member email");
+            toast.error("Please enter the member email.");
+            return;
+        }
+
+        if (!/^[6-9][0-9]{9}$/.test(newMember.phoneNumber)) {
+            toast.error("Enter a valid 10-digit Indian mobile number for the member.");
+            return;
+        }
+
+        if (!newMember.collegeOrOrganization.trim()) {
+            toast.error("Please enter the member's college or organization.");
             return;
         }
 
@@ -131,7 +141,7 @@ const [registrationId, setRegistrationId] = useState("");
 
         
         if (members.length >= additionalMemberCount) {
-            alert("Maximum team members reached");
+            toast.error("You have reached the maximum number of team members.");
             return;
         }
 
@@ -172,11 +182,29 @@ const [registrationId, setRegistrationId] = useState("");
              toast.error("Please enter team name");
         return;
         }
- if (!captainPhoneNumber.trim()) {
-        toast.error("Please enter captain phone number");
-        return;
-    }
+        if (!/^[6-9][0-9]{9}$/.test(captainPhoneNumber)) {
+            toast.error("Enter a valid 10-digit mobile number for the captain.");
+            return;
+        }
 
+        if (!captainCollegeOrOrganization.trim()) {
+            toast.error("Please enter the captain's college or organization.");
+            return;
+        }
+
+
+
+        const invalidMember = members.findIndex((member) =>
+            !member.name.trim() ||
+            !member.email.trim() ||
+            !/^[6-9][0-9]{9}$/.test(member.phoneNumber) ||
+            !member.collegeOrOrganization.trim()
+        );
+
+        if (invalidMember !== -1) {
+            toast.error(`Please edit Member ${invalidMember + 1} and complete all required fields.`);
+            return;
+        }
 
         const totalMembers = members.length + 1;
 
@@ -473,6 +501,7 @@ razorpay.open();
 
                                             <label className="mb-2 block text-sm text-slate-400">
                                                 College / Organization
+                                                <span className="ml-1 text-orange-400">*</span>
                                             </label>
 
                                             <input
@@ -889,25 +918,36 @@ razorpay.open();
                             <div>
 
                                 <label className="mb-2 block text-sm text-slate-400">
-                                    Phone Number
-                                </label>
+                                                Phone Number
+                                                <span className="ml-1 text-orange-400">
+                                                    *
+                                                </span>
+                                            </label>
+
 
                                <input
-  type="tel"
-  value={captainPhoneNumber}
-  onChange={(e) => {
-    const value = e.target.value.replace(/\D/g, "");
+                                    type="tel"
+                                    value={newMember.phoneNumber}
+                                    onChange={(e) => {
+                                        const value = e.target.value.replace(/\D/g, "");
 
-    if (value.length <= 10) {
-      setCaptainPhoneNumber(value);
-    }
-  }}
-  placeholder="Enter 10-digit phone number"
-  maxLength={10}
-  pattern="[6-9][0-9]{9}"
-  className="w-full rounded-lg border border-slate-700 bg-[#111c2f] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-  required
-/>
+                                        if (value.length <= 10) {
+                                            setNewMember({
+                                                ...newMember,
+                                                phoneNumber: value,
+                                            });
+                                        }
+                                    }}
+                                    placeholder="Enter 10-digit phone number"
+                                    maxLength={10}
+                                    pattern="[6-9][0-9]{9}"
+                                    title="Enter a valid 10-digit mobile number"
+                                    required
+                                    className="w-full rounded-lg border border-slate-700 bg-[#111c2f] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+                                <p className="mt-2 text-xs text-slate-500">
+                                    {newMember.phoneNumber.length}/10 digits
+                                </p>
 
                             </div>
 
@@ -917,6 +957,7 @@ razorpay.open();
 
                                 <label className="mb-2 block text-sm text-slate-400">
                                     College / Organization
+                                    <span className="ml-1 text-orange-400">*</span>
                                 </label>
 
                                 <input
