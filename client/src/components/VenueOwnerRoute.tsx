@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
-import { Spinner } from './Spinner'
 
 // Guards a page so only a logged-in venue owner (a user who owns >= 1 venue)
 // can see it:
@@ -44,7 +43,16 @@ export function VenueOwnerRoute({ children }: { children: ReactNode }) {
   if (initializing || (user && ownsVenue === null)) {
     return (
       <div className="page-loader">
-        <Spinner size={28} />
+        <div className="page-loader__inner">
+          <p className="page-loader__wordmark">Event<span>OS</span></p>
+          <div className="page-loader__ring">
+            <div className="page-loader__dot" />
+          </div>
+          <p className="page-loader__label">Loading</p>
+          <div className="page-loader__deco">
+            <span /><span /><span /><span /><span />
+          </div>
+        </div>
       </div>
     )
   }

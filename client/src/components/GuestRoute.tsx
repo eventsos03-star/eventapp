@@ -4,7 +4,6 @@ import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../context/AuthContext'
-import { Spinner } from './Spinner'
 
 export function GuestRoute({ children }: { children: ReactNode }) {
   const { user, initializing } = useAuth()
@@ -17,7 +16,16 @@ export function GuestRoute({ children }: { children: ReactNode }) {
   if (initializing) {
     return (
       <div className="page-loader">
-        <Spinner size={28} />
+        <div className="page-loader__inner">
+          <p className="page-loader__wordmark">Event<span>OS</span></p>
+          <div className="page-loader__ring">
+            <div className="page-loader__dot" />
+          </div>
+          <p className="page-loader__label">Loading</p>
+          <div className="page-loader__deco">
+            <span /><span /><span /><span /><span />
+          </div>
+        </div>
       </div>
     )
   }

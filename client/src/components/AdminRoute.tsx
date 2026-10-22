@@ -4,7 +4,6 @@ import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../context/AuthContext'
-import { Spinner } from './Spinner'
 
 // Guards a page so only a logged-in platform admin can see it:
 // - signed out       -> /login
@@ -21,7 +20,16 @@ export function AdminRoute({ children }: { children: ReactNode }) {
   if (initializing) {
     return (
       <div className="page-loader">
-        <Spinner size={28} />
+        <div className="page-loader__inner">
+          <p className="page-loader__wordmark">Event<span>OS</span></p>
+          <div className="page-loader__ring">
+            <div className="page-loader__dot" />
+          </div>
+          <p className="page-loader__label">Loading</p>
+          <div className="page-loader__deco">
+            <span /><span /><span /><span /><span />
+          </div>
+        </div>
       </div>
     )
   }

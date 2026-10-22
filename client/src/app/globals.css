@@ -8,3 +8,118 @@
 .hide-scrollbar::-webkit-scrollbar {
     display: none;
 }
+
+/* ── Page loader ────────────────────────────────────────────── */
+.page-loader {
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+    background-color: #14171f;   /* --color-ink */
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+.page-loader__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+}
+
+/* Wordmark */
+.page-loader__wordmark {
+    font-family: "Fraunces", ui-serif, serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #e4d9c0;             /* --color-paper-dim */
+    animation: loader-pulse 2.4s ease-in-out infinite;
+}
+
+.page-loader__wordmark span {
+    color: #e8a33d;             /* --color-amber */
+}
+
+/* Ring spinner */
+.page-loader__ring {
+    position: relative;
+    width: 52px;
+    height: 52px;
+}
+
+.page-loader__ring::before,
+.page-loader__ring::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+}
+
+/* Dim track */
+.page-loader__ring::before {
+    border: 3px solid #333a4d;   /* --color-ink-line */
+}
+
+/* Amber arc */
+.page-loader__ring::after {
+    border: 3px solid transparent;
+    border-top-color: #e8a33d;  /* --color-amber */
+    border-right-color: #e8a33d;
+    animation: loader-spin 0.9s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
+}
+
+/* Dot inside the ring */
+.page-loader__dot {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+}
+
+.page-loader__dot::after {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #e8a33d;        /* --color-amber */
+    animation: loader-pulse 2.4s ease-in-out infinite;
+}
+
+/* Sub-label */
+.page-loader__label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.6875rem;        /* 11px */
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #333a4d;              /* --color-ink-line */
+    animation: loader-pulse 2.4s ease-in-out 0.4s infinite;
+}
+
+/* Ticket-punch decorative dots */
+.page-loader__deco {
+    display: flex;
+    gap: 6px;
+}
+
+.page-loader__deco span {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #333a4d;
+    animation: loader-pulse 2.4s ease-in-out infinite;
+}
+
+.page-loader__deco span:nth-child(2) { animation-delay: 0.2s; }
+.page-loader__deco span:nth-child(3) { animation-delay: 0.4s; }
+.page-loader__deco span:nth-child(4) { animation-delay: 0.6s; }
+.page-loader__deco span:nth-child(5) { animation-delay: 0.8s; }
+
+/* Keyframes */
+@keyframes loader-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes loader-pulse {
+    0%, 100% { opacity: 0.5; }
+    50%       { opacity: 1; }
+}
