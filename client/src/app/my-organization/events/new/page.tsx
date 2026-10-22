@@ -360,6 +360,7 @@ function CreateEventPageInner() {
   }
 
   function isDateBooked(date: Date) {
+    if (isDateInPast(date)) return false;
     const selectedKey = formatDateKey(date);
 const holdStartKey = hold
       ? formatDateKey(toDateOnly(hold.startDate))
