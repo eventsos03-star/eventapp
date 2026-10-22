@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
-// const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:5000";
-const BACKEND_URL = process.env.BACKEND_URL ?? "https://eventos-api.duckdns.org";
+const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:5000";
+// const BACKEND_URL = process.env.BACKEND_URL ?? "https://eventos-api.duckdns.org";
 
 const nextConfig: NextConfig = {
   turbopack: {

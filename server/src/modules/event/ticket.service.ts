@@ -165,6 +165,8 @@ export const ticketVerification = async (
  * - Individual: marks as checked in.
  * - Team: returns members and check-in statuses.
  */
+import { DateTime } from "luxon";
+
 export const scanAndVerifyTicket = async (
   eventId: string,
   ticketNumber: string,
@@ -172,24 +174,36 @@ export const scanAndVerifyTicket = async (
 ) => {
   const cleanTicketNumber = ticketNumber.trim();
 
-  const ticket = await Ticket.findOne({ ticketNumber: cleanTicketNumber });
+  const ticket = await Ticket.findOne({
+    ticketNumber: cleanTicketNumber,
+  });
+
   if (!ticket) {
     throw new AppError("Invalid ticket. Ticket number not found.", 404);
   }
 
-  const registration: any = await Registration.findById(ticket.registrationId)
+  const registration: any = await Registration.findById(
+    ticket.registrationId
+  )
     .populate("participantId", "firstName lastName email")
     .populate("teamId");
 
   if (!registration) {
-    throw new AppError("Registration record for this ticket not found.", 404);
+    throw new AppError(
+      "Registration record for this ticket not found.",
+      404
+    );
   }
 
   if (registration.eventId.toString() !== eventId) {
-    throw new AppError("This ticket belongs to a different event.", 400);
+    throw new AppError(
+      "This ticket belongs to a different event.",
+      400
+    );
   }
 
   const event = await Event.findById(eventId);
+
   if (!event) {
     throw new AppError("Event not found.", 404);
   }
@@ -198,39 +212,46 @@ export const scanAndVerifyTicket = async (
     throw new AppError("This event has been cancelled.", 400);
   }
 
-  // Event day validation window
-  const now = new Date();
-  const eventStartDay = new Date(event.eventDate);
-  eventStartDay.setHours(0, 0, 0, 0);
+  // Event-day validation using Indian Standard Time
+  const TIME_ZONE = "Asia/Kolkata";
+  const now = DateTime.now().setZone(TIME_ZONE);
 
-  const eventEndDay = new Date(event.eventEndDate ?? event.eventDate);
-  eventEndDay.setHours(23, 59, 59, 999);
+  const eventStartDay = DateTime
+    .fromJSDate(new Date(event.eventDate), { zone: "utc" })
+    .setZone(TIME_ZONE)
+    .startOf("day");
 
-  if (now < eventStartDay) {
-    const formattedStart = eventStartDay.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+  const eventEndDay = DateTime
+    .fromJSDate(
+      new Date(event.eventEndDate ?? event.eventDate),
+      { zone: "utc" }
+    )
+    .setZone(TIME_ZONE)
+    .endOf("day");
+
+  if (now.toMillis() < eventStartDay.toMillis()) {
+    const formattedStart = eventStartDay.toFormat("LLL dd, yyyy");
+
     throw new AppError(
       `Check-in is not open yet! Ticket scanning is only available on the event day (${formattedStart}).`,
       400
     );
   }
 
-  if (now > eventEndDay) {
+  if (now.toMillis() > eventEndDay.toMillis()) {
     throw new AppError(
       "This event has already ended. Ticket check-in is closed.",
       400
     );
   }
 
-  // ==========================================
   // CASE A: INDIVIDUAL TICKET
-  // ==========================================
   if (!registration.teamId) {
     if (ticket.status === "used" || registration.checkedIn) {
-      throw new AppError("Ticket has already been used and checked in.", 400);
+      throw new AppError(
+        "Ticket has already been used and checked in.",
+        400
+      );
     }
 
     ticket.status = "used";
@@ -250,8 +271,9 @@ export const scanAndVerifyTicket = async (
     });
 
     const attendeeName =
-      `${registration.participantId?.firstName ?? ""} ${registration.participantId?.lastName ?? ""}`.trim() ||
-      "Attendee";
+      `${registration.participantId?.firstName ?? ""} ${
+        registration.participantId?.lastName ?? ""
+      }`.trim() || "Attendee";
 
     return {
       isTeam: false,
@@ -262,10 +284,9 @@ export const scanAndVerifyTicket = async (
     };
   }
 
-  // ==========================================
   // CASE B: TEAM TICKET
-  // ==========================================
   const team: any = registration.teamId;
+
   if (!team) {
     throw new AppError("Team record not found for this ticket.", 404);
   }
@@ -282,9 +303,11 @@ export const scanAndVerifyTicket = async (
 
   const memberRoster = team.members.map((m: any) => {
     const isCheckedIn = checkedInMemberIdSet.has(m._id.toString());
+
     const attendanceRecord = existingAttendances.find(
       (a) => a.teamMemberId?.toString() === m._id.toString()
     );
+
     return {
       _id: m._id.toString(),
       name: m.name,
@@ -292,12 +315,17 @@ export const scanAndVerifyTicket = async (
       phoneNumber: m.phoneNumber,
       collegeOrOrganization: m.collegeOrOrganization,
       isCheckedIn,
-      checkedInAt: attendanceRecord ? attendanceRecord.checkedInAt : null,
+      checkedInAt: attendanceRecord
+        ? attendanceRecord.checkedInAt
+        : null,
     };
   });
 
   const totalMembers = team.members.length;
-  const checkedInCount = memberRoster.filter((m: any) => m.isCheckedIn).length;
+  const checkedInCount = memberRoster.filter(
+    (m: any) => m.isCheckedIn
+  ).length;
+
   const allAlreadyCheckedIn = checkedInCount >= totalMembers;
 
   return {
