@@ -363,6 +363,18 @@ export default function EventsListPage() {
                 {events.map((event) => {
                   const isPaid = event.eventType === "paid";
 
+                  // Registration mode should come from the event API.
+                  // teamSize is a fallback for older event records that don't
+                  // include registrationType.
+                  const registrationType = String(
+                    event.registrationType ?? (event.teamSize ? "team" : "individual")
+                  ).toLowerCase();
+
+                  const isTeamRegistration =
+                    registrationType === "team" ||
+                    registrationType === "team-registration" ||
+                    registrationType === "team registration";
+
                   const venueName =
                           event.venueBookingId?.venueId?.venueName;
 
@@ -424,6 +436,7 @@ export default function EventsListPage() {
                           >
                             {isPaid ? "Paid" : "Free"}
                           </span>
+
 
                         </div>
 
@@ -514,6 +527,21 @@ export default function EventsListPage() {
     </div>
   </div>
 )}
+
+                          {/* Registration Type */}
+                          <div className="mt-3">
+                            <span
+                              className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium ${
+                                isTeamRegistration
+                                  ? "bg-blue-500/10 text-blue-400"
+                                  : "bg-violet-500/10 text-violet-400"
+                              }`}
+                            >
+                              {isTeamRegistration
+                                ? "Team Registration"
+                                : "Individual Registration"}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Bottom */}

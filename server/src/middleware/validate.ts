@@ -8,6 +8,9 @@ import { AppError } from '../utils/AppError.js';
  */
 export function validate(schema: AnyZodObject): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction) => {
+
+   console.log("ZOD VALIDATION HIT:", req.originalUrl);
+        console.log("PHONE NUMBER:", req.body.phoneNumber);
     const result = schema.safeParse({
       body: req.body,
       query: req.query,
@@ -20,6 +23,7 @@ export function validate(schema: AnyZodObject): RequestHandler {
       return next(new AppError(message, 400));
     }
 
+    req.body = result.data.body;
     next();
   };
 }
