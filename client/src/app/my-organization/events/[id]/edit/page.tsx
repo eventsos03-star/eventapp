@@ -429,10 +429,11 @@ export default function EditEventPage() {
       return;
     }
 
-    const regEndDate = new Date(form.registrationEndDate);
-    const evDateWithTime = new Date(`${form.eventDate}T${form.eventTime || "23:59"}:00`);
-    if (regEndDate > evDateWithTime) {
-      setSaveError("Registration must close before or at event start time.");
+    const eventEndBoundary = form.eventEndDate
+      ? new Date(`${form.eventEndDate}T23:59:59`)
+      : new Date(`${form.eventDate}T23:59:59`);
+    if (new Date(form.registrationEndDate) > eventEndBoundary) {
+      setSaveError("Registration close date must be on or before the event concludes.");
       return;
     }
 

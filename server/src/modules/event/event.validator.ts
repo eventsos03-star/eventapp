@@ -37,7 +37,7 @@ const createEventBody = z
     eventDate: z.coerce.date(),
     eventEndDate: z.coerce.date().optional(),
     /** HH:mm — when provided the event has a specific wall-clock start time.
-     *  This unlocks same-day registration windows for last-minute / sudden events. */
+     *  This unlocks same-day / instant registration windows for last-minute events. */
     eventTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "eventTime must be HH:mm").optional(),
     certificateEnabled: z.boolean().optional(),
     ticketPrice: z.number().positive().optional(),
@@ -55,24 +55,20 @@ const createEventBody = z
     (data) => data.registrationStartDate < data.registrationEndDate,
     { message: "registrationStartDate must be before registrationEndDate", path: ["registrationStartDate"] }
   )
-  // When eventTime is supplied the event has a precise start time, so
-  // registrationEndDate is allowed to be up to the event start time.
+  // For instant and regular events, registration can remain open up until the event concludes
   .refine(
     (data) => {
       const regEnd = data.registrationEndDate;
-      const evStart = getEffectiveEventStart(data.eventDate, data.eventTime);
-      return regEnd <= evStart;
+      const endDay = data.eventEndDate ?? data.eventDate;
+      // Allow registration to remain open until the end of the event day / multi-day window
+      const eventEndBoundary = new Date(endDay.getTime() + 24 * 60 * 60 * 1000);
+      return regEnd <= eventEndBoundary;
     },
-    { message: "registrationEndDate must be before or on event start time", path: ["registrationEndDate"] }
+    { message: "registrationEndDate must be on or before the event ends", path: ["registrationEndDate"] }
   )
   .refine(
     (data) => {
-      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-      if (data.eventTime) {
-        const evStart = getEffectiveEventStart(data.eventDate, data.eventTime);
-        return evStart >= fifteenMinutesAgo;
-      }
-      // Without eventTime, allow today's date (with 24h timezone buffer)
+      // Allow instant events starting today or any future date (24h buffer for timezones)
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
       return data.eventDate >= yesterday;
     },
@@ -82,11 +78,11 @@ const createEventBody = z
     (data) => !data.eventEndDate || data.eventEndDate >= data.eventDate,
     { message: "eventEndDate must be on or after eventDate", path: ["eventEndDate"] }
   )
-  // Allow registrationStartDate from now (current moment), with 15 minutes grace period
+  // Allow registrationStartDate from today / now (with 24h grace buffer for timezones)
   .refine(
     (data) => {
-      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-      return data.registrationStartDate >= fifteenMinutesAgo;
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      return data.registrationStartDate >= yesterday;
     },
     { message: "registrationStartDate cannot be in the past", path: ["registrationStartDate"] }
   );
@@ -142,10 +138,11 @@ const updateEventBody = z
   .refine(
     (data) => {
       if (!data.registrationEndDate || !data.eventDate) return true;
-      const evStart = getEffectiveEventStart(data.eventDate, data.eventTime);
-      return data.registrationEndDate <= evStart;
+      const endDay = data.eventEndDate ?? data.eventDate;
+      const eventEndBoundary = new Date(endDay.getTime() + 24 * 60 * 60 * 1000);
+      return data.registrationEndDate <= eventEndBoundary;
     },
-    { message: "registrationEndDate must be before or on event start time", path: ["registrationEndDate"] }
+    { message: "registrationEndDate must be on or before the event ends", path: ["registrationEndDate"] }
   )
   .refine(
     (data) => !data.eventEndDate || !data.eventDate ||
