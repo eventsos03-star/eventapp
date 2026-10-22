@@ -6,6 +6,16 @@ const objectId = z.string().refine(
   { message: "Invalid ObjectId" }
 );
 
+function getEffectiveEventStart(eventDate: Date, eventTime?: string | null): Date {
+  if (eventTime && /^([01]\d|2[0-3]):[0-5]\d$/.test(eventTime)) {
+    const [hours, minutes] = eventTime.split(":").map(Number);
+    const d = new Date(eventDate);
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+  }
+  return eventDate;
+}
+
 const createEventBody = z
   .object({
     organizationId: objectId,
@@ -26,9 +36,12 @@ const createEventBody = z
     registrationEndDate: z.coerce.date(),
     eventDate: z.coerce.date(),
     eventEndDate: z.coerce.date().optional(),
+    /** HH:mm — when provided the event has a specific wall-clock start time.
+     *  This unlocks same-day / instant registration windows for last-minute events. */
+    eventTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "eventTime must be HH:mm").optional(),
     certificateEnabled: z.boolean().optional(),
     ticketPrice: z.number().positive().optional(),
-    teamSize: z.number().int().positive().optional(),
+    teamSize: z.number().int().min(2, "teamSize must be at least 2").optional(),
   })
   .refine(
     (data) => data.eventType !== "paid" || typeof data.ticketPrice === "number",
@@ -42,20 +55,35 @@ const createEventBody = z
     (data) => data.registrationStartDate < data.registrationEndDate,
     { message: "registrationStartDate must be before registrationEndDate", path: ["registrationStartDate"] }
   )
+  // For instant and regular events, registration can remain open up until the event concludes
   .refine(
-    (data) => data.registrationEndDate <= data.eventDate,
-    { message: "registrationEndDate must be before or on eventDate", path: ["registrationEndDate"] }
+    (data) => {
+      const regEnd = data.registrationEndDate;
+      const endDay = data.eventEndDate ?? data.eventDate;
+      // Allow registration to remain open until the end of the event day / multi-day window
+      const eventEndBoundary = new Date(endDay.getTime() + 24 * 60 * 60 * 1000);
+      return regEnd <= eventEndBoundary;
+    },
+    { message: "registrationEndDate must be on or before the event ends", path: ["registrationEndDate"] }
   )
   .refine(
-    (data) => data.eventDate >= new Date(new Date().toDateString()),
+    (data) => {
+      // Allow instant events starting today or any future date (24h buffer for timezones)
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      return data.eventDate >= yesterday;
+    },
     { message: "eventDate cannot be in the past", path: ["eventDate"] }
   )
   .refine(
     (data) => !data.eventEndDate || data.eventEndDate >= data.eventDate,
     { message: "eventEndDate must be on or after eventDate", path: ["eventEndDate"] }
   )
+  // Allow registrationStartDate from today / now (with 24h grace buffer for timezones)
   .refine(
-    (data) => data.registrationStartDate >= new Date(new Date().toDateString()),
+    (data) => {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      return data.registrationStartDate >= yesterday;
+    },
     { message: "registrationStartDate cannot be in the past", path: ["registrationStartDate"] }
   );
 
@@ -83,17 +111,23 @@ const updateEventBody = z
         publicId: z.string().optional(),
         key: z.string().optional(),
       })
+      .nullable()
       .optional(),
+    removeBannerImage: z.boolean().optional(),
     eventType: z.enum(["free", "paid"]).optional(),
     registrationType: z.enum(["team", "individual"]).optional(),
     maxParticipants: z.number().int().positive().optional(),
     registrationStartDate: z.coerce.date().optional(),
     registrationEndDate: z.coerce.date().optional(),
     eventDate: z.coerce.date().optional(),
-    eventEndDate: z.coerce.date().optional(),
+    eventEndDate: z.coerce.date().nullable().optional(),
+    removeEventEndDate: z.boolean().optional(),
+    /** HH:mm — when provided the event has a specific wall-clock start time.
+     *  This unlocks same-day registration windows for last-minute / sudden events. */
+    eventTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "eventTime must be HH:mm").nullable().optional(),
     certificateEnabled: z.boolean().optional(),
-    ticketPrice: z.number().positive().optional(),
-    teamSize: z.number().int().positive().optional(),
+    ticketPrice: z.number().positive().nullable().optional(),
+    teamSize: z.number().int().min(2, "teamSize must be at least 2").nullable().optional(),
   })
   .strict()
   .refine(
@@ -102,14 +136,26 @@ const updateEventBody = z
     { message: "registrationStartDate must be before registrationEndDate", path: ["registrationStartDate"] }
   )
   .refine(
-    (data) => !data.registrationEndDate || !data.eventDate ||
-      data.registrationEndDate <= data.eventDate,
-    { message: "registrationEndDate must be before or on eventDate", path: ["registrationEndDate"] }
+    (data) => {
+      if (!data.registrationEndDate || !data.eventDate) return true;
+      const endDay = data.eventEndDate ?? data.eventDate;
+      const eventEndBoundary = new Date(endDay.getTime() + 24 * 60 * 60 * 1000);
+      return data.registrationEndDate <= eventEndBoundary;
+    },
+    { message: "registrationEndDate must be on or before the event ends", path: ["registrationEndDate"] }
   )
   .refine(
     (data) => !data.eventEndDate || !data.eventDate ||
       data.eventEndDate >= data.eventDate,
     { message: "eventEndDate must be on or after eventDate", path: ["eventEndDate"] }
+  )
+  .refine(
+    (data) => data.eventType !== "paid" || data.ticketPrice === undefined || (data.ticketPrice !== null && data.ticketPrice > 0),
+    { message: "ticketPrice must be positive for paid events", path: ["ticketPrice"] }
+  )
+  .refine(
+    (data) => data.registrationType !== "team" || data.teamSize === undefined || (data.teamSize !== null && data.teamSize >= 2),
+    { message: "teamSize must be at least 2 for team registration", path: ["teamSize"] }
   );
 
 export const updateEventSchema = z.object({

@@ -55,6 +55,7 @@ function CreateEventPageInner() {
     registrationEndDate: "",
     eventDate: "",
     eventEndDate: "",
+    eventTime: "",
     certificateEnabled: false,
     ticketPrice: "",
     teamSize: "",
@@ -585,10 +586,17 @@ const holdStartKey = hold
       formData.append("certificateEnabled", String(form.certificateEnabled));
       formData.append("registrationStartDate", new Date(form.registrationStartDate).toISOString());
       formData.append("registrationEndDate", new Date(form.registrationEndDate).toISOString());
-      formData.append("eventDate", new Date(`${form.eventDate}T00:00:00`).toISOString());
+      const eventDateIso = form.eventTime
+        ? new Date(`${form.eventDate}T${form.eventTime}:00`).toISOString()
+        : new Date(`${form.eventDate}T00:00:00`).toISOString();
+      formData.append("eventDate", eventDateIso);
 
       if (form.eventEndDate) {
         formData.append("eventEndDate", new Date(`${form.eventEndDate}T00:00:00`).toISOString());
+      }
+
+      if (form.eventTime) {
+        formData.append("eventTime", form.eventTime);
       }
 
       if (bannerFile) {
@@ -1082,6 +1090,19 @@ releaseHold();
                   className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2.5 text-xs text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 scheme-dark"
                 />
               </div>
+            </div>
+
+            {/* Event Start Time */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Event Start Time <span className="text-slate-500">(Optional, e.g. 10:00 AM)</span>
+              </label>
+              <input
+                type="time"
+                value={form.eventTime}
+                onChange={(e) => update("eventTime", e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 scheme-dark"
+              />
             </div>
 
             {/* Certificate Toggle */}

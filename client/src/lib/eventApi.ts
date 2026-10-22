@@ -56,6 +56,7 @@ export interface CreateEventPayload {
   registrationEndDate: string;
   eventDate: string;
   eventEndDate?: string;
+  eventTime?: string;
   certificateEnabled?: boolean;
   ticketPrice?: number;
   teamSize?: number;
@@ -66,6 +67,7 @@ export interface UpdateEventPayload {
   eventName?: string;
   description?: string;
   bannerImage?: { url: string; key?: string; publicId?: string };
+  removeBannerImage?: boolean;
   eventType?: "free" | "paid";
   registrationType?: "team" | "individual";
   maxParticipants?: number;
@@ -73,6 +75,8 @@ export interface UpdateEventPayload {
   registrationEndDate?: string;
   eventDate?: string;
   eventEndDate?: string;
+  removeEventEndDate?: boolean;
+  eventTime?: string;
   certificateEnabled?: boolean;
   ticketPrice?: number;
   teamSize?: number;
@@ -116,7 +120,7 @@ export const eventService = {
   getById: (id: string) =>
     eventApi.get(`/events/${id}`).then((res) => res.data),
 
-    update: (id: string, payload: UpdateEventPayload | FormData) => {
+  update: (id: string, payload: UpdateEventPayload | FormData) => {
     const isFormData = typeof FormData !== "undefined" && payload instanceof FormData;
     return eventApi
       .patch(`/events/${id}`, payload, {
@@ -141,7 +145,7 @@ export const eventService = {
   }) =>
     eventApi.get("/events/public", { params }).then((res) => res.data),
 
-publicGetById: (id: string) =>
+  publicGetById: (id: string) =>
     eventApi.get(`/events/public/${id}`).then((res) => res.data),
 
   getVenueAvailability: (venueId: string) =>

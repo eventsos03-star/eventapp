@@ -78,6 +78,11 @@ export const updateEvent = asyncHandler(async (req, res) => {
       await deleteImageFromS3(oldImageKey).catch(() => {});
     }
 
+    // 5. If banner was explicitly removed, delete the old S3 image
+    if (req.body.removeBannerImage && oldImageKey) {
+      await deleteImageFromS3(oldImageKey).catch(() => {});
+    }
+
     return success(res, 200, "event updated successfully", event);
   } catch (error) {
     // Rollback: if DB update fails, delete the newly uploaded image from S3
