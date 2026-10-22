@@ -147,6 +147,36 @@ export default function OrgEventDetailPage() {
     year: "numeric",
   });
 
+  const formatEventTime = (timeStr?: string, dateObj?: Date) => {
+    if (timeStr && timeStr.trim()) {
+      const [hoursStr, minutesStr] = timeStr.trim().split(":");
+      const hours = parseInt(hoursStr, 10);
+      const minutes = parseInt(minutesStr, 10);
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        const d = new Date();
+        d.setHours(hours, minutes, 0, 0);
+        return d.toLocaleTimeString(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      }
+      return timeStr;
+    }
+    if (dateObj && !isNaN(dateObj.getTime())) {
+      const hours = dateObj.getHours();
+      const minutes = dateObj.getMinutes();
+      if (hours !== 0 || minutes !== 0) {
+        return dateObj.toLocaleTimeString(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      }
+    }
+    return null;
+  };
+
+  const formattedTime = formatEventTime(event.eventTime, eventDate);
+
   const registrationEnd = event.registrationEndDate
     ? new Date(event.registrationEndDate).toLocaleDateString(undefined, {
         month: "short",
@@ -271,6 +301,12 @@ export default function OrgEventDetailPage() {
                 />
 
                 <EventInfo
+                  icon={<Clock3 className="h-4 w-4" />}
+                  label="Time"
+                  value={formattedTime || "Time not specified"}
+                />
+
+                <EventInfo
                   icon={<MapPin className="h-4 w-4" />}
                   label="Location"
                   value={formattedLocation || venueName || "Location not specified"}
@@ -375,6 +411,9 @@ export default function OrgEventDetailPage() {
                       Event Date & Time
                     </p>
                     <p className="mt-1 text-sm text-slate-300">{formattedDate}</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {formattedTime ? `Starts at ${formattedTime}` : "Time not specified"}
+                    </p>
                   </div>
                 </div>
 
