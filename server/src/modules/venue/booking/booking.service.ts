@@ -345,7 +345,7 @@ export const getBookingsForVenue = async (params: {
     );
   }
 
-  return VenueBooking.find({
+  const bookings = await VenueBooking.find({
     venueId,
   })
     .populate(
@@ -355,6 +355,32 @@ export const getBookingsForVenue = async (params: {
     .sort({
       startDate: 1,
     });
+
+  const bookingIds = bookings.map((b) => b._id);
+  const events = await Event.find({
+    venueBookingId: { $in: bookingIds },
+    isDeleted: false,
+  }).select("_id eventName venueBookingId");
+
+  const eventMap = new Map<string, { _id: string; eventName: string }>();
+  for (const ev of events) {
+    if (ev.venueBookingId) {
+      eventMap.set(ev.venueBookingId.toString(), {
+        _id: ev._id.toString(),
+        eventName: ev.eventName,
+      });
+    }
+  }
+
+  return bookings.map((b) => {
+    const obj = b.toObject();
+    const ev = eventMap.get(b._id.toString());
+    return {
+      ...obj,
+      event: ev || null,
+      eventName: ev?.eventName || null,
+    };
+  });
 };
 
 
@@ -408,10 +434,6 @@ export const getBookingById = async (params: {
   const isAdmin =
     userRole === "ADMIN";
 
-  if (isOwner || isAdmin) {
-    return booking;
-  }
-
   const bookingOrgId =
     booking.organizationId
       .toString();
@@ -427,14 +449,23 @@ export const getBookingById = async (params: {
       inviteStatus: "accepted",
     }).select("_id");
 
-  if (ownsOrg || Boolean(isMember)) {
-    return booking;
+  if (!isOwner && !isAdmin && !ownsOrg && !Boolean(isMember)) {
+    throw new AppError(
+      "You are not authorized to view this booking",
+      403
+    );
   }
 
-  throw new AppError(
-    "You are not authorized to view this booking",
-    403
-  );
+  const ev = await Event.findOne({
+    venueBookingId: booking._id,
+    isDeleted: false,
+  }).select("_id eventName");
+
+  return {
+    ...booking.toObject(),
+    event: ev ? { _id: ev._id.toString(), eventName: ev.eventName } : null,
+    eventName: ev?.eventName || null,
+  };
 };
 
 

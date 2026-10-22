@@ -144,6 +144,11 @@ export default function AdminBookingsPage() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-semibold text-ink">{venue?.venueName ?? 'Unknown venue'}</span>
+                        {(booking.eventName || booking.event?.eventName) && (
+                          <span className="rounded-md bg-amber/10 px-2 py-0.5 text-xs font-bold text-amber-700">
+                            {booking.eventName || booking.event?.eventName}
+                          </span>
+                        )}
                         <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[booking.status]}`}>
                           {booking.status}
                         </span>

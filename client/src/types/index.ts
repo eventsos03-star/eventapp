@@ -213,6 +213,8 @@ export interface VenueBooking {
   cancelledAt?: string
   createdAt: string
   updatedAt: string
+  eventName?: string
+  event?: { _id: string; eventName: string }
 }
 
 export interface BookingDateRange {
@@ -279,6 +281,8 @@ export interface AdminBooking {
   cancelledAt?: string
   createdAt: string
   updatedAt: string
+  eventName?: string
+  event?: { _id: string; eventName: string }
 }
 
 export interface AdminEvent {

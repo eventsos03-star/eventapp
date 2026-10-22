@@ -59,6 +59,7 @@ export function UpcomingBookings({
                 ? ` – ${format(parseISO(booking.endDate), 'MMM d')}`
                 : '')
             const isBusy = busy?.[booking._id]
+            const eventName = booking.eventName || booking.event?.eventName
             return (
               <li
                 key={booking._id}
@@ -71,8 +72,13 @@ export function UpcomingBookings({
                       {STATUS_LABEL[booking.status] ?? booking.status}
                     </span>
                   </div>
+                  {eventName && (
+                    <p className="mt-1 font-semibold text-sm text-amber-600">
+                      {eventName}
+                    </p>
+                  )}
                   <p className="mt-0.5 truncate text-xs text-slate-500">
-                    {requesterName(booking)} · ${booking.bookingAmount.toLocaleString()}
+                    {requesterName(booking)} · ₹{booking.bookingAmount.toLocaleString()}
                   </p>
                 </div>
 

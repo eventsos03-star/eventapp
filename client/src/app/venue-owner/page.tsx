@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { VenueOwnerRoute } from '../../components/VenueOwnerRoute'
 import { Sidebar } from '../../components/venue-owner/Sidebar'
 import type { OwnerTab } from '../../components/venue-owner/Sidebar'
@@ -134,10 +136,14 @@ function OwnerContent() {
     <div className="min-h-screen bg-slate-50 font-sans antialiased">
       {/* Mobile top bar */}
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 lg:hidden">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-slate-950 text-sm font-black text-amber-400">
-            E
-          </span>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/profile"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Profile
+          </Link>
           <span className="text-base font-bold tracking-tight text-slate-900">
             Event<span className="text-amber-500">OS</span>
           </span>
@@ -183,6 +189,13 @@ function OwnerContent() {
           <div className="mx-auto max-w-5xl">
             <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
+                <Link
+                  href="/profile"
+                  className="mb-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 transition hover:text-amber-600"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back to Profile
+                </Link>
                 <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Venue Owner</h1>
                 <p className="mt-1 text-sm text-slate-500">
                   Manage your venues, availability and booking requests.

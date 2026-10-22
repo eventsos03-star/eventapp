@@ -173,9 +173,31 @@ export async function listBookings(status?: BookingStatus) {
     .sort({ createdAt: -1 })
     .limit(200);
 
+  const bookingIds = bookings.map((b) => b._id);
+  const events = await Event.find({
+    venueBookingId: { $in: bookingIds },
+    isDeleted: false,
+  }).select('_id eventName venueBookingId');
+
+  const eventMap = new Map<string, { _id: string; eventName: string }>();
+  for (const ev of events) {
+    if (ev.venueBookingId) {
+      eventMap.set(ev.venueBookingId.toString(), {
+        _id: ev._id.toString(),
+        eventName: ev.eventName,
+      });
+    }
+  }
+
   return bookings.map((booking) => {
     const { _id, ...rest } = booking.toObject() as unknown as Record<string, unknown>;
-    return { id: String(_id), ...rest };
+    const ev = eventMap.get(String(_id));
+    return {
+      id: String(_id),
+      ...rest,
+      event: ev || null,
+      eventName: ev?.eventName || null,
+    };
   });
 }
 

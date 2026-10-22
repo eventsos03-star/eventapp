@@ -14,6 +14,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 const API_ROOT = process.env.NEXT_PUBLIC_API_URL ?? "";
 const VENUE_BASE = `${API_ROOT}/api/venues`;
@@ -44,6 +46,8 @@ interface RawBooking {
   status: BookingStatus;
   paymentStatus: "pending" | "advancePaid" | "fullyPaid";
   createdAt: string;
+  eventName?: string;
+  event?: { _id: string; eventName: string };
 }
 
 interface OwnedVenue {
@@ -231,6 +235,13 @@ export default function VenueOwnerBookingsPage() {
     <div className="min-h-screen bg-[#FBFBFA] text-stone-900">
       <div className="mx-auto max-w-5xl px-6 py-12">
         <header className="mb-8">
+          <Link
+            href="/profile"
+            className="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 transition hover:text-stone-900"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Profile
+          </Link>
           <h1 className="font-serif text-3xl text-stone-900">Venue bookings</h1>
           <p className="mt-1 text-sm text-stone-500">
             Requests to book any of your venues land here.
@@ -287,6 +298,7 @@ export default function VenueOwnerBookingsPage() {
               <thead>
                 <tr className="border-b border-stone-200 bg-stone-50 text-xs text-stone-500">
                   <th className="px-4 py-2.5 font-medium">Venue</th>
+                  <th className="px-4 py-2.5 font-medium">Event</th>
                   <th className="px-4 py-2.5 font-medium">Requested by</th>
                   <th className="px-4 py-2.5 font-medium">Dates</th>
                   <th className="px-4 py-2.5 font-medium">Amount</th>
@@ -299,10 +311,14 @@ export default function VenueOwnerBookingsPage() {
                   const status = STATUS_STYLES[row.status];
                   const isActing = Boolean(pendingAction[row._id]);
                   const error = rowError[row._id];
+                  const eventName = row.eventName || row.event?.eventName;
 
                   return (
                     <tr key={row._id} className="border-b border-stone-100 last:border-0">
                       <td className="px-4 py-3 align-top text-stone-800">{row.venueName}</td>
+                      <td className="px-4 py-3 align-top font-medium text-amber-700">
+                        {eventName || "—"}
+                      </td>
                       <td className="px-4 py-3 align-top">
                         <div className="text-stone-800">
                           {row.requestedBy.firstName} {row.requestedBy.lastName}
