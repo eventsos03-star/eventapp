@@ -142,19 +142,41 @@ const eventImage =
 
   const eventDate = new Date(event.eventDate);
 
-
-
-  
   const formattedDate = eventDate.toLocaleDateString(undefined, {
     month: "long",
     day: "numeric",
     year: "numeric",
   });
 
-  const formattedTime = eventDate.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const formatEventTime = (timeStr?: string, dateObj?: Date) => {
+    if (timeStr && timeStr.trim()) {
+      const [hoursStr, minutesStr] = timeStr.trim().split(":");
+      const hours = parseInt(hoursStr, 10);
+      const minutes = parseInt(minutesStr, 10);
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        const d = new Date();
+        d.setHours(hours, minutes, 0, 0);
+        return d.toLocaleTimeString(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      }
+      return timeStr;
+    }
+    if (dateObj && !isNaN(dateObj.getTime())) {
+      const hours = dateObj.getHours();
+      const minutes = dateObj.getMinutes();
+      if (hours !== 0 || minutes !== 0) {
+        return dateObj.toLocaleTimeString(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      }
+    }
+    return null;
+  };
+
+  const formattedTime = formatEventTime(event.eventTime, eventDate);
 
   const registrationEnd = event.registrationEndDate
     ? new Date(event.registrationEndDate).toLocaleDateString(
@@ -351,11 +373,11 @@ const registrationDisabled =
                   value={formattedDate}
                 />
 
-                {/* <EventInfo
+                <EventInfo
                   icon={<Clock3 className="h-4 w-4" />}
                   label="Time"
-                  value={formattedTime}
-                /> */}
+                  value={formattedTime || "Time not specified"}
+                />
 
                 <EventInfo
                   icon={<MapPin className="h-4 w-4" />}
@@ -521,9 +543,9 @@ const registrationDisabled =
           {formattedDate}
         </p>
 
-        {/* <p className="mt-1 text-xs text-slate-500">
-          {formattedTime}
-        </p> */}
+        <p className="mt-1 text-xs text-slate-400">
+          {formattedTime ? `Starts at ${formattedTime}` : "Time not specified"}
+        </p>
       </div>
     </div>
 
