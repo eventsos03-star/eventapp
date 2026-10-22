@@ -60,11 +60,30 @@ export const getAllEvents=async({search,page,limit,location,eventType,sort,}:Pub
 
   if (location) {
   const venues = await Venue.find({
-    location: {
-      $regex: location,
-      $options: "i",
-    },
+    isDeleted: false,
+    status: "approved",
+    $or: [
+      {
+        "location.city": {
+          $regex: location,
+          $options: "i",
+        },
+      },
+      {
+        "location.state": {
+          $regex: location,
+          $options: "i",
+        },
+      },
+      {
+        "location.country": {
+          $regex: location,
+          $options: "i",
+        },
+      },
+    ],
   }).select("_id");
+
 
   const venueIds = venues.map((venue) => venue._id);
 
