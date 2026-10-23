@@ -217,7 +217,7 @@ export default function IndividualRegistrationForm({
 console.log("Razorpay order ID:", options.order_id);
 console.log("Razorpay amount:", options.amount);
 console.log("Razorpay currency:", options.currency);
-
+console.log("Checkout Key ID:", options.key);
             const razorpay = new window.Razorpay(options);
 
 
