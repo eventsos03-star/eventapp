@@ -80,6 +80,7 @@ export const authenticate = asyncHandler(
             status: user.status,
             organizationId,
             orgRole,
+            phone: user.phone,
         };
 
         req.sessionId = payload.sessionId;

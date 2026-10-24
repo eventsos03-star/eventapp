@@ -22,6 +22,10 @@ async function rollbackS3Uploads(keys: string[]): Promise<void> {
 }
 
 export const createVenue = asyncHandler(async (req, res) => {
+  if (!req.user?.phone) {
+    throw new AppError('Please add a phone number to your profile before creating a venue', 400);
+  }
+
   const files = getUploadedFiles(req);
 
   const venueId = new mongoose.Types.ObjectId();

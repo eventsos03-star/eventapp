@@ -6,6 +6,10 @@ import { AppError } from "../../utils/AppError.js";
 import { uploadEventBannerToS3, deleteImageFromS3 } from "../../services/s3.service.js";
 
 export const create = asyncHandler(async (req, res) => {
+  if (!req.user?.phone) {
+    throw new AppError('Please add a phone number to your profile before creating an event', 400);
+  }
+
   const eventId = new mongoose.Types.ObjectId();
   let uploadedKey: string | undefined;
   let bannerImage: { url: string; key: string } | undefined;

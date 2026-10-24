@@ -43,12 +43,23 @@ export const changePasswordSchema = z.object({
   }),
 });
 
+const phoneRegex = /^[+]?[\d\s()-]{7,20}$/;
+
 export const updateProfileSchema = z.object({
   body: z
     .object({
       firstName: z.string().trim().min(1, 'First name is required').max(50).optional(),
       lastName: z.string().trim().min(1, 'Last name is required').max(50).optional(),
-      phone: z.string().trim().max(20).optional(),
+      phone: z
+        .string()
+        .trim()
+        .optional()
+        .refine((val) => !val || phoneRegex.test(val), {
+          message: 'Enter a valid phone number',
+        })
+        .refine((val) => !val || val.replace(/\D/g, '').length >= 7, {
+          message: 'Phone number must contain at least 7 digits',
+        }),
       location: z.string().trim().max(100).optional(),
     })
     .refine(

@@ -5,7 +5,7 @@ import { Spinner } from '../../../components/Spinner'
 import { adminApi } from '../../../lib/adminApi'
 import type { Organization } from '../../../types'
 import { TabBar, STATUS_STYLES, type Message, type Tab } from '../../../components/admin/ui'
-import { RejectModal, ConfirmDialog, PermanentDeleteModal } from '../../../components/admin/modals'
+import { RejectModal, ConfirmDialog, PermanentDeleteModal, OrganizationReviewModal } from '../../../components/admin/modals'
 
 export default function AdminOrganizationsPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
@@ -28,6 +28,10 @@ export default function AdminOrganizationsPage() {
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectTarget, setRejectTarget] = useState<{ kind: 'org'; id: string } | null>(null)
   const [rejecting, setRejecting] = useState(false)
+
+  const [reviewOrg, setReviewOrg] = useState<Organization | null>(null)
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [approving, setApproving] = useState(false)
 
   const fetchOrgs = useCallback(async () => {
     const { data } = await adminApi.getOrganizations(orgTab)
@@ -52,17 +56,21 @@ export default function AdminOrganizationsPage() {
 
   async function handleApprove(id: string) {
     const key = `org-${id}`
-    if (action) return
+    if (action || approving) return
     setAction(key)
+    setApproving(true)
     setMessage(null)
     try {
       await adminApi.approveOrganization(id)
       setMessage({ type: 'success', text: 'Approved successfully' })
+      setReviewOpen(false)
+      setReviewOrg(null)
       await load()
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Action failed' })
     } finally {
       setAction(null)
+      setApproving(false)
     }
   }
 
@@ -80,6 +88,8 @@ export default function AdminOrganizationsPage() {
       setMessage({ type: 'success', text: 'Rejected successfully' })
       setRejectOpen(false)
       setRejectTarget(null)
+      setReviewOpen(false)
+      setReviewOrg(null)
       await load()
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Action failed' })
@@ -196,9 +206,20 @@ export default function AdminOrganizationsPage() {
                       <p className="mt-0.5 text-xs text-ink/35">Created {new Date(org.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div className="flex flex-wrap gap-2 sm:shrink-0">
+                      <button
+                        type="button"
+                        disabled={action !== null}
+                        onClick={() => {
+                          setReviewOrg(org)
+                          setReviewOpen(true)
+                        }}
+                        className="flex items-center gap-2 rounded-lg border border-amber/40 px-3 py-1.5 text-xs font-semibold text-amber transition hover:bg-amber/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Review
+                      </button>
                       {orgTab === 'pending' && org.status === 'pending' && (
                         <>
-                          <button type="button" disabled={action !== null} onClick={() => void handleApprove(org.id)} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
+                          <button type="button" disabled={action !== null || approving} onClick={() => void handleApprove(org.id)} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
                             {isBusy(`org-${org.id}`) && <Spinner size={12} />}Approve
                           </button>
                           <button type="button" disabled={action !== null} onClick={() => openReject(org.id)} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
@@ -231,6 +252,23 @@ export default function AdminOrganizationsPage() {
       )}
 
       <RejectModal open={rejectOpen} onReject={handleReject} onCancel={() => { setRejectOpen(false); setRejectTarget(null) }} loading={rejecting} />
+
+      <OrganizationReviewModal
+        open={reviewOpen}
+        organization={reviewOrg}
+        onApprove={() => {
+          if (reviewOrg) void handleApprove(reviewOrg.id)
+        }}
+        onReject={() => {
+          if (reviewOrg) openReject(reviewOrg.id)
+        }}
+        onClose={() => {
+          setReviewOpen(false)
+          setReviewOrg(null)
+        }}
+        approving={approving}
+        rejecting={rejecting}
+      />
 
       <ConfirmDialog
         open={orgDeleteModal.open}

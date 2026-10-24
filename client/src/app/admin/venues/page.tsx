@@ -5,7 +5,7 @@ import { Spinner } from '../../../components/Spinner'
 import { adminApi } from '../../../lib/adminApi'
 import type { Venue } from '../../../types'
 import { STATUS_STYLES, type Message } from '../../../components/admin/ui'
-import { RejectModal } from '../../../components/admin/modals'
+import { RejectModal, VenueReviewModal } from '../../../components/admin/modals'
 
 const STATUS_TABS: { value: Venue['status'] | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -17,7 +17,7 @@ const STATUS_TABS: { value: Venue['status'] | 'all'; label: string }[] = [
 
 export default function AdminVenuesPage() {
   const [venues, setVenues] = useState<Venue[]>([])
-  const [tab, setTab] = useState<Venue['status'] | 'all'>('all')
+  const [tab, setTab] = useState<Venue['status'] | 'all'>('pending')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<Message>(null)
@@ -27,6 +27,9 @@ export default function AdminVenuesPage() {
   const [rejecting, setRejecting] = useState(false)
 
   const [action, setAction] = useState<string | null>(null)
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [reviewVenue, setReviewVenue] = useState<Venue | null>(null)
+  const [approving, setApproving] = useState(false)
 
   const fetchVenues = useCallback(async () => {
     const { data } = await adminApi.getVenues(tab === 'all' ? undefined : tab)
@@ -48,6 +51,36 @@ export default function AdminVenuesPage() {
   useEffect(() => {
     void load()
   }, [tab, load])
+
+  function openReview(venue: Venue) {
+    setReviewVenue(venue)
+    setReviewOpen(true)
+  }
+
+  async function handleApproveFromModal() {
+    if (!reviewVenue || approving || rejecting) return
+    setApproving(true)
+    setAction(`approve-${reviewVenue._id}`)
+    setMessage(null)
+    try {
+      await adminApi.approveVenue(reviewVenue._id)
+      setMessage({ type: 'success', text: 'Venue approved' })
+      setReviewOpen(false)
+      setReviewVenue(null)
+      await load()
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Action failed' })
+    } finally {
+      setApproving(false)
+      setAction(null)
+    }
+  }
+
+  function openRejectFromModal() {
+    if (!reviewVenue) return
+    setRejectTarget(reviewVenue._id)
+    setRejectOpen(true)
+  }
 
   async function handleApprove(id: string) {
     if (action) return
@@ -78,6 +111,8 @@ export default function AdminVenuesPage() {
       setMessage({ type: 'success', text: 'Venue rejected' })
       setRejectOpen(false)
       setRejectTarget(null)
+      setReviewOpen(false)
+      setReviewVenue(null)
       await load()
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Action failed' })
@@ -142,20 +177,25 @@ export default function AdminVenuesPage() {
                       <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[venue.status]}`}>{venue.status}</span>
                     </div>
                     <p className="mt-0.5 text-xs text-ink/45">
-                      {venue.location.city} · ${venue.pricePerDay}/day · capacity {venue.capacity}
+                      {venue.location?.city} · ${venue.pricePerDay}/day · capacity {venue.capacity}
                     </p>
-                    <p className="mt-0.5 truncate text-xs text-ink/35">{venue.location.formattedAddress}</p>
+                    <p className="mt-0.5 truncate text-xs text-ink/35">{venue.location?.formattedAddress}</p>
                   </div>
-                  {venue.status === 'pending' && (
-                    <div className="flex flex-wrap gap-2 sm:shrink-0">
-                      <button type="button" disabled={action !== null} onClick={() => void handleApprove(venue._id)} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
-                        {action === `approve-${venue._id}` && <Spinner size={12} />}Approve
-                      </button>
-                      <button type="button" disabled={action !== null} onClick={() => openReject(venue._id)} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
-                        Reject
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex flex-wrap gap-2 sm:shrink-0">
+                    <button type="button" onClick={() => openReview(venue)} className="rounded-lg border border-paper-dim px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-paper-dim/10">
+                      Review
+                    </button>
+                    {venue.status === 'pending' && (
+                      <>
+                        <button type="button" disabled={action !== null} onClick={() => void handleApprove(venue._id)} className="flex items-center gap-2 rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60">
+                          {action === `approve-${venue._id}` && <Spinner size={12} />}Approve
+                        </button>
+                        <button type="button" disabled={action !== null} onClick={() => openReject(venue._id)} className="flex items-center gap-2 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">
+                          Reject
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -164,6 +204,15 @@ export default function AdminVenuesPage() {
       )}
 
       <RejectModal open={rejectOpen} onReject={handleReject} onCancel={() => { setRejectOpen(false); setRejectTarget(null) }} loading={rejecting} />
+      <VenueReviewModal
+        open={reviewOpen}
+        venue={reviewVenue}
+        onApprove={handleApproveFromModal}
+        onReject={openRejectFromModal}
+        onClose={() => { setReviewOpen(false); setReviewVenue(null) }}
+        approving={approving}
+        rejecting={rejecting}
+      />
     </div>
   )
 }
