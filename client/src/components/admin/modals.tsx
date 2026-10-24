@@ -483,3 +483,129 @@ export function VenueReviewModal({
     </div>
   )
 }
+
+export function OrganizationReviewModal({
+  open,
+  organization,
+  onApprove,
+  onReject,
+  onClose,
+  approving,
+  rejecting,
+}: {
+  open: boolean
+  organization: any
+  onApprove: () => void
+  onReject: () => void
+  onClose: () => void
+  approving: boolean
+  rejecting: boolean
+}) {
+  if (!open || !organization) return null
+
+  const ownerUser = typeof organization.ownerId === 'object' && organization.ownerId !== null ? organization.ownerId : null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 px-4 py-6">
+      <div className="relative w-full max-w-4xl max-h-[90vh] overflow-auto rounded-2xl border border-paper-dim bg-paper">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-paper-dim bg-paper px-6 py-4">
+          <div>
+            <h3 className="font-display text-xl font-semibold text-ink">Review Organization</h3>
+            <p className="text-sm text-ink/50">Read-only details for validation</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg px-3 py-1.5 text-sm text-ink/60 hover:bg-paper-dim/10">Close</button>
+        </div>
+
+        <div className="grid gap-6 p-6 lg:grid-cols-2">
+          <section className="space-y-4">
+            <div className="rounded-xl border border-paper-dim p-4">
+              <h4 className="text-sm font-semibold text-ink">Organization Details</h4>
+              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <dt className="text-ink/50">Name</dt>
+                <dd className="text-ink">{organization.organizationName}</dd>
+                <dt className="text-ink/50">Type</dt>
+                <dd className="text-ink">{organization.organizationType}</dd>
+                <dt className="text-ink/50">Status</dt>
+                <dd className="text-ink capitalize">{organization.status}</dd>
+                <dt className="text-ink/50">Email</dt>
+                <dd className="text-ink">{organization.email}</dd>
+                <dt className="text-ink/50">Phone</dt>
+                <dd className="text-ink">{organization.phoneNumber || '-'}</dd>
+                <dt className="text-ink/50">Created</dt>
+                <dd className="text-ink">{organization.createdAt ? new Date(organization.createdAt).toLocaleString() : '-'}</dd>
+              </dl>
+              {organization.description && (
+                <div className="mt-3">
+                  <p className="text-xs font-semibold text-ink/60">Description</p>
+                  <p className="mt-1 text-sm text-ink/80 whitespace-pre-wrap">{organization.description}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-paper-dim p-4">
+              <h4 className="text-sm font-semibold text-ink">Address</h4>
+              <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <dt className="text-ink/50">Street</dt>
+                <dd className="text-ink">{organization.address?.street || '-'}</dd>
+                <dt className="text-ink/50">City</dt>
+                <dd className="text-ink">{organization.address?.city || '-'}</dd>
+                <dt className="text-ink/50">State</dt>
+                <dd className="text-ink">{organization.address?.state || '-'}</dd>
+                <dt className="text-ink/50">Postal Code</dt>
+                <dd className="text-ink">{organization.address?.postalCode || '-'}</dd>
+                <dt className="text-ink/50">Country</dt>
+                <dd className="text-ink">{organization.address?.country || '-'}</dd>
+              </dl>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <div className="rounded-xl border border-paper-dim p-4">
+              <h4 className="text-sm font-semibold text-ink">Account (User)</h4>
+              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <dt className="text-ink/50">Name</dt>
+                <dd className="text-ink">{ownerUser?.firstName || '-'} {ownerUser?.lastName || ''}</dd>
+                <dt className="text-ink/50">Email</dt>
+                <dd className="text-ink">{ownerUser?.email || '-'}</dd>
+                <dt className="text-ink/50">Phone</dt>
+                <dd className="text-ink">{ownerUser?.phone || '-'}</dd>
+                <dt className="text-ink/50">Email Verified</dt>
+                <dd className="text-ink">{ownerUser?.emailVerified === true ? 'Yes' : ownerUser?.emailVerified === false ? 'No' : '-'}</dd>
+                <dt className="text-ink/50">Joined</dt>
+                <dd className="text-ink">{ownerUser?.createdAt ? new Date(ownerUser.createdAt).toLocaleDateString() : '-'}</dd>
+              </dl>
+            </div>
+
+            <div className="rounded-xl border border-amber/40 bg-amber/5 p-4">
+              <h4 className="text-sm font-semibold text-ink">Validation Checklist (Read-only)</h4>
+              <ul className="mt-2 space-y-1 text-xs text-ink/70">
+                <li>• Check owner details and phone</li>
+                <li>• Verify organization info</li>
+                <li>• Review contact/email</li>
+                <li>• Check address consistency</li>
+              </ul>
+            </div>
+
+            {organization.rejectionReason && organization.status === 'rejected' && (
+              <div className="rounded-xl border border-red-300 bg-red-50 p-4">
+                <h4 className="text-sm font-semibold text-red-700">Rejection Reason</h4>
+                <p className="mt-1 text-sm text-red-700">{organization.rejectionReason}</p>
+              </div>
+            )}
+          </section>
+        </div>
+
+        {organization.status === 'pending' && (
+          <div className="sticky bottom-0 flex justify-end gap-3 border-t border-paper-dim bg-paper px-6 py-4">
+            <button type="button" onClick={onReject} disabled={rejecting || approving} className="flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60">
+              {rejecting && <Spinner size={14} />}Reject
+            </button>
+            <button type="button" onClick={onApprove} disabled={approving || rejecting} className="flex items-center gap-2 rounded-lg border border-teal/40 px-4 py-2 text-sm font-semibold text-teal hover:bg-teal/10 disabled:opacity-60">
+              {approving && <Spinner size={14} />}Approve
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

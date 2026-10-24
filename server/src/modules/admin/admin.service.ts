@@ -186,7 +186,7 @@ export async function listOrganizations(status: ResourceStatus | 'deleted' = DEF
       ? { isDeleted: true }
       : { status, ...NOT_DELETED };
   const organizations = await Organization.find(filter)
-    .populate('ownerId', 'firstName lastName email')
+    .populate('ownerId', 'firstName lastName email phone avatar emailVerified createdAt')
     .sort({ createdAt: 1 }).lean();
 
   let ownerDeletedById = new Map<string, boolean>();
@@ -267,7 +267,7 @@ export async function rejectOrganization(id: string, reason: string): Promise<Or
 
 export async function getOrganizationDetail(id: string): Promise<OrganizationResponse> {
   const organization = await Organization.findById(id)
-    .populate('ownerId', 'firstName lastName email')
+    .populate('ownerId', 'firstName lastName email phone avatar emailVerified createdAt')
     .populate('approvedBy', 'firstName lastName email')
     .lean();
   if (!organization) throw new AppError('Organization not found', 404);
