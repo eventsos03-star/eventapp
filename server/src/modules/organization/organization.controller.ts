@@ -3,6 +3,9 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { success } from '../../utils/response.js';
 
 export const createOrganization = asyncHandler(async (req, res) => {
+  if (!req.user?.phone) {
+    throw new AppError('Please add a phone number to your profile before creating an organization', 400);
+  }
   const org = await orgService.createOrganization(req.user!.id, req.body);
   success(res, 201, 'Organization created successfully', org);
 });

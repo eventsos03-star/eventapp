@@ -958,7 +958,9 @@ const [venueOwnerLoading, setVenueOwnerLoading] =
                       onChange={(event) =>
                         setPhone(event.target.value)
                       }
-                      placeholder="Enter phone number"
+                      placeholder="Enter phone number (e.g. +91 9876543210)"
+                      pattern="[+]?[\d\s()-]{7,20}"
+                      title="Enter a valid phone number with at least 7 digits"
                       className={textInputClass()}
                     />
 
