@@ -70,7 +70,7 @@ const venueLocationSchema = new Schema<IVenueLocation>(
 
 const venueSchema = new Schema<IVenue>(
   {
-    ownerId: { type: Schema.Types.ObjectId, ref: 'VenueOwner', required: true },
+    ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     venueName: { type: String, required: true, trim: true },
     description: { type: String, required: true },
     images: [

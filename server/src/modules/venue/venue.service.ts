@@ -2,6 +2,7 @@
   import type { IVenueImage } from './venue.model.js';
   import type { PipelineStage } from 'mongoose';
   import { notifyAllAdmins } from '../notification/notification.service.js';
+  import VenueOwner from '../venue_owner/venueOwner.mode.js';
 
   const NOT_DELETED = { $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] };
 
@@ -127,7 +128,35 @@
     if (status) {
       filter.status = status;
     }
-    return await Venue.find(filter);
+    const venues = await Venue.find(filter)
+      .populate('ownerId', 'firstName lastName email phone avatar emailVerified createdAt')
+      .lean();
+    const ownerIds = venues
+      .map((v: any) => v.ownerId?._id || v.ownerId)
+      .filter(Boolean)
+      .map((id: any) => id.toString());
+    const uniqueOwnerIds = Array.from(new Set(ownerIds));
+    const venueOwners = await VenueOwner.find({ userId: { $in: uniqueOwnerIds } }).lean();
+    const ownerMap = new Map(venueOwners.map((vo: any) => [vo.userId.toString(), vo]));
+    return venues.map((v: any) => {
+      const oid = v.ownerId?._id?.toString() || v.ownerId?.toString();
+      const ownerUser = v.ownerId && typeof v.ownerId === 'object' ? v.ownerId : undefined;
+      const vo = oid ? ownerMap.get(oid) : undefined;
+      return {
+        ...v,
+        ownerUser: ownerUser
+          ? {
+              ...ownerUser,
+              firstName: ownerUser.firstName || vo?.ownerName?.split(' ')?.[0] || '',
+              lastName: ownerUser.lastName || vo?.ownerName?.split(' ')?.slice(1).join(' ') || '',
+              email: ownerUser.email || vo?.email || '',
+              phone: ownerUser.phone || vo?.phone || '',
+              emailVerified: ownerUser.emailVerified ?? false,
+            }
+          : undefined,
+        venueOwner: vo,
+      };
+    });
   };
 
   export const getVenueById = async (id: string) => {
